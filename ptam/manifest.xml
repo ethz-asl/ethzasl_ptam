@@ -14,8 +14,7 @@
   <depend package="agast"/>
   <depend package="gvars3"/>
   <depend package="std_msgs"/>
-  <depend package="ptam_msgs"/>
-  <depend package="ptam_srvs"/>
+  <depend package="ptam_com"/>
   <depend package="cv_bridge"/>
   <depend package="sensor_msgs"/>
   <depend package="image_transport"/>
