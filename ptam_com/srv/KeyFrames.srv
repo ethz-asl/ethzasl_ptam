@@ -1,0 +1,4 @@
+int32 flags
+---
+uint32[]   KFids
+geometry_msgs/PoseWithCovarianceStamped[]   KFs

@@ -1,0 +1,11 @@
+# use this to enable single degrees of freedom to control the mav
+
+bool    roll
+bool    pitch
+bool    yaw
+bool    thrust
+---
+bool    roll
+bool    pitch
+bool    yaw
+bool    thrust

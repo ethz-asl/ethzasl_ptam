@@ -1,0 +1,6 @@
+string             command
+string             SPACE="Space"
+string             QUIZ="q"
+string             RESET="r"
+---
+string             status

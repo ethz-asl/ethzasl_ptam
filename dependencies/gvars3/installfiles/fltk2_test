@@ -1,0 +1,17 @@
+GUI_Fltk2.InitXInterface
+GUI_Fltk2.AddWindow fl "An FLTK2 window"
+
+fl.AddPushButton yo "echo An FLTK2 window"
+fl.AddMonitor "Toggle" foo
+fl.AddToggleButton "A toggle Button" foo
+fl.AddSlider foo 0 1
+
+fl.AddMonitor "Double" test_double
+fl.AddSlider test_double 5 78
+fl.AddSlider test_double 5 78 "test"
+
+
+fl.AddSpin test_double 0 100 "spin test"
+fl.AddSpin test_double 0 100
+
+fl.AddPushButton Dismiss "fl.Destroy"

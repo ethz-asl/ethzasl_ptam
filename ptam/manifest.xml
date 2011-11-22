@@ -1,0 +1,31 @@
+<package>
+  <description brief="ptam">
+
+     ptam
+
+  </description>
+  <author>Markus Achtelik</author>
+  <license>BSD</license>
+  <review status="unreviewed" notes=""/>
+  <url>http://ros.org/wiki/ptam</url>
+  <depend package="roscpp"/>
+  <depend package="TooN"/>
+  <depend package="libcvd"/>
+  <depend package="agast"/>
+  <depend package="gvars3"/>
+  <depend package="std_msgs"/>
+  <depend package="ptam_msgs"/>
+  <depend package="ptam_srvs"/>
+  <depend package="cv_bridge"/>
+  <depend package="sensor_msgs"/>
+  <depend package="image_transport"/>
+  <depend package="opencv2"/>
+  <depend package="tf"/>
+  <depend package="visualization_msgs"/>
+  <depend package="dynamic_reconfigure"/>
+</package>
+
+
+
+
+

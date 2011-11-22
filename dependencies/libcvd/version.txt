@@ -1,0 +1,1 @@
+libcvd 0.8 Snapshot 2010_01_19

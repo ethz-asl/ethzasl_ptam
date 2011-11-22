@@ -1,0 +1,104 @@
+Background\ ColorR=0
+Background\ ColorG=0
+Background\ ColorB=0
+Fixed\ Frame=/world
+Target\ Frame=/world
+Axes.Enabled=1
+Axes.Length=0.1
+Axes.Radius=0.01
+Axes.Reference\ Frame=/world
+Axes2.Enabled=1
+Axes2.Length=0.2
+Axes2.Radius=0.02
+Axes2.Reference\ Frame=/hex/cam_bottom
+Grid.Alpha=0.5
+Grid.Cell\ Size=0.1
+Grid.ColorR=0.5
+Grid.ColorG=0.5
+Grid.ColorB=0.5
+Grid.Enabled=1
+Grid.Line\ Style=0
+Grid.Line\ Width=0.03
+Grid.Normal\ Cell\ Count=0
+Grid.OffsetX=0
+Grid.OffsetY=0
+Grid.OffsetZ=0
+Grid.Plane=0
+Grid.Plane\ Cell\ Count=10
+Grid.Reference\ Frame=/world
+Markers.Enabled=1
+Markers.Marker\ Topic=/vslam/kf_visualization
+Markers.pointcloud_publisher=1
+Markers2.Enabled=1
+Markers2.Marker\ Topic=/vslam/path_visualization
+Markers2.pointcloud_publisher=1
+Point\ Cloud2.Alpha=1
+Point\ Cloud2.Billboard\ Size=0.005
+Point\ Cloud2.Color\ Transformer=RGB8
+Point\ Cloud2.Decay\ Time=10
+Point\ Cloud2.Enabled=1
+Point\ Cloud2.Position\ Transformer=XYZ
+Point\ Cloud2.Selectable=1
+Point\ Cloud2.Style=2
+Point\ Cloud2.Topic=/vslam/pc2
+Point\ Cloud2..AxisAutocompute\ Value\ Bounds=1
+Point\ Cloud2..AxisAxis=2
+Point\ Cloud2..AxisMax\ Value=0.080364
+Point\ Cloud2..AxisMin\ Value=-0.179101
+Point\ Cloud2..AxisUse\ Fixed\ Frame=1
+Point\ Cloud2..Flat\ ColorColorR=0.380392
+Point\ Cloud2..Flat\ ColorColorG=0.968627
+Point\ Cloud2..Flat\ ColorColorB=0.141176
+Point\ Cloud2..IntensityAutocompute\ Intensity\ Bounds=1
+Point\ Cloud2..IntensityMax\ ColorR=1
+Point\ Cloud2..IntensityMax\ ColorG=1
+Point\ Cloud2..IntensityMax\ ColorB=1
+Point\ Cloud2..IntensityMax\ Intensity=4096
+Point\ Cloud2..IntensityMin\ ColorR=0
+Point\ Cloud2..IntensityMin\ ColorG=0
+Point\ Cloud2..IntensityMin\ ColorB=0
+Point\ Cloud2..IntensityMin\ Intensity=0
+TF.All\ Enabled=1
+TF.Enabled=1
+TF.Frame\ Timeout=15
+TF.Show\ Arrows=1
+TF.Show\ Axes=1
+TF.Show\ Names=1
+TF.Update\ Interval=0
+Tool\ 2D\ Nav\ GoalTopic=goal
+Tool\ 2D\ Pose\ EstimateTopic=initialpose
+Camera\ Type=rviz::OrbitViewController
+Camera\ Config=1.621 0.0633592 1.73171 -0.246909 0.213668 -0.149132
+Property\ Grid\ State=selection=Point Cloud2.Enabled.Point Cloud2.Alpha;expanded=.Global Options,Grid.Enabled,Point Cloud2.Enabled,Axes.Enabled,TF.Enabled,TF./hex/cam_bottom/hex/cam_bottom,TF./world/world,TF.Enabled.TF.Tree,TF./hex/cam_bottomTree/hex/cam_bottom,TF./worldTree/world,Axes2.Enabled,Markers.Enabled,Markers.Enabled.Markers.Namespaces,Markers2.Enabled,Markers2.Enabled.Markers2.Namespaces;scrollpos=0,15;splitterpos=235,470;ispageselected=1
+[Display0]
+Name=Grid
+Package=rviz
+ClassName=rviz::GridDisplay
+[Display1]
+Name=Point Cloud2
+Package=rviz
+ClassName=rviz::PointCloud2Display
+[Display2]
+Name=Axes
+Package=rviz
+ClassName=rviz::AxesDisplay
+[Display3]
+Name=TF
+Package=rviz
+ClassName=rviz::TFDisplay
+[Display4]
+Name=Axes2
+Package=rviz
+ClassName=rviz::AxesDisplay
+[Display5]
+Name=Markers
+Package=rviz
+ClassName=rviz::MarkerDisplay
+[Display6]
+Name=Markers2
+Package=rviz
+ClassName=rviz::MarkerDisplay
+[TF.]
+worldEnabled=1
+[TF./hex]
+cam_bottomEnabled=1

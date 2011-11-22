@@ -1,0 +1,22 @@
+<package>
+  <description brief="ptam_com">
+
+     ptam_com
+
+  </description>
+  <author>Markus Achtelik</author>
+  <license>BSD</license>
+  <review status="unreviewed" notes=""/>
+  <url>http://ros.org/wiki/sfly_msgs</url>
+  <depend package="roscpp"/>
+  <depend package="geometry_msgs"/>
+  <depend package="sensor_msgs"/>
+  
+  <export>
+    <cpp cflags="-I${prefix}/msg/cpp -I${prefix}/srv/cpp"/>
+  </export>
+  
+
+</package>
+
+

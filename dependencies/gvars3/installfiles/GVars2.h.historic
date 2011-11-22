@@ -1,0 +1,147 @@
+/*                       
+	This file shows how GVars2 used to work. Now this functionality is provided by GVars3
+	via the GVars2.h compatibility wrapper.
+
+	This file is part of the GVars3 Library.
+
+	Copyright (C) 2005 The Authors
+
+	This library is free software; you can redistribute it and/or
+	modify it under the terms of the GNU Lesser General Public
+	License as published by the Free Software Foundation; either
+	version 2.1 of the License, or (at your option) any later version.
+
+	This library is distributed in the hope that it will be useful,
+	but WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+	Lesser General Public License for more details.
+
+	You should have received a copy of the GNU Lesser General Public
+	License along with this library; if not, write to the Free Software
+	Foundation, Inc., 
+    51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+*/
+
+#ifndef __GVARS_2_H
+#define __GVARS_2_H
+
+#include <string>
+#include <map>
+#include <numerics.h>
+
+using namespace std;
+
+template <class T> class gvar2
+{
+  friend class GVars2;
+ public:
+  gvar2() {datapointer_ptr=NULL;};
+  inline T& operator*() {return **datapointer_ptr;};
+  void SafeSet(T tNewVal);     // This swaps pointer, which is assumed to be atomic.
+                               // Use this if setting vects, matrices or strings in threaded environments.
+ private:
+  T **datapointer_ptr;
+  static const T tDefaultVal;
+  static const int nTypeNum;
+};
+
+
+typedef gvar2< Vector<> > gvar2_Vector;
+typedef gvar2< Matrix<> > gvar2_Matrix;
+typedef gvar2<double> gvar2_double;
+typedef gvar2<std::string> gvar2_string;
+typedef gvar2<int> gvar2_int;
+
+
+enum GVar2Type {gvar2_int_Type,
+		gvar2_double_Type, 
+		gvar2_string_Type, 
+		gvar2_Vector_Type, 
+		gvar2_Matrix_Type};
+
+
+struct GVar2PointerElement
+{
+  void* datapointer;
+  string* psName;
+  GVar2Type nType;
+};
+
+
+
+
+
+class GVars2
+{
+ public:
+  GVars2();
+  void  Register(gvar2_string& gv2, string sName, string sDefault, bool bSilent =false );
+  template <class T> void  Register(gvar2<T>& gv2, string sName, string sDefault, bool bSilent = false );
+  template <class T> void  Register(gvar2<T>& gv2, string sName, T tDefault=DefaultForType<T>(), bool bSilent = false );
+
+  void SetVar(string sVar, string sValue);
+  void SetVar(string s);
+  
+
+  int GetInt(string sName, int nDefault=0, bool bSilent = false); 
+  double GetDouble(string sName, double dDefault=0.0, bool bSilent = false); 
+  string GetString(string sName, string sDefault="", bool bSilent = false); 
+  Vector<> GetVector(string sName, Vector<> vDefault=(Vector<1>)((double[]){0}), bool bSilent = false); 
+  Matrix<> GetMatrix(string sName, Matrix<> mDefault=(Matrix<1>)((double[]){0}), bool bSilent = false); 
+  
+  int GetInt(string sName, string sDefault, bool bSilent = false); 
+  double GetDouble(string sName, string sDefault, bool bSilent = false); 
+  Vector<> GetVector(string sName, string sDefault, bool bSilent = false); 
+  Matrix<> GetMatrix(string sName, string sDefault, bool bSilent = false);  
+  
+  void Load(string sFileName);
+  
+  void PrintVarList(ostream& os=cout);
+  void PrintVar(string s, ostream& os, bool bEndl = true);
+  
+  string StringValue(const string &sVarName, bool bNoQuotes=false);
+
+
+  char* ReadlineCommandGenerator(const char *szText, int nState);
+  
+ private:
+  template <class T> void  ReallyRegister(gvar2<T>& gv2, string sName, T tDefault, bool bSilent=false);
+  
+  template <class T> void SetRegisteredVar(string sVar, GVar2PointerElement *pgvpe, string sValue);
+  
+  template <class T> static string TypeName();
+  template <class T> static GVar2Type WhatType();
+  template <class T> static T DefaultForType();
+  
+  //  template <class T> T* ParseAndAllocate(string s);  // Now in GStringUtil.h
+  
+  map<string,string> mUnmatchedTags;
+  map<string,GVar2PointerElement*> mRegisteredTags;
+  
+   
+};
+
+
+
+#endif
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

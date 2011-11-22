@@ -1,0 +1,36 @@
+
+***  AGAST corner detector  ***           Version: 1.0.4
+------------------------------- 
+
+-- How to compile and use the demo program --
+
+Adapt the OPENCV paths in the 'Makefile' and compile the sources by typing 'make'
+in the program folder. Run the program by typing
+    demo <image_in>
+where <image_in> specifies your input image.
+
+As result you get four images with the names oast9_16.ppm, agast7_12d.ppm, 
+agast7_12s.ppm and agast5_8.ppm. These images represent the result of 
+- the optimal accelerated segment test on a pixel mask of 16 pixels (with a 9 pixel arc length),
+- the adaptive and generic AST with a 12 pixel diamond and square shaped mask and 
+- the adaptive and generic AST with a 8 pixel mask.
+
+With the parameters AST_THR_16, AST_THR_12 and AST_THR_8 in the 'demo.cc' file you 
+can define the thresholds to adjust the corner response of the AST.
+
+
+-- Referencing this work --
+
+If you are publishing a project using this software, please refrence following
+publication:
+
+@inproceedings{mair2010_agast,
+    title       =    "Adaptive and Generic Corner Detection Based on the Accelerated Segment Test",
+    author      =    "Elmar Mair and Gregory D. Hager and Darius Burschka and Michael Suppa and Gerhard Hirzinger",
+    year        =    "2010",
+    month       =    "September",
+    booktitle   =    "European Conference on Computer Vision (ECCV'10)",
+    notes       =    "Poster presentation",
+    url         =    "http://www6.in.tum.de/Main/ResearchAgast"
+}
+

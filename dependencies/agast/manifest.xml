@@ -1,0 +1,22 @@
+<package>
+  <description brief="agast">
+	Adaptive and Generic Accelerated Segment Test 
+ 	AGAST Corner Detector: faster than FAST and even FAST-ER 
+    	by http://www6.in.tum.de/Main/ResearchAgast
+</description>
+  <author>slynen</author>
+  <license>GPL</license>
+  <review status="unreviewed" notes=""/>
+  <url>http://ros.org/wiki/agast</url>
+ 
+ <depend package="opencv2"/>
+ <depend package="roscpp"/>
+  <export>
+    <cpp cflags="-I${prefix}/include" lflags=" -L${prefix}/lib -lagast"/>
+  </export>
+  <platform os="ubuntu" version="9.04"/>
+  <platform os="ubuntu" version="9.10"/>
+  <platform os="ubuntu" version="10.04"/>
+</package>
+
+

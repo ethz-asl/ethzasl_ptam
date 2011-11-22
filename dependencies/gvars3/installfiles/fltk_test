@@ -1,0 +1,29 @@
+gui=GUI_Fltk
+
+
+GUI_Fltk.InitXInterface
+GUI_Fltk.AddWindow fl "An FLTK window"
+fl.AddPushButton yo "echo An FLTK window"
+fl.AddMonitor "Toggle" foo
+fl.AddToggleButton "A toggle Button" foo
+fl.AddSlider foo 0 1
+
+fl.AddMonitor "Double" test_double
+fl.AddSlider test_double 5 78
+
+fl.AddPushButton Dismiss "fl.Destroy"
+
+
+GUI_Motif.InitXInterface
+GUI_Motif.AddWindow mo "A Motif Window"
+mo.AddPushButton yo "echo A Motif Window"
+mo.AddMonitor "Toggle" foo
+mo.AddToggleButton "A toggle Button" foo
+mo.AddSlider foo 0 1
+
+mo.AddMonitor "Double" test_double
+mo.AddSlider test_double 5 78
+
+
+mo.AddPushButton Dismiss "mo.Destroy"
+

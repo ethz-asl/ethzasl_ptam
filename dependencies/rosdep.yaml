@@ -1,0 +1,9 @@
+atlas-sse2:
+  ubuntu: 
+    10.04: libatlas-sse2-dev
+    10.10: libatlas-sse2-dev
+    11.04: libatlas-base-dev
+    11.10: libatlas-base-dev
+
+lapack:
+  ubuntu: liblapack-dev
