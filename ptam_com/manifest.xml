@@ -7,15 +7,14 @@
   <author>Markus Achtelik</author>
   <license>BSD</license>
   <review status="unreviewed" notes=""/>
-  <url>http://ros.org/wiki/sfly_msgs</url>
+  <url>http://ros.org/wiki/sfly_srvs</url>
   <depend package="roscpp"/>
   <depend package="geometry_msgs"/>
   <depend package="sensor_msgs"/>
-  
+
   <export>
-    <cpp cflags="-I${prefix}/msg/cpp -I${prefix}/srv/cpp"/>
+    <cpp cflags="-I${prefix}/srv/cpp -I${prefix}/msg/cpp"/>
   </export>
-  
 
 </package>
 

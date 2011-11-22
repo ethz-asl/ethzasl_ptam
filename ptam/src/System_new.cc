@@ -11,7 +11,7 @@
 #include "ptam/LevelHelpers.h"
 #include "ptam/MapPoint.h"
 
-#include <ptam_msgs/ptam_info.h>
+#include <ptam_com/ptam_info.h>
 #include <cvd/vision.h>
 
 using namespace CVD;
@@ -24,7 +24,7 @@ System::System() :
 {
 
   pub_pose_ = nh_.advertise<geometry_msgs::PoseWithCovarianceStamped> ("pose", 1);
-  pub_info_ = nh_.advertise<ptam_msgs::ptam_info> ("info", 1);
+  pub_info_ = nh_.advertise<ptam_com::ptam_info> ("info", 1);
   srvPC_ = nh_.advertiseService("pointcloud", &System::pointcloudservice,this);
   srvKF_ = nh_.advertiseService("keyframes", &System::keyframesservice,this);
 
@@ -334,7 +334,7 @@ void System::publishPoseAndInfo(const std_msgs::Header & header)
 
     if (pub_info_.getNumSubscribers() > 0)
     {
-    	ptam_msgs::ptam_infoPtr msg_info(new ptam_msgs::ptam_info);
+    	ptam_com::ptam_infoPtr msg_info(new ptam_com::ptam_info);
       double diff = header.stamp.toSec() - last_time;
       if (diff < 1.0 && diff > 0.005)
         fps = fps * 0.8 + 0.2 / diff;
@@ -421,7 +421,7 @@ void System::publishPreviewImage(CVD::Image<CVD::byte> & img, const std_msgs::He
 }
 
 //Weiss{
-bool System::pointcloudservice(ptam_srvs::PointCloudRequest & req, ptam_srvs::PointCloudResponse & resp)
+bool System::pointcloudservice(ptam_com::PointCloudRequest & req, ptam_com::PointCloudResponse & resp)
 {
 	static unsigned int seq=0;
 	int dimension   = 4;
@@ -490,7 +490,7 @@ bool System::pointcloudservice(ptam_srvs::PointCloudRequest & req, ptam_srvs::Po
 }
 
 
-bool System::keyframesservice(ptam_srvs::KeyFramesRequest & req, ptam_srvs::KeyFramesResponse & resp)
+bool System::keyframesservice(ptam_com::KeyFrame_srvRequest & req, ptam_com::KeyFrame_srvResponse & resp)
 {
 	// flags: 	negative number = send newest N KeyFrames
 	//			zero = send all available KeyFrames

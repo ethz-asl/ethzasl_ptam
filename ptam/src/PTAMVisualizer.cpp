@@ -1,7 +1,7 @@
 #include <ros/ros.h>
-#include <ptam_srvs/PointCloud.h>
-#include <ptam_srvs/KeyFrames.h>
-#include <ptam_msgs/KeyFrames.h>
+#include <ptam_com/PointCloud.h>
+#include <ptam_com/KeyFrame_srv.h>
+#include <ptam_com/KeyFrame_msg.h>
 #include <sensor_msgs/PointCloud2.h>
 #include <ptam/PTAMVisualizerParamsConfig.h>
 #include <dynamic_reconfigure/server.h>
@@ -44,17 +44,17 @@ int main(int argc, char **argv)
 {
 	ros::init(argc, argv, "pointcloud_publisher");
 	ros::NodeHandle n;
-	ros::ServiceClient PC2client = n.serviceClient<ptam_srvs::PointCloud>("vslam/pointcloud");
-	ros::ServiceClient KFclient = n.serviceClient<ptam_srvs::KeyFrames>("vslam/keyframes");
+	ros::ServiceClient PC2client = n.serviceClient<ptam_com::PointCloud>("vslam/pointcloud");
+	ros::ServiceClient KFclient = n.serviceClient<ptam_com::KeyFrame_srv>("vslam/keyframes");
 	ros::Publisher pub_cloud = n.advertise<sensor_msgs::PointCloud2> ("vslam/pc2", 1);
-	ros::Publisher pub_kfs = n.advertise<ptam_msgs::KeyFrames> ("vslam/kfs",1);
+	ros::Publisher pub_kfs = n.advertise<ptam_com::KeyFrame_msg> ("vslam/kfs",1);
 	ros::Publisher pub_marker = n.advertise<visualization_msgs::MarkerArray>("vslam/kf_visualization_array", 1);
 	pub_path = n.advertise<visualization_msgs::Marker>("vslam/path_visualization", 1);
 
 	ros::Subscriber sub_path = n.subscribe("vslam/pose",1,&pathCallback);
 
-	ptam_srvs::PointCloud srv_pc2;
-	ptam_srvs::KeyFrames srv_kfs;
+	ptam_com::PointCloud srv_pc2;
+	ptam_com::KeyFrame_srv srv_kfs;
 	unsigned int pathidx=0;
 
 	pw = getpwuid(getuid());

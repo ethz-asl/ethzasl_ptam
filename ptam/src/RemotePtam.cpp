@@ -55,7 +55,7 @@
 #include <boost/thread.hpp>
 #include <boost/format.hpp>
 
-#include <ptam_srvs/ptam_command.h>
+#include <ptam_com/ptam_command.h>
 #include <std_msgs/String.h>
 
 #ifdef HAVE_GTK

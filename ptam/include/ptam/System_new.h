@@ -19,8 +19,8 @@
 #include <image_transport/image_transport.h>
 #include <sensor_msgs/Imu.h>
 #include <geometry_msgs/PoseWithCovarianceStamped.h>
-#include <ptam_srvs/PointCloud.h>
-#include <ptam_srvs/KeyFrames.h>
+#include <ptam_com/PointCloud.h>
+#include <ptam_com/KeyFrame_srv.h>
 #include <queue>
 
 #include "GLWindow2.h"
@@ -91,8 +91,8 @@ private:
 
   void publishPoseAndInfo(const std_msgs::Header & header);
   void publishPreviewImage(CVD::Image<CVD::byte> & img, const std_msgs::Header & header);
-  bool pointcloudservice(ptam_srvs::PointCloudRequest & req, ptam_srvs::PointCloudResponse & resp);
-  bool keyframesservice(ptam_srvs::KeyFramesRequest & req, ptam_srvs::KeyFramesResponse & resp);
+  bool pointcloudservice(ptam_com::PointCloudRequest & req, ptam_com::PointCloudResponse & resp);
+  bool keyframesservice(ptam_com::KeyFrame_srvRequest & req, ptam_com::KeyFrame_srvResponse & resp);
 
   void imageCallback(const sensor_msgs::ImageConstPtr & img);
   void imuCallback(const sensor_msgs::ImuConstPtr & msg);

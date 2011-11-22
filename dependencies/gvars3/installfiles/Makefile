@@ -4,7 +4,7 @@ SHELL = /bin/sh
 srcdir = .
 top_srcdir = .
 
-prefix = /home/asctec/sfly/ros_ptam/dependencies/gvars3
+prefix = /home/slynen/Documents/projects/ros_ptam/dependencies/gvars3
 exec_prefix = ${prefix}
 bindir = ${exec_prefix}/bin
 sbindir = ${exec_prefix}/sbin
@@ -24,12 +24,12 @@ arch= x86_64
 
 CC = @CC@
 CXX=/usr/bin/c++
-CPPFLAGS = -I. -I/home/asctec/sfly/ros_ptam/dependencies/TooN/include
+CPPFLAGS = -I. -I/home/slynen/Documents/projects/ros_ptam/dependencies/TooN/include
 CFLAGS = $(CPPFLAGS) @CFLAGS@
 CXXFLAGS = $(CPPFLAGS) -g -O2 -Wall -Wextra -pthread
 OFLAGS=@OFLAGS@
 LDFLAGS = 
-LIBS =  -lm 
+LIBS = -lreadline  -lm 
 HLIBS =  -lm 
 INSTALL = @INSTALL@
 AR=ar
@@ -99,7 +99,7 @@ OBJS=\
 	src/GUI_non_readline.o	\
 	src/inst.o\
 
-ifeq (,yes)
+ifeq (yes,yes)
 	OBJS+=src/GUI_readline.o
 	OBJS+=src/GUI_impl_readline.o
 	CPPFLAGS+=-DGUI_HAVE_READLINE

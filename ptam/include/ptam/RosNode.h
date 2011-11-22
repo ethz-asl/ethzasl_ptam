@@ -15,8 +15,8 @@
 #include <cv_bridge/CvBridge.h>
 #include <tf/transform_broadcaster.h>
 #include <geometry_msgs/PoseWithCovarianceStamped.h>
-#include <ptam_msgs/ptam_info.h>
-#include <ptam_srvs/ptam_command.h>
+#include <ptam_com/ptam_info.h>
+#include <ptam_com/ptam_command.h>
 #include <visualization_msgs/Marker.h>
 
 //slynen{
@@ -125,7 +125,7 @@ private:
 	geometry_msgs::PoseWithCovarianceStamped msgPose_;
 
 	ros::Publisher pubInfo_;
-	ptam_msgs::ptam_info msgInfo_;
+	ptam_com::ptam_info msgInfo_;
 
 public:
 	Publisher();
@@ -139,7 +139,7 @@ private:
 	std::string command_;
 	std::string response_;
 	ros::ServiceServer commandServer_;
-	bool commandCallback(ptam_srvs::ptam_commandRequest & req, ptam_srvs::ptam_commandResponse & res);
+	bool commandCallback(ptam_com::ptam_commandRequest & req, ptam_com::ptam_commandResponse & res);
 
 	image_transport::ImageTransport it_;
 	image_transport::Publisher previewPublisher_;

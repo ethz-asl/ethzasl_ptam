@@ -150,7 +150,7 @@ Publisher::Publisher()
   ParamsAccess Params;
 
   pubPose_ = nh.advertise<geometry_msgs::PoseWithCovarianceStamped> ("pose", 1);
-  pubInfo_ = nh.advertise<ptam_msgs::ptam_info> ("info", 1);
+  pubInfo_ = nh.advertise<ptam_com::ptam_info> ("info", 1);
 }
 
 bool Publisher::publishPose(TooN::SE3<> pose, TooN::Matrix<6> covar, int trackingQuality, bool mapQuality,
@@ -266,7 +266,7 @@ RemoteInterface::RemoteInterface() :
   //}
 }
 
-bool RemoteInterface::commandCallback(ptam_srvs::ptam_commandRequest & req, ptam_srvs::ptam_commandResponse & res)
+bool RemoteInterface::commandCallback(ptam_com::ptam_commandRequest & req, ptam_com::ptam_commandResponse & res)
 {
   command_ = req.command;
   newCommand_ = true;
