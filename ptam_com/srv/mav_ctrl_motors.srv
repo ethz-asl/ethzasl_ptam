@@ -1,3 +1,0 @@
-bool      startMotors         # starts/stops the motors
----
-bool      motorsRunning       # are the motors running? 
