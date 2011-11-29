@@ -45,14 +45,11 @@ set(PTAM_SOURCE_FILES
     src/MapMaker.cc  
     src/PatchFinder.cc  
     src/SmallBlurryImage.cc  
-#    src/VideoSource_Linux_DV.cc 
     src/EyeGame.cc               
     src/KeyFrame.cc        
     src/MapPoint.cc  
     src/Relocaliser.cc  
-#    src/System.cc     
-    src/System_new.cc            
-#src/VideoSource_Linux_V4L.cc
+    src/System.cc     
     src/RosNode.cpp
     src/Params.cpp
 	)
@@ -85,8 +82,7 @@ set(PTAM_HEADER_FILES
     include/ptam/HomographyInit.h    
     include/ptam/MapPoint.h      
     include/ptam/PatchFinder.h  
-#    include/ptam/System.h  
-    include/ptam/System_new.h
+    include/ptam/System.h  
     include/ptam/RosNode.h
     include/ptam/Params.h
 	)

@@ -3,8 +3,7 @@
 #include <stdlib.h>
 #include <iostream>
 #include <gvars3/instances.h>
-//#include "ptam/System.h"
-#include "ptam/System_new.h"
+#include "ptam/System.h"
 #include "ptam/RosNode.h"
 
 using namespace std;
