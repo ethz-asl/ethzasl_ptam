@@ -15,18 +15,21 @@ if("${_TooN_failed}" STREQUAL 0)
 		string(STRIP ${libcvdPATH} libcvdPATH)
         set(ENV{CPPFLAGS} -I${TooNPATH}/include -I${libcvdPATH}/include)
 
-		#run configure
-		execute_process(WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/installfiles COMMAND ./configure --disable-widgets --prefix=${PROJECT_SOURCE_DIR} RESULT_VARIABLE _make_ok)
+    # copy install files for easier (and cleaner ;) ) make clean
+		execute_process(WORKING_DIRECTORY ${PROJECT_SOURCE_DIR} COMMAND cp -rup ${PROJECT_SOURCE_DIR}/installfiles/ ${PROJECT_SOURCE_DIR}/build RESULT_VARIABLE _make_ok)
+
+    #run configure
+		execute_process(WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/build/installfiles COMMAND ./configure --disable-widgets --prefix=${PROJECT_SOURCE_DIR} RESULT_VARIABLE _make_ok)
 		if(NOT (${_make_ok} STREQUAL 0))
             message(FATAL_ERROR "configuring gvars failed")
         endif(NOT (${_make_ok} STREQUAL 0))
     
-		execute_process(WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/installfiles COMMAND make  RESULT_VARIABLE _make_ok)
+		execute_process(WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/build/installfiles COMMAND make  RESULT_VARIABLE _make_ok)
 		if(NOT (${_make_ok} STREQUAL 0))
             message(FATAL_ERROR "building gvars failed")
         endif(NOT (${_make_ok} STREQUAL 0))
         
-		execute_process(WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/installfiles COMMAND make install  RESULT_VARIABLE _make_ok)
+		execute_process(WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/build/installfiles COMMAND make install  RESULT_VARIABLE _make_ok)
 		
 	else("${_libcvd_failed}" STREQUAL 0)
 		message(FATA_ERROR ROS libcvd package not found! ${libcvdPATH})
@@ -36,5 +39,9 @@ else("${_TooN_failed}" STREQUAL 0)
 endif("${_TooN_failed}" STREQUAL 0)
 
 # add directories that should be removed on make clean
-list(APPEND GVARS_MAKE_CLEAN_FILES ${PROJECT_SOURCE_DIR}/include ${PROJECT_SOURCE_DIR}/bin ${PROJECT_SOURCE_DIR}/lib)
+list(APPEND GVARS_MAKE_CLEAN_FILES 
+  ${PROJECT_SOURCE_DIR}/include 
+  ${PROJECT_SOURCE_DIR}/bin 
+  ${PROJECT_SOURCE_DIR}/lib 
+)
 set_directory_properties(PROPERTIES ADDITIONAL_MAKE_CLEAN_FILES "${GVARS_MAKE_CLEAN_FILES}")

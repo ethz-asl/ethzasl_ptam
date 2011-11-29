@@ -13,20 +13,24 @@ if("${_TooN_failed}" STREQUAL 0)
     set(ENV{CPPFLAGS} -I${TooNPATH}/include)
     set(ENV{CXXFLAGS} -D_REENTRANT)
 
+
+   # copy install files for easier (and cleaner ;) ) make clean
+	execute_process(WORKING_DIRECTORY ${PROJECT_SOURCE_DIR} COMMAND cp -rup ${PROJECT_SOURCE_DIR}/installfiles/ ${PROJECT_SOURCE_DIR}/build RESULT_VARIABLE _make_ok)
+
 	#run configure
-	execute_process(WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/installfiles COMMAND ./configure --without-ffmpeg --without-dc1394v1 --without-dc1394v2 --with-lapack --prefix=${PROJECT_SOURCE_DIR}  RESULT_VARIABLE _make_ok)
+	execute_process(WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/build/installfiles COMMAND ./configure --without-ffmpeg --without-dc1394v1 --without-dc1394v2 --with-lapack --prefix=${PROJECT_SOURCE_DIR}  RESULT_VARIABLE _make_ok)
 	if(NOT (${_make_ok} STREQUAL 0))
         message(FATAL_ERROR "configuring libcvd failed")
     endif(NOT (${_make_ok} STREQUAL 0))
 	
 	# make
-	execute_process(WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/installfiles COMMAND make  RESULT_VARIABLE _make_ok)
+	execute_process(WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/build/installfiles COMMAND make  RESULT_VARIABLE _make_ok)
 	if(NOT (${_make_ok} STREQUAL 0))
         message(FATAL_ERROR "compiling libcvd failed")
     endif(NOT (${_make_ok} STREQUAL 0))
 	
 	#make install
-	execute_process(WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/installfiles COMMAND make install  RESULT_VARIABLE _make_ok)
+	execute_process(WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/build/installfiles COMMAND make install  RESULT_VARIABLE _make_ok)
 	
 else("${_TooN_failed}" STREQUAL 0)
 	message(FATAL_ERROR ROS TooN package not found! ${TooNPATH})
