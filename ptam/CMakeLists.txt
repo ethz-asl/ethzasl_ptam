@@ -145,5 +145,3 @@ target_link_libraries(remote_ptam ${GTK_LIBRARIES})
 
 
 rosbuild_add_executable(pointcloudpublisher src/PTAMVisualizer.cpp)
-
-include(getIncludePaths.cmake)
