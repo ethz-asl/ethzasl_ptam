@@ -11,12 +11,8 @@ using namespace GVars3;
 
 int main(int argc, char** argv)
 {
-
-	// ros init ...
 	ros::init(argc, argv, "ptam");
 	ROS_INFO("starting ptam with node name %s", ros::this_node::getName().c_str());
-//	ros::AsyncSpinner spinner(0);
-//	spinner.start();
 
 	cout << "  Welcome to PTAM " << endl;
 	cout << "  --------------- " << endl;
