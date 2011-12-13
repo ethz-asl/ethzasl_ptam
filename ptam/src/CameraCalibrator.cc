@@ -19,39 +19,33 @@ using namespace GVars3;
 
 int main(int argc, char** argv)
 {
-	// ros init ...
-	ros::init(argc, argv, "cameracalibrator");
-	ROS_INFO("starting CameraCalibrator with node name %s", ros::this_node::getName().c_str());
-//	ros::AsyncSpinner spinner(0);
-//	spinner.start();
+
+  ros::init(argc, argv, "cameracalibrator");
+  ROS_INFO("starting CameraCalibrator with node name %s", ros::this_node::getName().c_str());
+
 
   cout << "  Welcome to CameraCalibrator " << endl;
   cout << "  -------------------------------------- " << endl;
   cout << "  Parallel tracking and mapping for Small AR workspaces" << endl;
   cout << "  Copyright (C) Isis Innovation Limited 2008 " << endl;
-//  cout << endl;
- // cout << "  Parsing calibrator_settings.cfg ...." << endl;
   
-//  GUI.LoadFile("calibrator_settings.cfg");
-
   GUI.StartParserThread();
   atexit(GUI.StopParserThread); // Clean up readline when program quits
   GV3::get<Vector<NUMTRACKERCAMPARAMETERS> >("Camera.Parameters", ATANCamera::mvDefaultParams, SILENT);
 
   try
-    {
-      RosNode::PtamParameters mPtamParameters;
-      CameraCalibrator c;
-
-      c.Run();
-    }
+  {
+    RosNode::PtamParameters mPtamParameters;
+    CameraCalibrator c;
+    c.Run();
+  }
   catch(CVD::Exceptions::All e)
-    {
-      cout << endl;
-      cout << "!! Failed to run CameraCalibrator; got exception. " << endl;
-      cout << "   Exception was: " << endl;
-      cout << e.what << endl;
-    }
+  {
+    cout << endl;
+    cout << "!! Failed to run CameraCalibrator; got exception. " << endl;
+    cout << "   Exception was: " << endl;
+    cout << e.what << endl;
+  }
 }
 
 
@@ -70,25 +64,19 @@ void CameraCalibrator::imageCallback(const sensor_msgs::ImageConstPtr & img){
 
 
 CameraCalibrator::CameraCalibrator()
-  :mGLWindow(CVD::ImageRef(752, 480), "Camera Calibrator"), mCamera("Camera")
+  :mGLWindow(CVD::ImageRef(752, 480), "Camera Calibrator"), mCamera("Camera"), mbDone(false), mCurrentImage(CVD::ImageRef(752, 480))
 {
-  mbDone = false;
   GUI.RegisterCommand("CameraCalibrator.GrabNextFrame", GUICommandCallBack, this);
   GUI.RegisterCommand("CameraCalibrator.Reset", GUICommandCallBack, this);
   GUI.RegisterCommand("CameraCalibrator.ShowNext", GUICommandCallBack, this);
   GUI.RegisterCommand("CameraCalibrator.SaveCalib", GUICommandCallBack, this);
   GUI.RegisterCommand("quit", GUICommandCallBack, this);
   GUI.RegisterCommand("exit", GUICommandCallBack, this);
-//Weiss{
-//  ParamsAccess Params;
-//  FixParams* pPars = ParamsAccess::fixParams;
-  //mgvnOptimizing=pPars->Calibrator_Optimize;
-  //mgvnShowImage=pPars->Calibrator_Show;
-  //mgvnDisableDistortion=pPars->Calibrator_NoDistortion;
+
   GV3::Register(mgvnOptimizing, "CameraCalibrator.Optimize", 0, SILENT);
   GV3::Register(mgvnShowImage, "CameraCalibrator.Show", 0, SILENT);
   GV3::Register(mgvnDisableDistortion, "CameraCalibrator.NoDistortion", 0, SILENT);
-//}
+
   GUI.ParseLine("GLWindow.AddMenu CalibMenu");
   GUI.ParseLine("CalibMenu.AddMenuButton Live GrabFrame CameraCalibrator.GrabNextFrame");
   GUI.ParseLine("CalibMenu.AddMenuButton Live Reset CameraCalibrator.Reset");
@@ -110,29 +98,12 @@ CameraCalibrator::CameraCalibrator()
 
 void CameraCalibrator::Run()
 {
+  ros::Rate r(100);
   while(!mbDone)
     {
-      // We use two versions of each video frame:
-      // One black and white (for processing by the tracker etc)
-      // and one RGB, for drawing.
       
     ros::spinOnce();
-
-    if(!mNewImage){
-      usleep(1e3);
-      continue;
-    }
-    else
-      mNewImage = false;
-
-//      Image<Rgb<CVD::byte> > imFrameRGB(mVideoSource.Size());
-//      Image<CVD::byte>  mCurrentImage(mVideoSource.Size());
-//
-//      // Grab new video frame...
-//      if(!mVideoSource.GetAndFillFrameBWandRGB(mCurrentImage, imFrameRGB)){
-//        usleep(1e3);
-//        continue;
-//      }
+    r.sleep();
       
       // Set up openGL
       mGLWindow.SetupViewport();
@@ -140,24 +111,27 @@ void CameraCalibrator::Run()
       mGLWindow.SetupVideoRasterPosAndZoom();
       
       if(mvCalibImgs.size() < 1)
-	*mgvnOptimizing = 0;
+	*mgvnOptimizing = false;
       
       if(!*mgvnOptimizing)
 	{
 	  GUI.ParseLine("CalibMenu.ShowMenu Live");
 	  glDrawPixels(mCurrentImage);
 	  
-	  CalibImage c;
-	  if(c.MakeFromImage(mCurrentImage))
+	  if(mNewImage){
+	    mNewImage = false;
+	    CalibImage c;
+	    if(c.MakeFromImage(mCurrentImage))
 	    {
 	      if(mbGrabNextFrame)
-		{
-		  mvCalibImgs.push_back(c);
-		  mvCalibImgs.back().GuessInitialPose(mCamera);
-		  mvCalibImgs.back().Draw3DGrid(mCamera, false);
-		  mbGrabNextFrame = false;
-		};
+	      {
+	        mvCalibImgs.push_back(c);
+	        mvCalibImgs.back().GuessInitialPose(mCamera);
+	        mvCalibImgs.back().Draw3DGrid(mCamera, false);
+	        mbGrabNextFrame = false;
+	      };
 	    }
+	  }
 	}
       else
 	{
@@ -208,7 +182,7 @@ void CameraCalibrator::Reset()
   if(*mgvnDisableDistortion) mCamera.DisableRadialDistortion();
   
 //  mCamera.SetImageSize(mVideoSource.Size());
-  mCamera.SetImageSize(CVD::ImageRef(752, 480));
+  mCamera.SetImageSize(mCurrentImage.size());
   mbGrabNextFrame =false;
   *mgvnOptimizing = false;
   mvCalibImgs.clear();
@@ -221,6 +195,8 @@ void CameraCalibrator::GUICommandCallBack(void* ptr, string sCommand, string sPa
 
 void CameraCalibrator::GUICommandHandler(string sCommand, string sParams)  // Called by the callback func..
 {
+  ROS_INFO_STREAM("Received command: "<<sCommand<<" Param: "<<sParams);
+
   if(sCommand=="CameraCalibrator.Reset")
     {
       Reset();

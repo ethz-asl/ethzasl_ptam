@@ -19,10 +19,7 @@ public:
   
 protected:
   void Reset();
-//  void HandleFrame(CVD::Image<CVD::byte> imFrame);
-//  static void MainLoopCallback(void* pvUserData);
-//  void MainLoopStep();
-  
+  void init();
   GLWindow2 mGLWindow;
   ATANCamera mCamera;
   bool mbDone;
@@ -33,6 +30,7 @@ protected:
   bool mbGrabNextFrame;
 
   GVars3::gvar3<int> mgvnOptimizing;
+//  bool mgvnOptimizing;
   GVars3::gvar3<int> mgvnShowImage;
   GVars3::gvar3<int> mgvnDisableDistortion;
 
