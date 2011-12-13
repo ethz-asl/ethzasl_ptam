@@ -93,29 +93,6 @@ public:
 	}
 };
 
-class VideoSource{
-private:
-	sensor_msgs::CvBridge cvBridge_;
-	image_transport::Subscriber sub_;
-	CVD::ImageRef size_, lastSize_;
-	IplImage * cvImage_;
-	bool firstImageCallback_;
-	bool newImage_;
-	std::string frameId_;
-	ros::Time timestamp_;
-
-	boost::mutex imageMutex_;
-	void imageCallback(const sensor_msgs::ImageConstPtr& msg);
-
-public:
-	VideoSource();
-	CVD::ImageRef Size();
-	bool GetAndFillFrameBWandRGB(CVD::Image<CVD::byte> &imBW, CVD::Image<CVD::Rgb<CVD::byte> > &imRGB);
-	void getStampAndFrameId(double &timestamp, std::string & frameId);
-	bool running(){return ros::ok();};
-};
-
-
 class Publisher{
 private:
 	tf::TransformBroadcaster transformBroadcaster_;
