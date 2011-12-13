@@ -90,13 +90,11 @@ set(PTAM_HEADER_FILES
 SET(CALIBRATOR_FILES     
     src/CameraCalibrator.cc 
 	src/GLWindowMenu.cc 
-	#src/VideoSource_Linux_DV.cc
 	src/CalibCornerPatch.cc           
 	src/CalibImage.cc            
 	src/GLWindow2.cc	
 	src/ATANCamera.cc 
 	src/RosNode.cpp
-	#src/System.cc 
     src/Params.cpp 
 	)	
 	
@@ -121,7 +119,7 @@ target_link_libraries(ptam ${PTAM_LIBRARIES})
 #rosbuild_link_boost(ptam thread signals system)
 
 
-rosbuild_add_executable(cameracalibrator ${CALIBRATOR_FILES} ${PTAM_HEADER_FILES})
+rosbuild_add_executable(cameracalibrator ${CALIBRATOR_FILES})
 target_link_libraries(cameracalibrator ${PTAM_LIBRARIES})
 
 
