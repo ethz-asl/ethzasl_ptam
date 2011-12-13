@@ -15,12 +15,13 @@ class CameraCalibrator
 {
 public:
   CameraCalibrator();
+  ~CameraCalibrator();
   void Run();
   
 protected:
   void Reset();
   void init();
-  GLWindow2 mGLWindow;
+  GLWindow2 *mGLWindow;
   ATANCamera mCamera;
   bool mbDone;
 
@@ -30,7 +31,6 @@ protected:
   bool mbGrabNextFrame;
 
   GVars3::gvar3<int> mgvnOptimizing;
-//  bool mgvnOptimizing;
   GVars3::gvar3<int> mgvnShowImage;
   GVars3::gvar3<int> mgvnDisableDistortion;
 

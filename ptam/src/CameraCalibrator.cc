@@ -14,7 +14,7 @@ using namespace std;
 using namespace GVars3;
 
 //Weiss{
-  Vector<NUMTRACKERCAMPARAMETERS> camparams;
+Vector<NUMTRACKERCAMPARAMETERS> camparams;
 //}
 
 int main(int argc, char** argv)
@@ -23,12 +23,11 @@ int main(int argc, char** argv)
   ros::init(argc, argv, "cameracalibrator");
   ROS_INFO("starting CameraCalibrator with node name %s", ros::this_node::getName().c_str());
 
-
   cout << "  Welcome to CameraCalibrator " << endl;
   cout << "  -------------------------------------- " << endl;
   cout << "  Parallel tracking and mapping for Small AR workspaces" << endl;
   cout << "  Copyright (C) Isis Innovation Limited 2008 " << endl;
-  
+
   GUI.StartParserThread();
   atexit(GUI.StopParserThread); // Clean up readline when program quits
   GV3::get<Vector<NUMTRACKERCAMPARAMETERS> >("Camera.Parameters", ATANCamera::mvDefaultParams, SILENT);
@@ -39,7 +38,7 @@ int main(int argc, char** argv)
     CameraCalibrator c;
     c.Run();
   }
-  catch(CVD::Exceptions::All e)
+  catch (CVD::Exceptions::All e)
   {
     cout << endl;
     cout << "!! Failed to run CameraCalibrator; got exception. " << endl;
@@ -48,9 +47,8 @@ int main(int argc, char** argv)
   }
 }
 
-
-
-void CameraCalibrator::imageCallback(const sensor_msgs::ImageConstPtr & img){
+void CameraCalibrator::imageCallback(const sensor_msgs::ImageConstPtr & img)
+{
 
   ROS_ASSERT(img->encoding == sensor_msgs::image_encodings::MONO8 && img->step == img->width);
 
@@ -62,10 +60,23 @@ void CameraCalibrator::imageCallback(const sensor_msgs::ImageConstPtr & img){
   mNewImage = true;
 }
 
-
-CameraCalibrator::CameraCalibrator()
-  :mGLWindow(CVD::ImageRef(752, 480), "Camera Calibrator"), mCamera("Camera"), mbDone(false), mCurrentImage(CVD::ImageRef(752, 480))
+CameraCalibrator::CameraCalibrator() :
+  mCamera("Camera"), mbDone(false), mCurrentImage(CVD::ImageRef(752, 480)), mNewImage(false)
 {
+  ros::NodeHandle nh;
+  image_transport::ImageTransport it(nh);
+  mImageSub = it.subscribe("image", 1, &CameraCalibrator::imageCallback, this);
+}
+
+CameraCalibrator::~CameraCalibrator()
+{
+  delete mGLWindow;
+}
+
+void CameraCalibrator::init()
+{
+  mGLWindow = new GLWindow2(mCurrentImage.size(), "Camera Calibrator");
+
   GUI.RegisterCommand("CameraCalibrator.GrabNextFrame", GUICommandCallBack, this);
   GUI.RegisterCommand("CameraCalibrator.Reset", GUICommandCallBack, this);
   GUI.RegisterCommand("CameraCalibrator.ShowNext", GUICommandCallBack, this);
@@ -89,153 +100,157 @@ CameraCalibrator::CameraCalibrator()
   GUI.ParseLine("CalibMenu.AddMenuToggle Opti NoDist CameraCalibrator.NoDistortion");
   GUI.ParseLine("CalibMenu.AddMenuButton Opti Save CameraCalibrator.SaveCalib");
   Reset();
-
-  mNewImage = false;
-  ros::NodeHandle nh;
-  image_transport::ImageTransport it(nh);
-  mImageSub = it.subscribe("image", 1, &CameraCalibrator::imageCallback, this);
 }
 
 void CameraCalibrator::Run()
 {
+  bool initialized = false;
   ros::Rate r(100);
-  while(!mbDone)
-    {
-      
+  while (!mbDone && ros::ok())
+  {
+
     ros::spinOnce();
     r.sleep();
-      
-      // Set up openGL
-      mGLWindow.SetupViewport();
-      mGLWindow.SetupVideoOrtho();
-      mGLWindow.SetupVideoRasterPosAndZoom();
-      
-      if(mvCalibImgs.size() < 1)
-	*mgvnOptimizing = false;
-      
-      if(!*mgvnOptimizing)
-	{
-	  GUI.ParseLine("CalibMenu.ShowMenu Live");
-	  glDrawPixels(mCurrentImage);
-	  
-	  if(mNewImage){
-	    mNewImage = false;
-	    CalibImage c;
-	    if(c.MakeFromImage(mCurrentImage))
-	    {
-	      if(mbGrabNextFrame)
-	      {
-	        mvCalibImgs.push_back(c);
-	        mvCalibImgs.back().GuessInitialPose(mCamera);
-	        mvCalibImgs.back().Draw3DGrid(mCamera, false);
-	        mbGrabNextFrame = false;
-	      };
-	    }
-	  }
-	}
-      else
-	{
-	  OptimizeOneStep();
-	  GUI.ParseLine("CalibMenu.ShowMenu Opti");
-	  int nToShow = *mgvnShowImage - 1;
-	  if(nToShow < 0)
-	    nToShow = 0;
-	  if(nToShow >= (int) mvCalibImgs.size())
-	    nToShow = mvCalibImgs.size()-1;
-	  *mgvnShowImage = nToShow + 1;
-      
-	  glDrawPixels(mvCalibImgs[nToShow].mim);
-	  mvCalibImgs[nToShow].Draw3DGrid(mCamera,true);
-	}
-      
-      ostringstream ost;
-      ost << "Camera Calibration: Grabbed " << mvCalibImgs.size() << " images." << endl;
-      if(!*mgvnOptimizing)
-	{
-	  ost << "Take snapshots of the calib grid with the \"GrabFrame\" button," << endl;
-	  ost << "and then press \"Optimize\"." << endl;
-	  ost << "Take enough shots (4+) at different angles to get points " << endl;
-	  ost << "into all parts of the image (corners too.) The whole grid " << endl;
-	  ost << "doesn't need to be visible so feel free to zoom in." << endl;
-	}
-      else
-	{
-	  ost << "Current RMS pixel error is " << mdMeanPixelError << endl;
-	  ost << "Current camera params are  " << mCamera.mgvvCameraParams << endl;
-	  ost << "(That would be a pixel aspect ratio of " 
-	      <<  mCamera.PixelAspectRatio() << ")" << endl;
-	  ost << "Check fit by looking through the grabbed images." << endl;
-	  ost << "RMS should go below 0.5, typically below 0.3 for a wide lens." << endl;
-	  ost << "Press \"save\" to save calibration to camera.cfg file and exit." << endl;
-	}
 
-      mGLWindow.DrawCaption(ost.str());
-      mGLWindow.DrawMenus();
-      mGLWindow.HandlePendingEvents();
-      mGLWindow.swap_buffers();
+    if (!initialized)
+    {
+      if (mNewImage)
+      {
+        init();
+        initialized = true;
+      }
+      continue;
     }
+
+    // Set up openGL
+    mGLWindow->SetupViewport();
+    mGLWindow->SetupVideoOrtho();
+    mGLWindow->SetupVideoRasterPosAndZoom();
+
+    if (mvCalibImgs.size() < 1)
+      *mgvnOptimizing = false;
+
+    if (!*mgvnOptimizing)
+    {
+      GUI.ParseLine("CalibMenu.ShowMenu Live");
+      glDrawPixels(mCurrentImage);
+
+      if (mNewImage)
+      {
+        mNewImage = false;
+        CalibImage c;
+        if (c.MakeFromImage(mCurrentImage))
+        {
+          if (mbGrabNextFrame)
+          {
+            mvCalibImgs.push_back(c);
+            mvCalibImgs.back().GuessInitialPose(mCamera);
+            mvCalibImgs.back().Draw3DGrid(mCamera, false);
+            mbGrabNextFrame = false;
+          };
+        }
+      }
+    }
+    else
+    {
+      OptimizeOneStep();
+      GUI.ParseLine("CalibMenu.ShowMenu Opti");
+      int nToShow = *mgvnShowImage - 1;
+      if (nToShow < 0)
+        nToShow = 0;
+      if (nToShow >= (int)mvCalibImgs.size())
+        nToShow = mvCalibImgs.size() - 1;
+      *mgvnShowImage = nToShow + 1;
+
+      glDrawPixels(mvCalibImgs[nToShow].mim);
+      mvCalibImgs[nToShow].Draw3DGrid(mCamera, true);
+    }
+
+    ostringstream ost;
+    ost << "Camera Calibration: Grabbed " << mvCalibImgs.size() << " images." << endl;
+    if (!*mgvnOptimizing)
+    {
+      ost << "Take snapshots of the calib grid with the \"GrabFrame\" button," << endl;
+      ost << "and then press \"Optimize\"." << endl;
+      ost << "Take enough shots (4+) at different angles to get points " << endl;
+      ost << "into all parts of the image (corners too.) The whole grid " << endl;
+      ost << "doesn't need to be visible so feel free to zoom in." << endl;
+    }
+    else
+    {
+      ost << "Current RMS pixel error is " << mdMeanPixelError << endl;
+      ost << "Current camera params are  " << mCamera.mgvvCameraParams << endl;
+      ost << "(That would be a pixel aspect ratio of " << mCamera.PixelAspectRatio() << ")" << endl;
+      ost << "Check fit by looking through the grabbed images." << endl;
+      ost << "RMS should go below 0.5, typically below 0.3 for a wide lens." << endl;
+      ost << "Press \"save\" to save calibration to camera.cfg file and exit." << endl;
+    }
+
+    mGLWindow->DrawCaption(ost.str());
+    mGLWindow->DrawMenus();
+    mGLWindow->HandlePendingEvents();
+    mGLWindow->swap_buffers();
+  }
 }
 
 void CameraCalibrator::Reset()
 {
   mCamera.mgvvCameraParams = ATANCamera::mvDefaultParams;
-  if(*mgvnDisableDistortion) mCamera.DisableRadialDistortion();
-  
-//  mCamera.SetImageSize(mVideoSource.Size());
+  if (*mgvnDisableDistortion)
+    mCamera.DisableRadialDistortion();
+
   mCamera.SetImageSize(mCurrentImage.size());
-  mbGrabNextFrame =false;
+  mbGrabNextFrame = false;
   *mgvnOptimizing = false;
   mvCalibImgs.clear();
 }
 
 void CameraCalibrator::GUICommandCallBack(void* ptr, string sCommand, string sParams)
 {
-  ((CameraCalibrator*) ptr)->GUICommandHandler(sCommand, sParams);
+  ((CameraCalibrator*)ptr)->GUICommandHandler(sCommand, sParams);
 }
 
-void CameraCalibrator::GUICommandHandler(string sCommand, string sParams)  // Called by the callback func..
+void CameraCalibrator::GUICommandHandler(string sCommand, string sParams) // Called by the callback func..
 {
-  ROS_INFO_STREAM("Received command: "<<sCommand<<" Param: "<<sParams);
-
-  if(sCommand=="CameraCalibrator.Reset")
+  if (sCommand == "CameraCalibrator.Reset")
+  {
+    Reset();
+    return;
+  };
+  if (sCommand == "CameraCalibrator.GrabNextFrame")
+  {
+    mbGrabNextFrame = true;
+    return;
+  }
+  if (sCommand == "CameraCalibrator.ShowNext")
+  {
+    int nToShow = (*mgvnShowImage - 1 + 1) % mvCalibImgs.size();
+    *mgvnShowImage = nToShow + 1;
+    return;
+  }
+  if (sCommand == "CameraCalibrator.SaveCalib")
+  {
+    cout << "  Camera calib is " << mCamera.mgvvCameraParams << endl;
+    cout << "  Saving camera calib to camera.cfg..." << endl;
+    ofstream ofs("camera.cfg");
+    if (ofs.good())
     {
-      Reset();
-      return;
-    };
-  if(sCommand=="CameraCalibrator.GrabNextFrame")
-    {
-      mbGrabNextFrame = true;
-      return;
+      ofs << "Camera.Parameters=[ " << mCamera.mgvvCameraParams << " ]";
+      ofs.close();
+      cout << "  .. saved." << endl;
     }
-  if(sCommand=="CameraCalibrator.ShowNext")
+    else
     {
-      int nToShow = (*mgvnShowImage - 1 + 1) % mvCalibImgs.size();
-      *mgvnShowImage = nToShow + 1;
-      return;
+      cout << "! Could not open camera.cfg for writing." << endl;
+      GV2.PrintVar("Camera.Parameters", cout);
+      cout << "  Copy-paste above line to settings.cfg or camera.cfg! " << endl;
     }
-  if(sCommand=="CameraCalibrator.SaveCalib")
-    {
-      cout << "  Camera calib is " << mCamera.mgvvCameraParams << endl;
-      cout << "  Saving camera calib to camera.cfg..." << endl;
-      ofstream ofs("camera.cfg");
-      if(ofs.good())
-	{
-	  ofs << "Camera.Parameters=[ " << mCamera.mgvvCameraParams << " ]";
-	  ofs.close();
-	  cout << "  .. saved."<< endl;
-	}
-      else
-	{
-	  cout <<"! Could not open camera.cfg for writing." << endl;
-	  GV2.PrintVar("Camera.Parameters", cout);
-	  cout <<"  Copy-paste above line to settings.cfg or camera.cfg! " << endl;
-	}
-      mbDone = true;
-    }
-  if(sCommand=="exit" || sCommand=="quit")
-    {
-      mbDone = true;
-    }
+    mbDone = true;
+  }
+  if (sCommand == "exit" || sCommand == "quit")
+  {
+    mbDone = true;
+  }
 }
 
 void CameraCalibrator::OptimizeOneStep()
