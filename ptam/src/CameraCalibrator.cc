@@ -5,8 +5,6 @@
 #include <TooN/SVD.h>
 #include <fstream>
 #include <stdlib.h>
-#include "ptam/System.h"
-#include "ptam/RosNode.h"
 
 #include <ros/ros.h>
 #include <ros/package.h>
@@ -24,8 +22,8 @@ int main(int argc, char** argv)
 	// ros init ...
 	ros::init(argc, argv, "cameracalibrator");
 	ROS_INFO("starting CameraCalibrator with node name %s", ros::this_node::getName().c_str());
-	ros::AsyncSpinner spinner(0);
-	spinner.start();
+//	ros::AsyncSpinner spinner(0);
+//	spinner.start();
 
   cout << "  Welcome to CameraCalibrator " << endl;
   cout << "  -------------------------------------- " << endl;
@@ -44,6 +42,7 @@ int main(int argc, char** argv)
     {
       RosNode::PtamParameters mPtamParameters;
       CameraCalibrator c;
+
       c.Run();
     }
   catch(CVD::Exceptions::All e)
@@ -57,8 +56,21 @@ int main(int argc, char** argv)
 
 
 
+void CameraCalibrator::imageCallback(const sensor_msgs::ImageConstPtr & img){
+
+  ROS_ASSERT(img->encoding == sensor_msgs::image_encodings::MONO8 && img->step == img->width);
+
+  CVD::ImageRef size(img->width, img->height);
+  mCurrentImage.resize(size);
+
+  CVD::BasicImage<CVD::byte> img_tmp((CVD::byte *)&img->data[0], size);
+  CVD::copy(img_tmp, mCurrentImage);
+  mNewImage = true;
+}
+
+
 CameraCalibrator::CameraCalibrator()
-  :mGLWindow(mVideoSource.Size(), "Camera Calibrator"), mCamera("Camera")
+  :mGLWindow(CVD::ImageRef(752, 480), "Camera Calibrator"), mCamera("Camera")
 {
   mbDone = false;
   GUI.RegisterCommand("CameraCalibrator.GrabNextFrame", GUICommandCallBack, this);
@@ -89,6 +101,11 @@ CameraCalibrator::CameraCalibrator()
   GUI.ParseLine("CalibMenu.AddMenuToggle Opti NoDist CameraCalibrator.NoDistortion");
   GUI.ParseLine("CalibMenu.AddMenuButton Opti Save CameraCalibrator.SaveCalib");
   Reset();
+
+  mNewImage = false;
+  ros::NodeHandle nh;
+  image_transport::ImageTransport it(nh);
+  mImageSub = it.subscribe("image", 1, &CameraCalibrator::imageCallback, this);
 }
 
 void CameraCalibrator::Run()
@@ -99,11 +116,23 @@ void CameraCalibrator::Run()
       // One black and white (for processing by the tracker etc)
       // and one RGB, for drawing.
       
-      Image<Rgb<CVD::byte> > imFrameRGB(mVideoSource.Size());
-      Image<CVD::byte>  imFrameBW(mVideoSource.Size());
-      
-      // Grab new video frame...
-      mVideoSource.GetAndFillFrameBWandRGB(imFrameBW, imFrameRGB);  
+    ros::spinOnce();
+
+    if(!mNewImage){
+      usleep(1e3);
+      continue;
+    }
+    else
+      mNewImage = false;
+
+//      Image<Rgb<CVD::byte> > imFrameRGB(mVideoSource.Size());
+//      Image<CVD::byte>  mCurrentImage(mVideoSource.Size());
+//
+//      // Grab new video frame...
+//      if(!mVideoSource.GetAndFillFrameBWandRGB(mCurrentImage, imFrameRGB)){
+//        usleep(1e3);
+//        continue;
+//      }
       
       // Set up openGL
       mGLWindow.SetupViewport();
@@ -116,10 +145,10 @@ void CameraCalibrator::Run()
       if(!*mgvnOptimizing)
 	{
 	  GUI.ParseLine("CalibMenu.ShowMenu Live");
-	  glDrawPixels(imFrameBW);
+	  glDrawPixels(mCurrentImage);
 	  
 	  CalibImage c;
-	  if(c.MakeFromImage(imFrameBW))
+	  if(c.MakeFromImage(mCurrentImage))
 	    {
 	      if(mbGrabNextFrame)
 		{
@@ -178,7 +207,8 @@ void CameraCalibrator::Reset()
   mCamera.mgvvCameraParams = ATANCamera::mvDefaultParams;
   if(*mgvnDisableDistortion) mCamera.DisableRadialDistortion();
   
-  mCamera.SetImageSize(mVideoSource.Size());
+//  mCamera.SetImageSize(mVideoSource.Size());
+  mCamera.SetImageSize(CVD::ImageRef(752, 480));
   mbGrabNextFrame =false;
   *mgvnOptimizing = false;
   mvCalibImgs.clear();
