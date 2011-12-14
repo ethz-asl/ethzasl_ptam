@@ -61,7 +61,7 @@ void CameraCalibrator::imageCallback(const sensor_msgs::ImageConstPtr & img)
 }
 
 CameraCalibrator::CameraCalibrator() :
-  mCamera("Camera"), mbDone(false), mCurrentImage(CVD::ImageRef(752, 480)), mNewImage(false)
+  mCamera("Camera"), mbDone(false), mCurrentImage(CVD::ImageRef(752, 480)), mDoOptimize(false), mNewImage(false)
 {
   ros::NodeHandle nh;
   image_transport::ImageTransport it(nh);
@@ -134,6 +134,7 @@ void CameraCalibrator::Run()
     {
       GUI.ParseLine("CalibMenu.ShowMenu Live");
       glDrawPixels(mCurrentImage);
+      mDoOptimize = true; // set this so that optimization begins when "optimize" is pressed)
 
       if (mNewImage)
       {
@@ -153,7 +154,8 @@ void CameraCalibrator::Run()
     }
     else
     {
-      OptimizeOneStep();
+      if(mDoOptimize)
+        OptimizeOneStep();
       GUI.ParseLine("CalibMenu.ShowMenu Opti");
       int nToShow = *mgvnShowImage - 1;
       if (nToShow < 0)
@@ -274,6 +276,7 @@ void CameraCalibrator::OptimizeOneStep()
     {
       int nMotionBase = n*6;
       vector<CalibImage::ErrorAndJacobians> vEAJ = mvCalibImgs[n].Project(mCamera);
+
       for(unsigned int i=0; i<vEAJ.size(); i++)
 	{
 	  CalibImage::ErrorAndJacobians &EAJ = vEAJ[i];
@@ -298,7 +301,17 @@ void CameraCalibrator::OptimizeOneStep()
 	}
     };
   
+  if(nTotalMeas == 0)
+  {
+    ROS_WARN_THROTTLE(2, "No new measurements, this can happen for wide angle cameras when \"Camera.Project()\" gets invalid");
+    return;
+  }
+
+  double lastPixelError = mdMeanPixelError;
   mdMeanPixelError = sqrt(dSumSquaredError / nTotalMeas);
+
+  if(std::abs(lastPixelError - mdMeanPixelError) < 1e-6)
+    mDoOptimize = false;
 
   SVD<> svd(mJTJ);
   Vector<> vUpdate(nDim);

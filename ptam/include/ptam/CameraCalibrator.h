@@ -38,6 +38,7 @@ protected:
 
   CVD::Image<CVD::byte> mCurrentImage;
   image_transport::Subscriber mImageSub;
+  bool mDoOptimize;
   bool mNewImage;
   void imageCallback(const sensor_msgs::ImageConstPtr & img);
 
