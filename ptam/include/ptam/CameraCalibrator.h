@@ -7,9 +7,9 @@
 #include <gvars3/gvars3.h>
 #include <vector>
 #include "GLWindow2.h"
-#include "ptam/RosNode.h"
 #include <ros/ros.h>
-#include <sensor_msgs/Image.h>
+#include <image_transport/image_transport.h>
+#include <sensor_msgs/image_encodings.h>
 
 class CameraCalibrator
 {

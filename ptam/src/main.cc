@@ -4,7 +4,8 @@
 #include <iostream>
 #include <gvars3/instances.h>
 #include "ptam/System.h"
-#include "ptam/RosNode.h"
+#include <ptam/Params.h>
+//#include "ptam/RosNode.h"
 
 using namespace std;
 using namespace GVars3;
@@ -25,7 +26,7 @@ int main(int argc, char** argv)
 
 	try
 	{
-		RosNode::PtamParameters mPtamParameters;
+		PtamParameters mPtamParameters;
 		System s;
 		s.Run();
 		// ugly, but should prevent from asking for a keyboard input

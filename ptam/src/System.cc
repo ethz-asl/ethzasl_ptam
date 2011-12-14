@@ -12,6 +12,7 @@
 #include "ptam/MapPoint.h"
 
 #include <ptam_com/ptam_info.h>
+#include <opencv/cv.h>
 #include <cvd/vision.h>
 
 using namespace CVD;

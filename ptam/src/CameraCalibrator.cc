@@ -2,9 +2,15 @@
 #include "ptam/OpenGL.h"
 #include <gvars3/instances.h>
 #include "ptam/CameraCalibrator.h"
+#include <ptam/Params.h>
 #include <TooN/SVD.h>
 #include <fstream>
 #include <stdlib.h>
+
+#include <cvd/image.h>
+#include <cvd/byte.h>
+#include <cvd/rgb.h>
+#include <cvd/utility.h>
 
 #include <ros/ros.h>
 #include <ros/package.h>
@@ -34,7 +40,7 @@ int main(int argc, char** argv)
 
   try
   {
-    RosNode::PtamParameters mPtamParameters;
+    PtamParameters mPtamParameters;
     CameraCalibrator c;
     c.Run();
   }

@@ -13,6 +13,10 @@
 #include <ros/ros.h>
 #include <XmlRpcValue.h>
 
+#include <dynamic_reconfigure/server.h>
+#include <ptam/Params.h>
+
+typedef dynamic_reconfigure::Server<ptam::PtamParamsConfig> PtamParamsReconfigureServer;
 typedef ptam::PtamParamsConfig VarParams;
 
 class FixParams
@@ -70,5 +74,27 @@ public:
 	static FixParams* fixParams;
 };
 
+class PtamParameters{
+private:
+        ptam::PtamParamsConfig mVarParams;
+        FixParams mFixParams;
+
+        PtamParamsReconfigureServer *mpPtamParamsReconfigureServer;
+
+        void ptamParamsConfig(ptam::PtamParamsConfig & config, uint32_t level){
+                mVarParams = config;
+        };
+public:
+        PtamParameters()
+        {
+                mpPtamParamsReconfigureServer = new PtamParamsReconfigureServer(ros::NodeHandle("~"));
+                PtamParamsReconfigureServer::CallbackType PtamParamCall = boost::bind(&PtamParameters::ptamParamsConfig, this, _1, _2);
+                mpPtamParamsReconfigureServer->setCallback(PtamParamCall);
+
+                mFixParams.readFixParams();
+
+                ParamsAccess pAccess(&mVarParams, &mFixParams);
+        }
+};
 
 #endif /* PARAMS_H_ */

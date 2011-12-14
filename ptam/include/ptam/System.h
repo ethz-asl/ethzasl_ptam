@@ -17,19 +17,25 @@
 #include <tf/transform_broadcaster.h>
 #include <tf/transform_listener.h>
 #include <image_transport/image_transport.h>
+#include <sensor_msgs/image_encodings.h>
 #include <sensor_msgs/Imu.h>
 #include <geometry_msgs/PoseWithCovarianceStamped.h>
 #include <ptam_com/PointCloud.h>
 #include <ptam_com/KeyFrame_srv.h>
+#include <std_msgs/String.h>
 #include <queue>
 
 #include "GLWindow2.h"
-#include "ptam/RosNode.h"
+//#include "ptam/RosNode.h"
 #include "ptam/Params.h"
 
 #include <cvd/image.h>
 #include <cvd/rgb.h>
 #include <cvd/byte.h>
+
+#include <TooN/TooN.h>
+#include <TooN/se3.h>
+#include <TooN/so3.h>
 
 class ATANCamera;
 class Map;
@@ -61,8 +67,6 @@ private:
   ros::Publisher pub_info_;
   ros::ServiceServer srvPC_;
   ros::ServiceServer srvKF_;
-  RosNode::RemoteInterface mRemoteInterface;
-  RosNode::Visualization mVisualization;
 
   ros::CallbackQueue image_queue_;
 

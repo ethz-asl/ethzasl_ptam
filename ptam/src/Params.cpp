@@ -7,6 +7,8 @@
 
 #include <ptam/Params.h>
 
+ParamsAccess params_obj;
+
 ptam::PtamParamsConfig* ParamsAccess::varParams;
 FixParams* ParamsAccess::fixParams;
 
