@@ -50,7 +50,6 @@ set(PTAM_SOURCE_FILES
     src/MapPoint.cc  
     src/Relocaliser.cc  
     src/System.cc     
-#    src/RosNode.cpp
     src/Params.cpp
 	)
 
@@ -94,7 +93,6 @@ SET(CALIBRATOR_FILES
 	src/CalibImage.cc            
 	src/GLWindow2.cc	
 	src/ATANCamera.cc 
-#	src/RosNode.cpp
     src/Params.cpp 
 	)	
 	
