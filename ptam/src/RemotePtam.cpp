@@ -1,5 +1,7 @@
 /*
 
+Copyright (c) 2008, Willow Garage, Inc.
+
 Copyright (c) 2011, Markus Achtelik, ASL, ETH Zurich, Switzerland
 You can contact the author at <markus dot achtelik at mavt dot ethz dot ch>
 
@@ -40,6 +42,19 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <cv_bridge/cv_bridge.h>
 #include <image_transport/image_transport.h>
 
+#ifdef HAVE_GTK
+#include <gtk/gtk.h>
+
+// Platform-specific workaround for #3026: image_view doesn't close when
+// closing image window. On platforms using GTK+ we connect this to the
+// window's "destroy" event so that image_view exits.
+static void destroyNode(GtkWidget *widget, gpointer data)
+{
+  ros::shutdown();
+}
+
+#endif
+
 class RemotePtam
 {
 private:
@@ -60,6 +75,12 @@ public:
     bool autosize;
     local_nh.param("autosize", autosize, false);
     cv::namedWindow(window_name_, autosize ? 1 : 0);
+
+#ifdef HAVE_GTK
+    // Register appropriate handler for when user closes the display window
+    GtkWidget *widget = GTK_WIDGET( cvGetWindowHandle(window_name_.c_str()) );
+    g_signal_connect(widget, "destroy", G_CALLBACK(destroyNode), NULL);
+#endif
 
     sub_ = NULL;
     subscribe(nh);

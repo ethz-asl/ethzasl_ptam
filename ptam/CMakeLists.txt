@@ -107,7 +107,21 @@ rosbuild_add_executable(cameracalibrator ${CALIBRATOR_FILES})
 target_link_libraries(cameracalibrator ${PTAM_LIBRARIES})
 
 # PTAM remote control
+# this is unfortunately neccessary to close app, when opencvwindow gets closed
+include(FindPkgConfig)
+if (PKG_CONFIG_FOUND AND UNIX AND NOT APPLE)
+   pkg_check_modules(GTK gtk+-2.0)
+   if (GTK_FOUND)
+      include_directories(${GTK_INCLUDE_DIRS})
+      link_directories(${GTK_LIBRARY_DIRS})
+      add_definitions(-DHAVE_GTK)
+      # Hack around gdk-pixbuf move issues for now
+      # http://ubuntuforums.org/showthread.php?t=1596930
+      include_directories(/usr/include/gdk-pixbuf-2.0)
+   endif(GTK_FOUND)
+endif(PKG_CONFIG_FOUND AND UNIX AND NOT APPLE)
 rosbuild_add_executable(remote_ptam src/RemotePtam.cpp)
+target_link_libraries(remote_ptam ${GTK_LIBRARIES})
 
 
 rosbuild_add_executable(pointcloudpublisher src/PTAMVisualizer.cpp)
