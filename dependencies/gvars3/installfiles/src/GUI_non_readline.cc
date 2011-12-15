@@ -61,7 +61,7 @@ namespace GVars3
       {
 	cout << "> ";  
 	cin.getline (line, 1000);
-	
+
 	if(quit || !line)
 	  break;
 		  
@@ -79,7 +79,9 @@ namespace GVars3
     if(!none)
       {
 	cout << endl << endl << endl << "Press enter to quit..." << endl ;
+  cout<<"... actually not: cancelling getline-thread ;)"<<endl<<endl;
 	quit = 1;
+	pthread_cancel(cmd);
 	pthread_join(cmd,NULL);
 	quit_callback = "";
 	quit = 0;
