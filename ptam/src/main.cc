@@ -29,8 +29,6 @@ int main(int argc, char** argv)
 		PtamParameters mPtamParameters;
 		System s;
 		s.Run();
-		// ugly, but should prevent from asking for a keyboard input
-		abort();
 	}
 	catch(CVD::Exceptions::All e)
 	{
