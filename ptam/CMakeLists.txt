@@ -82,7 +82,6 @@ set(PTAM_HEADER_FILES
     include/ptam/MapPoint.h      
     include/ptam/PatchFinder.h  
     include/ptam/System.h  
-    include/ptam/RosNode.h
     include/ptam/Params.h
 	)
 	
