@@ -1343,12 +1343,12 @@ ImageRef TrackerData::irImageSize;  // Static member of TrackerData lives here
 
 
 //Achtelik{
-void Tracker::command(const std::string & params){
-#ifndef NO_GUI
-	this->GUICommandCallBack(this, "KeyPress", params);
-#else
-	this->GUICommandHandler("KeyPress", params);
-#endif
+void Tracker::command(const std::string & cmd){
+
+  if(ParamsAccess::fixParams->gui)
+    this->GUICommandCallBack(this, "KeyPress", cmd);
+  else
+    this->GUICommandHandler("KeyPress", cmd);
 }
 //}
 

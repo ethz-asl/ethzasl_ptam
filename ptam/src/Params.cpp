@@ -57,5 +57,6 @@ void FixParams::readFixParams()
   nh.param("GLWindowMenu_mgvnMenuTextOffset", GLWindowMenu_mgvnMenuTextOffset, 20);
   nh.param("InitLevel", InitLevel, 1);
   nh.param("parent_frame", parent_frame, std::string("world"));
+  nh.param("gui", gui, false);
 }
 ;

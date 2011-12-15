@@ -74,10 +74,8 @@ private:
 
   bool first_frame_;
 
-#ifndef NO_GUI
   GLWindow2 *mGLWindow;
   MapViewer *mpMapViewer;
-#endif
 
   CVD::Image<CVD::byte > img_bw_;
   CVD::Image<CVD::Rgb<CVD::byte> > img_rgb_;

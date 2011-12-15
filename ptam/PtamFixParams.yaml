@@ -1,3 +1,4 @@
+gui: true
 ImageSizeX: 752
 ImageSizeY: 480
 ARBuffer_width: 1200

@@ -62,17 +62,17 @@ void System::init(const CVD::ImageRef & size)
   GUI.RegisterCommand("exit", GUICommandCallBack, this);
   GUI.RegisterCommand("quit", GUICommandCallBack, this);
 
-#ifndef NO_GUI
-  mGLWindow = new GLWindow2(size, "PTAM");
-  mpMapViewer = new MapViewer(*mpMap, *mGLWindow);
+  if(ParamsAccess::fixParams->gui){
+    mGLWindow = new GLWindow2(size, "PTAM");
+    mpMapViewer = new MapViewer(*mpMap, *mGLWindow);
 
-  GUI.ParseLine("GLWindow.AddMenu Menu Menu");
-  GUI.ParseLine("Menu.ShowMenu Root");
-  GUI.ParseLine("Menu.AddMenuButton Root Reset Reset Root");
-  GUI.ParseLine("Menu.AddMenuButton Root Spacebar PokeTracker Root");
-  GUI.ParseLine("DrawMap=0");
-  GUI.ParseLine("Menu.AddMenuToggle Root \"View Map\" DrawMap Root");
-#endif
+    GUI.ParseLine("GLWindow.AddMenu Menu Menu");
+    GUI.ParseLine("Menu.ShowMenu Root");
+    GUI.ParseLine("Menu.AddMenuButton Root Reset Reset Root");
+    GUI.ParseLine("Menu.AddMenuButton Root Spacebar PokeTracker Root");
+    GUI.ParseLine("DrawMap=0");
+    GUI.ParseLine("Menu.AddMenuToggle Root \"View Map\" DrawMap Root");
+  }
 }
 
 
@@ -126,45 +126,40 @@ void System::imageCallback(const sensor_msgs::ImageConstPtr & img)
 
   bool tracker_draw = false;
 
-#ifndef NO_GUI
-  CVD::copy(img_tmp, img_rgb_);
+    static gvar3<int> gvnDrawMap("DrawMap", 0, HIDDEN | SILENT);
+    bool bDrawMap = mpMap->IsGood() && *gvnDrawMap;
 
-  mGLWindow->SetupViewport();
-  mGLWindow->SetupVideoOrtho();
-  mGLWindow->SetupVideoRasterPosAndZoom();
+  if(ParamsAccess::fixParams->gui){
+    CVD::copy(img_tmp, img_rgb_);
 
-  static gvar3<int> gvnDrawMap("DrawMap", 0, HIDDEN | SILENT);
-  static gvar3<int> gvnDrawAR("DrawAR", 0, HIDDEN | SILENT);
-
-  bool bDrawMap = mpMap->IsGood() && *gvnDrawMap;
-  bool bDrawAR = mpMap->IsGood() && *gvnDrawAR;
-  tracker_draw = !bDrawAR && !bDrawMap;
-#endif
+    mGLWindow->SetupViewport();
+    mGLWindow->SetupVideoOrtho();
+    mGLWindow->SetupVideoRasterPosAndZoom();
+    tracker_draw = !bDrawMap;
+  }
 
   mpTracker->TrackFrame(img_bw_, tracker_draw, imu_orientation);
-
 
   publishPoseAndInfo(img->header);
 
   publishPreviewImage(img_bw_, img->header);
   std::cout << mpMapMaker->getMessageForUser();
 
-#ifndef NO_GUI
-  string sCaption;
+  if(ParamsAccess::fixParams->gui){
+    string sCaption;
 
-  if (bDrawMap)
-    mpMapViewer->DrawMap(mpTracker->GetCurrentPose());
+    if (bDrawMap)
+      mpMapViewer->DrawMap(mpTracker->GetCurrentPose());
 
-  if (bDrawMap)
-    sCaption = mpMapViewer->GetMessageForUser();
-  else
-    sCaption = mpTracker->GetMessageForUser();
-  mGLWindow->DrawCaption(sCaption);
-  mGLWindow->DrawMenus();
-  mGLWindow->swap_buffers();
-  mGLWindow->HandlePendingEvents();
-#endif
-
+    if (bDrawMap)
+      sCaption = mpMapViewer->GetMessageForUser();
+    else
+      sCaption = mpTracker->GetMessageForUser();
+    mGLWindow->DrawCaption(sCaption);
+    mGLWindow->DrawMenus();
+    mGLWindow->swap_buffers();
+    mGLWindow->HandlePendingEvents();
+  }
 //	usleep(50000);
 //
 //  ros::Time t1 = img->header.stamp;

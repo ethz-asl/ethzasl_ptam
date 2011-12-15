@@ -94,7 +94,6 @@ set(PTAM_LIBRARIES GL glut)
 #target_link_libraries(${PROJECT_NAME} another_library)
 #rosbuild_add_boost_directories()
 
-#add_definitions(-DNO_GUI)
 add_definitions(-DKF_REPROJ)
 
 # PTAM executable
