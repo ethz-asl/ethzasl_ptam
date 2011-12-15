@@ -44,50 +44,29 @@
 
 
 
-#include <opencv/cv.h>
-#include <opencv/highgui.h>
+#include <opencv2/imgproc/imgproc.hpp>
+#include <opencv2/highgui/highgui.hpp>
 
 #include <ros/ros.h>
 #include <sensor_msgs/Image.h>
-#include <cv_bridge/CvBridge.h>
-#include <image_transport/image_transport.h>
+#include <sensor_msgs/image_encodings.h>
 
-#include <boost/thread.hpp>
-#include <boost/format.hpp>
+#include <cv_bridge/cv_bridge.h>
+#include <image_transport/image_transport.h>
 
 #include <ptam_com/ptam_command.h>
 #include <std_msgs/String.h>
 
-#ifdef HAVE_GTK
-#include <gtk/gtk.h>
-
-// Platform-specific workaround for #3026: image_view doesn't close when
-// closing image window. On platforms using GTK+ we connect this to the
-// window's "destroy" event so that image_view exits.
-static void destroy(GtkWidget *widget, gpointer data)
-{
-	ros::shutdown();
-}
-#endif
-
-class ImageView
+class RemotePtam
 {
 private:
 	image_transport::Subscriber *sub_;
-
-	sensor_msgs::ImageConstPtr last_msg_;
-	sensor_msgs::CvBridge img_bridge_;
-	boost::mutex image_mutex_;
-
 	std::string window_name_;
-	boost::format filename_format_;
-	int count_;
 	std::string transport_;
 	std::string topic_;
 
 public:
-	ImageView(const ros::NodeHandle& nh, const std::string& _transport)
-	: filename_format_(""), count_(0)
+	RemotePtam(const ros::NodeHandle& nh, const std::string& _transport)
 	{
 		topic_ = "vslam/preview";
 		ros::NodeHandle local_nh("~");
@@ -97,47 +76,37 @@ public:
 
 		bool autosize;
 		local_nh.param("autosize", autosize, false);
-
-		const char* name = window_name_.c_str();
-		cvNamedWindow(name, autosize ? CV_WINDOW_AUTOSIZE : 0);
-#ifdef HAVE_GTK
-		GtkWidget *widget = GTK_WIDGET( cvGetWindowHandle(name) );
-		g_signal_connect(widget, "destroy", G_CALLBACK(destroy), NULL);
-#endif
-		cvStartWindowThread();
-
+		cv::namedWindow(window_name_, autosize ? 1:0);
 
 		sub_ = NULL;
 		subscribe(nh);
 	}
 
-	~ImageView()
+	~RemotePtam()
 	{
 		unsubscribe();
-		cvDestroyWindow(window_name_.c_str());
+		cv::destroyWindow(window_name_);
 	}
 
 	void image_cb(const sensor_msgs::ImageConstPtr& msg)
 	{
-		boost::lock_guard<boost::mutex> guard(image_mutex_);
+		cv_bridge::CvImagePtr cv_ptr;
+		try
+		{
+		  cv_ptr = cv_bridge::toCvCopy(msg, sensor_msgs::image_encodings::BGR8);
+		}
+		catch (cv_bridge::Exception& e)
+		{
+		  ROS_ERROR("cv_bridge exception: %s", e.what());
+		  return;
+		}
 
-		// Hang on to message pointer for sake of mouse_cb
-		last_msg_ = msg;
-
-		// May want to view raw bayer data
-		// NB: This is hacky, but should be OK since we have only one image CB.
-		if (msg->encoding.find("bayer") != std::string::npos)
-			boost::const_pointer_cast<sensor_msgs::Image>(msg)->encoding = "mono8";
-
-		if (img_bridge_.fromImage(*msg, "bgr8"))
-			cvShowImage(window_name_.c_str(), img_bridge_.toIpl());
-		else
-			ROS_ERROR("Unable to convert %s image to bgr8", msg->encoding.c_str());
+		cv::imshow(window_name_, cv_ptr->image);
 	}
 	void subscribe(const ros::NodeHandle& nh){
 		if(sub_ == NULL){
 			image_transport::ImageTransport it(nh);
-			sub_ = new image_transport::Subscriber(it.subscribe(topic_, 1, &ImageView::image_cb, this, transport_));
+			sub_ = new image_transport::Subscriber(it.subscribe(topic_, 1, &RemotePtam::image_cb, this, transport_));
 		}
 	}
 
@@ -158,11 +127,11 @@ int main(int argc, char **argv)
 //				"\t$ ./image_view image:=<image topic> [transport]");
 //	}
 
-	ImageView view(n, (argc > 1) ? argv[1] : "raw");
+	RemotePtam remote(n, (argc > 1) ? argv[1] : "raw");
 
 	char key = 0;
 
-	view.subscribe(n);
+	remote.subscribe(n);
 	bool subscribed = true;
 
 //	ros::ServiceClient commandClient = n.serviceClient<sfly_srvs::ptam_command>("vslam/command");
@@ -205,12 +174,12 @@ int main(int argc, char **argv)
 		}
 		else if(key == 's'){
 			if(subscribed){
-				view.unsubscribe();
+				remote.unsubscribe();
 				subscribed = false;
 				std::cout<<"unsubscribed"<<std::endl;
 			}
 			else{
-				view.subscribe(n);
+				remote.subscribe(n);
 				subscribed = true;
 				std::cout<<"subscribed"<<std::endl;
 			}
