@@ -41,7 +41,6 @@ class ATANCamera;
 class Map;
 class MapMaker;
 class Tracker;
-class ARDriver;
 class MapViewer;
 
 class System
@@ -77,7 +76,6 @@ private:
 
 #ifndef NO_GUI
   GLWindow2 *mGLWindow;
-  ARDriver *mpARDriver;
   MapViewer *mpMapViewer;
 #endif
 

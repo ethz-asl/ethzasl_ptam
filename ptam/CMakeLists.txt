@@ -22,7 +22,7 @@ include(${dynamic_reconfigure_PACKAGE_PATH}/cmake/cfgbuild.cmake)
 gencfg()
 
 set(PTAM_SOURCE_FILES 
-	src/ARDriver.cc           
+#	src/ARDriver.cc           
 	src/GLWindow2.cc       
 	src/main.cc      
 	src/MapViewer.cc 
@@ -36,8 +36,7 @@ set(PTAM_SOURCE_FILES
     src/HomographyInit.cc  
     src/MapMaker.cc  
     src/PatchFinder.cc  
-    src/SmallBlurryImage.cc  
-    src/EyeGame.cc               
+    src/SmallBlurryImage.cc                
     src/KeyFrame.cc        
     src/MapPoint.cc  
     src/Relocaliser.cc  
@@ -46,14 +45,13 @@ set(PTAM_SOURCE_FILES
 	)
 
 set(PTAM_HEADER_FILES
-    include/ptam/ARDriver.h          
+ #   include/ptam/ARDriver.h          
     include/ptam/CameraCalibrator.h  
     include/ptam/KeyFrame.h      
     include/ptam/MapViewer.h    
     include/ptam/Relocaliser.h       
     include/ptam/TrackerData.h
-    include/ptam/ATANCamera.h        
-    include/ptam/EyeGame.h           
+    include/ptam/ATANCamera.h         
     include/ptam/LevelHelpers.h  
     include/ptam/MEstimator.h   
     include/ptam/ShiTomasi.h         
@@ -63,7 +61,6 @@ set(PTAM_HEADER_FILES
     include/ptam/Map.h           
     include/ptam/MiniPatch.h    
     include/ptam/SmallBlurryImage.h 
-    include/ptam/VideoSource.h
     include/ptam/CalibCornerPatch.h  
     include/ptam/GLWindowMenu.h      
     include/ptam/MapMaker.h      

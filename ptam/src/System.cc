@@ -6,7 +6,7 @@
 #include "ptam/ATANCamera.h"
 #include "ptam/MapMaker.h"
 #include "ptam/Tracker.h"
-#include "ptam/ARDriver.h"
+//#include "ptam/ARDriver.h"
 #include "ptam/MapViewer.h"
 #include "ptam/LevelHelpers.h"
 #include "ptam/MapPoint.h"
@@ -64,18 +64,14 @@ void System::init(const CVD::ImageRef & size)
 
 #ifndef NO_GUI
   mGLWindow = new GLWindow2(size, "PTAM");
-  mpARDriver = new ARDriver(*mpCamera, size, *mGLWindow);
-  mpARDriver->Init();
   mpMapViewer = new MapViewer(*mpMap, *mGLWindow);
 
   GUI.ParseLine("GLWindow.AddMenu Menu Menu");
   GUI.ParseLine("Menu.ShowMenu Root");
   GUI.ParseLine("Menu.AddMenuButton Root Reset Reset Root");
   GUI.ParseLine("Menu.AddMenuButton Root Spacebar PokeTracker Root");
-  GUI.ParseLine("DrawAR=0");
   GUI.ParseLine("DrawMap=0");
   GUI.ParseLine("Menu.AddMenuToggle Root \"View Map\" DrawMap Root");
-  GUI.ParseLine("Menu.AddMenuToggle Root \"Draw AR\" DrawAR Root");
 #endif
 }
 
@@ -137,9 +133,6 @@ void System::imageCallback(const sensor_msgs::ImageConstPtr & img)
   mGLWindow->SetupVideoOrtho();
   mGLWindow->SetupVideoRasterPosAndZoom();
 
-  if (!mpMap->IsGood())
-    mpARDriver->Reset();
-
   static gvar3<int> gvnDrawMap("DrawMap", 0, HIDDEN | SILENT);
   static gvar3<int> gvnDrawAR("DrawAR", 0, HIDDEN | SILENT);
 
@@ -161,8 +154,6 @@ void System::imageCallback(const sensor_msgs::ImageConstPtr & img)
 
   if (bDrawMap)
     mpMapViewer->DrawMap(mpTracker->GetCurrentPose());
-  else if (bDrawAR)
-    mpARDriver->Render(img_rgb_, mpTracker->GetCurrentPose());
 
   if (bDrawMap)
     sCaption = mpMapViewer->GetMessageForUser();
