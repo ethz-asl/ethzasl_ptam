@@ -21,14 +21,6 @@ rosbuild_find_ros_package(dynamic_reconfigure)
 include(${dynamic_reconfigure_PACKAGE_PATH}/cmake/cfgbuild.cmake)
 gencfg()
 
-
-#uncomment if you have defined messages
-#rosbuild_genmsg()
-#uncomment if you have defined services
-#rosbuild_gensrv()
-
-
-
 set(PTAM_SOURCE_FILES 
 	src/ARDriver.cc           
 	src/GLWindow2.cc       
@@ -99,8 +91,6 @@ SET(CALIBRATOR_FILES
 
 #include_directories(/usr/local/include) 
 set(PTAM_LIBRARIES GL glut)
-#link_directories(/usr/local/lib)
-
 
 #common commands for building c++ executables and libraries
 #rosbuild_add_library(${PROJECT_NAME} src/example.cpp)
@@ -110,29 +100,18 @@ set(PTAM_LIBRARIES GL glut)
 #add_definitions(-DNO_GUI)
 add_definitions(-DKF_REPROJ)
 
+# PTAM executable
 rosbuild_add_executable(ptam ${PTAM_SOURCE_FILES} ${PTAM_HEADER_FILES})
 rosbuild_add_compile_flags(ptam -D_LINUX -D_REENTRANT -Wall  -O3 -march=nocona -msse3)
 target_link_libraries(ptam ${PTAM_LIBRARIES})
 #rosbuild_link_boost(ptam thread signals system)
 
-
+# Camera calibrator 
 rosbuild_add_executable(cameracalibrator ${CALIBRATOR_FILES})
 target_link_libraries(cameracalibrator ${PTAM_LIBRARIES})
 
-
-include(FindPkgConfig)
-if (PKG_CONFIG_FOUND AND UNIX AND NOT APPLE)
-   pkg_check_modules(GTK gtk+-2.0)
-   if (GTK_FOUND)
-      include_directories(${GTK_INCLUDE_DIRS})
-      link_directories(${GTK_LIBRARY_DIRS})
-      add_definitions(-DHAVE_GTK)
-   endif(GTK_FOUND)
-endif(PKG_CONFIG_FOUND AND UNIX AND NOT APPLE)
-
-# Image viewers
+# PTAM remote control
 rosbuild_add_executable(remote_ptam src/RemotePtam.cpp)
-target_link_libraries(remote_ptam ${GTK_LIBRARIES})
 
 
 rosbuild_add_executable(pointcloudpublisher src/PTAMVisualizer.cpp)
