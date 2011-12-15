@@ -90,10 +90,10 @@ public:
 
 	void image_cb(const sensor_msgs::ImageConstPtr& msg)
 	{
-		cv_bridge::CvImagePtr cv_ptr;
+		cv_bridge::CvImageConstPtr cv_ptr;
 		try
 		{
-		  cv_ptr = cv_bridge::toCvCopy(msg, sensor_msgs::image_encodings::BGR8);
+		  cv_ptr = cv_bridge::toCvShare(msg, sensor_msgs::image_encodings::BGR8);
 		}
 		catch (cv_bridge::Exception& e)
 		{
