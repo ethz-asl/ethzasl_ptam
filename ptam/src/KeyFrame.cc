@@ -112,7 +112,7 @@ void KeyFrame::MakeKeyFrame_Rest()
 
 	// For each level...
 	int startlvl=0;
-	if(!pVarPars->NoLevelZeroMapPoints)
+	if(pVarPars->NoLevelZeroMapPoints)
 		startlvl=1;	// ignore level zero points for the map
 	for(int l=startlvl; l<LEVELS; l++)
 	{

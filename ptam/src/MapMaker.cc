@@ -28,6 +28,12 @@ using namespace CVD;
 using namespace std;
 using namespace GVars3;
 
+//Weiss{ feature statistics
+//static unsigned int outcount[5]={0,0,0,0,0};
+//static unsigned int addcount[5]={0,0,0,0,0};
+//static unsigned int kfid=0;
+//}
+
 // Constructor sets up internal reference variable to Map.
 // Most of the intialisation is done by Reset()..
 MapMaker::MapMaker(Map& m, const ATANCamera &cam)
@@ -612,6 +618,9 @@ void MapMaker::AddKeyFrameFromTopOfQueue()
 	//}
 
 	pK->MakeKeyFrame_Rest();
+//Weiss{ feature statistics
+//	kfid = pK->ID;
+//}
 	mMap.vpKeyFrames.push_back(pK);
 	// Any measurements? Update the relevant point's measurement counter status map
 	for(meas_it it = pK->mMeasurements.begin();
@@ -630,6 +639,11 @@ void MapMaker::AddKeyFrameFromTopOfQueue()
 		addedsome |= AddSomeMapPoints(0);
 	addedsome |= AddSomeMapPoints(1);
 	addedsome |= AddSomeMapPoints(2);
+
+//Weiss{ feature statistics
+//	ROS_WARN_STREAM("\ntotall : " << addcount[4] << " totlvl0: " << addcount[0]  << " totlvl1: " <<  addcount[1]  << " totlvl2: " << addcount[2]  << " totlvl3: " <<  addcount[3]);
+//	ROS_WARN_STREAM("\noutall : " << outcount[4] << " outlvl0: " << outcount[0]  << " outlvl1: " <<  outcount[1]  << " outlvl2: " << outcount[2]  << " outlvl3: " <<  outcount[3]);
+//}
 
 	mbBundleConverged_Full = false;
 	mbBundleConverged_Recent = false;
@@ -807,6 +821,7 @@ bool MapMaker::AddPointEpipolar(KeyFrame &kSrc,
 	kTarget.AddKeyMapPoint(pNew);
 #endif
 	//}
+
 	return true;
 }
 
@@ -1022,6 +1037,14 @@ void MapMaker::BundleAdjust(set<KeyFrame*> sAdjustSet, set<KeyFrame*> sFixedSet,
 		int nBundleID = b.AddPoint((*it)->v3WorldPos);
 		mPoint_BundleID[*it] = nBundleID;
 		mBundleID_Point[nBundleID] = *it;
+
+//Weiss{ feature statistics
+//		if(kfid==(*it)->pPatchSourceKF->ID)
+//		{
+//			addcount[(*it)->nSourceLevel]++;
+//			addcount[4]++;
+//		}
+//}
 	}
 
 	// Add the relevant point-in-keyframe measurements
@@ -1105,6 +1128,13 @@ void MapMaker::BundleAdjust(set<KeyFrame*> sAdjustSet, set<KeyFrame*> sFixedSet,
 				pp->pMMData->sNeverRetryKFs.insert(pk);
 			pk->mMeasurements.erase(pp);
 			pp->pMMData->sMeasurementKFs.erase(pk);
+//Weiss{ feature statistics
+//			if(kfid==pp->pPatchSourceKF->ID)
+//			{
+//				outcount[pp->nSourceLevel]++;
+//				outcount[4]++;
+//			}
+//}
 		}
 	}
 }

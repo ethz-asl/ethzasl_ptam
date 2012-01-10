@@ -43,7 +43,7 @@ private:
 public:
 	AxesArray(){ID=0;};
 	void init(double lifetime);	// shall we add here some init arguments?
-	bool addAxes(const double pos[3], const double att[4]);
+	bool addAxes(const double pos[3], const double att[4],unsigned int id);
 	void clearAxes() {cubes.markers.clear();};
 	visualization_msgs::MarkerArray getAxes(){return cubes;};
 	TooN::Vector<3> getCenter(const double pos[3], const double att[4]);
@@ -76,7 +76,7 @@ TooN::Vector<3> AxesArray::getCenter(const double pos[3], const double att[4])
 	return -(rot.inverse()*TooN::makeVector(pos[0],pos[1],pos[2]));
 }
 
-bool AxesArray::addAxes(const double pos[3], const double att[4])
+bool AxesArray::addAxes(const double pos[3], const double att[4], unsigned int id)
 {
 	center = getCenter(pos, att);
 
@@ -88,7 +88,7 @@ bool AxesArray::addAxes(const double pos[3], const double att[4])
 //	memcpy(&(buffcube.pose.orientation.x),&(att[1]),sizeof(double)*3);
 
 	// add x-axis
-	buffcube.id = ID++;
+	buffcube.id = 10*id;
 	buffvec=center+rot.inverse()*TooN::makeVector(AX_DIST/2,0.0,0.0);
 	memcpy(&(buffcube.pose.position.x),&(buffvec[0]),sizeof(double)*3);
 	memcpy(&(buffcube.scale.x),dirx,sizeof(double)*3);
@@ -96,7 +96,7 @@ bool AxesArray::addAxes(const double pos[3], const double att[4])
 	cubes.markers.push_back(buffcube);
 
 	// add y-axis, keep orientation
-	buffcube.id = ID++;
+	buffcube.id = 10*id+1;
 	buffvec=center+rot.inverse()*TooN::makeVector(0.0, AX_DIST/2,0.0);
 	memcpy(&(buffcube.pose.position.x),&(buffvec[0]),sizeof(double)*3);
 	memcpy(&(buffcube.scale.x),diry,sizeof(double)*3);
@@ -104,7 +104,7 @@ bool AxesArray::addAxes(const double pos[3], const double att[4])
 	cubes.markers.push_back(buffcube);
 
 	// add z-axis, keep orientation
-	buffcube.id = ID++;
+	buffcube.id = 10*id+2;
 	buffvec=center+rot.inverse()*TooN::makeVector(0.0,0.0,AX_DIST/2);
 	memcpy(&(buffcube.pose.position.x),&(buffvec[0]),sizeof(double)*3);
 	memcpy(&(buffcube.scale.x),dirz,sizeof(double)*3);

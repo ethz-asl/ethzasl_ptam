@@ -327,6 +327,8 @@ void System::publishPoseAndInfo(const std_msgs::Header & header)
       for (unsigned int i = 0; i < msg_pose->pose.covariance.size(); i++)
         msg_pose->pose.covariance[i] = sqrt(fabs(covar[i % 6][i / 6]));
 
+      msg_pose->pose.covariance[1] = mpTracker->GetCurrentKF().dSceneDepthMedian;
+
       msg_pose->header = header;
 
       pub_pose_.publish(msg_pose);
@@ -424,7 +426,7 @@ void System::publishPreviewImage(CVD::Image<CVD::byte> & img, const std_msgs::He
 bool System::pointcloudservice(ptam_com::PointCloudRequest & req, ptam_com::PointCloudResponse & resp)
 {
 	static unsigned int seq=0;
-	int dimension   = 4;
+	int dimension   = 6;
 
 	resp.pointcloud.header.seq=seq;
 	seq++;
@@ -436,23 +438,31 @@ bool System::pointcloudservice(ptam_com::PointCloudRequest & req, ptam_com::Poin
 		resp.pointcloud.width = mpMap->vpPoints.size();
 		resp.pointcloud.fields.resize(dimension);
 		resp.pointcloud.fields[0].name = "x";
-		resp.pointcloud.fields[0].offset = 0*sizeof(float);
+		resp.pointcloud.fields[0].offset = 0*sizeof(uint32_t);
 		resp.pointcloud.fields[0].datatype = sensor_msgs::PointField::FLOAT32;
 		resp.pointcloud.fields[0].count = 1;
 		resp.pointcloud.fields[1].name = "y";
-		resp.pointcloud.fields[1].offset = 1*sizeof(float);
+		resp.pointcloud.fields[1].offset = 1*sizeof(uint32_t);
 		resp.pointcloud.fields[1].datatype = sensor_msgs::PointField::FLOAT32;
 		resp.pointcloud.fields[1].count = 1;
 		resp.pointcloud.fields[2].name = "z";
-		resp.pointcloud.fields[2].offset = 2*sizeof(float);
+		resp.pointcloud.fields[2].offset = 2*sizeof(uint32_t);
 		resp.pointcloud.fields[2].datatype = sensor_msgs::PointField::FLOAT32;
 		resp.pointcloud.fields[2].count = 1;
 		resp.pointcloud.fields[3].name = "rgb";
-		resp.pointcloud.fields[3].offset = 3*sizeof(float);
-		resp.pointcloud.fields[3].datatype = sensor_msgs::PointField::FLOAT32;
+		resp.pointcloud.fields[3].offset = 3*sizeof(uint32_t);
+		resp.pointcloud.fields[3].datatype = sensor_msgs::PointField::INT32;
 		resp.pointcloud.fields[3].count = 1;
+		resp.pointcloud.fields[4].name = "KF";
+		resp.pointcloud.fields[4].offset = 4*sizeof(uint32_t);
+		resp.pointcloud.fields[4].datatype = sensor_msgs::PointField::INT32;
+		resp.pointcloud.fields[4].count = 1;
+		resp.pointcloud.fields[5].name = "lvl";
+		resp.pointcloud.fields[5].offset = 5*sizeof(uint32_t);
+		resp.pointcloud.fields[5].datatype = sensor_msgs::PointField::INT32;
+		resp.pointcloud.fields[5].count = 1;
 
-		resp.pointcloud.point_step = dimension*sizeof(float);
+		resp.pointcloud.point_step = dimension*sizeof(uint32_t);
 		resp.pointcloud.row_step = resp.pointcloud.point_step * resp.pointcloud.width;
 		resp.pointcloud.data.resize(resp.pointcloud.row_step * resp.pointcloud.height);
 		resp.pointcloud.is_dense = false;
@@ -461,28 +471,19 @@ bool System::pointcloudservice(ptam_com::PointCloudRequest & req, ptam_com::Poin
 		unsigned char* dat = &(resp.pointcloud.data[0]);
 		unsigned int n=0;
 		for(std::vector<MapPoint*>::iterator it=mpMap->vpPoints.begin(); it!=mpMap->vpPoints.end(); ++it,++n)
-//		for (unsigned int i = 0; i < mpMap->vpPoints.size(); i++, n++)
 		{
 			if(n>resp.pointcloud.width-1) break;
-
-//			if(!mpMap->vpPoints[i]->bBad)
-//			{
-//				MapPoint p = *(mpMap->vpPoints[i]);
-//				int lvl = 0xff<<((3-p.nSourceLevel)*8);
-//				float* color = reinterpret_cast<float*>(&lvl);
-//				float* elementI = (float*) ((char*) resp.pointcloud.data.data() + i*resp.pointcloud.point_step);
-//				elementI[0] = (float) p.v3WorldPos[0];
-//				elementI[1] = (float) p.v3WorldPos[1];
-//				elementI[2] = (float) p.v3WorldPos[2];
-//				elementI[3] = *color;
-//			}
-
 			MapPoint p = *(*it);
 
 			Vector<3,float> fvec = p.v3WorldPos;
-			int lvl = 0xff<<((3-p.nSourceLevel)*8);
+			uint32_t colorlvl = 0xff<<((3-p.nSourceLevel)*8);
+			uint32_t lvl = p.nSourceLevel;
+			uint32_t KF = p.pPatchSourceKF->ID;
+
 			memcpy(dat, &(fvec),3*sizeof(float));
-			memcpy(dat+3*sizeof(float),reinterpret_cast<float*>(&lvl),sizeof(float));
+			memcpy(dat+3*sizeof(uint32_t),&colorlvl,sizeof(uint32_t));
+			memcpy(dat+4*sizeof(uint32_t),&lvl,sizeof(uint32_t));
+			memcpy(dat+5*sizeof(uint32_t),&KF,sizeof(uint32_t));
 			dat+=resp.pointcloud.point_step;
 		}
 	}
