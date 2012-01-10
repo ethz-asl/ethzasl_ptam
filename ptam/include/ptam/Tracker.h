@@ -51,6 +51,7 @@ public:
   inline SE3<> GetCurrentPose() { return mse3CamFromWorld;}
 //Weiss{
   inline Matrix<6> GetCurrentCov() { return mmCovariances;}
+  inline KeyFrame GetCurrentKF() { return mCurrentKF;}
   Vector<3> CalcSBIRotation(SmallBlurryImage *SBI1, SmallBlurryImage *SBI2);
 //}
   // Gets messages to be printed on-screen for the user.

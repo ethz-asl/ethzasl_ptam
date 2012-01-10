@@ -54,12 +54,28 @@ CandidateMinSTScore: 70
 #Cam_s: 0.910117
 # ---------------------
 # --- camera 150 firefly --- 
-Cam_fx: 0.388104
-Cam_fy: 0.607978
-Cam_cx: 0.541567
-Cam_cy: 0.504643
-Cam_s: 0.966441
+#Cam_fx: 0.388104
+#Cam_fy: 0.607978
+#Cam_cx: 0.541567
+#Cam_cy: 0.504643
+#Cam_s: 0.966441
 # ---------------------
+# --- bluefox camera on hex  --- 
+Cam_fx: 0.570905
+Cam_fy: 0.893487
+Cam_cx: 0.538077
+Cam_cy: 0.523616
+Cam_s: 0.928057
+# ---------------------
+# --- AQUA camera of Barbados dataset  --- 
+#Cam_fx: 0.790764
+#Cam_fy: 1.05914
+#Cam_cx: 0.524618
+#Cam_cy: 0.576256
+#Cam_s: 1.05129
+
+    
+
 Calibrator_BlurSigma: 1.0
 Calibrator_MeanGate: 10
 Calibrator_MinCornersForGrabbedImage: 20
@@ -74,7 +90,8 @@ GLWindowMenu_mgvnMenuTextOffset: 20
 InitLevel: 1
 MaxKFDistWiggleMult: 1
 MaxPatchesPerFrame: 300
-MaxKF: 3
+MaxKF: 0
 parent_frame: world
 TrackingQualityFoundPixels: 50
 UseKFPixelDist: 0
+GLWindowMenu_Enable: True

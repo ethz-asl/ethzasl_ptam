@@ -178,7 +178,7 @@ void Tracker::TrackFrame(Image<CVD::byte> &imFrame, bool bDraw)
 			// Heuristics to check if a key-frame should be added to the map:
 			if(mTrackingQuality == GOOD &&
 					mMapMaker.NeedNewKeyFrame(mCurrentKF) &&
-					mnFrame - mnLastKeyFrameDropped > 5  &&
+//					mnFrame - mnLastKeyFrameDropped > 5  &&
 					mMapMaker.QueueSize() < 5)
 			{
 				mMessageForUser << " Adding key-frame.";
@@ -887,7 +887,7 @@ void Tracker::TrackMap()
 	//static gvar3<int> gvnMaxPatchesPerFrame("Tracker.MaxPatchesPerFrame", 1000, SILENT);
 	//}
 	int nFinePatchesToUse = gvnMaxPatchesPerFrame - vIterationSet.size();
-	if((int) vNextToSearch.size() > nFinePatchesToUse)
+	if((int) vNextToSearch.size() > nFinePatchesToUse & nFinePatchesToUse>0)
 	{
 		random_shuffle(vNextToSearch.begin(), vNextToSearch.end());
 		vNextToSearch.resize(nFinePatchesToUse); // Chop!

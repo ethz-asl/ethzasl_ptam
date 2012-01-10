@@ -42,7 +42,7 @@ void pathCallback(const geometry_msgs::PoseWithCovarianceStampedConstPtr & msg);
 
 int main(int argc, char **argv)
 {
-	ros::init(argc, argv, "pointcloud_publisher");
+	ros::init(argc, argv, "ptam_visualizer");
 	ros::NodeHandle n;
 	ros::ServiceClient PC2client = n.serviceClient<ptam_com::PointCloud>("vslam/pointcloud");
 	ros::ServiceClient KFclient = n.serviceClient<ptam_com::KeyFrame_srv>("vslam/keyframes");
@@ -107,14 +107,13 @@ int main(int argc, char **argv)
 				memcpy(pos,&(srv_kfs.response.KFs[i].pose.pose.position.x),sizeof(double)*3);
 				att[0] = srv_kfs.response.KFs[i].pose.pose.orientation.w;
 				memcpy(att+1,&(srv_kfs.response.KFs[i].pose.pose.orientation.x),sizeof(double)*3);
-				tripods.addAxes(pos,att);
+				tripods.addAxes(pos,att,srv_kfs.response.KFids[i]);
 				if(lastKFid<=srv_kfs.response.KFids[i])
 				{
-					tripodshistory.addAxes(pos,att);
+					tripodshistory.addAxes(pos,att,srv_kfs.response.KFids[i]);
 					lastKFid=srv_kfs.response.KFids[i]+1;
 				}
 			}
-
 		}
 		else
 		{
@@ -173,23 +172,78 @@ void exportPC(std::string prefix)
 	strnsec = out.str();
 
 	std::string slash ="/";
-	std::string filename = pw->pw_dir+slash+prefix+strnsec;
+	std::string strpc ="_PC";
+	std::string filename = pw->pw_dir+slash+prefix+strnsec+strpc;
 	fid = fopen(filename.c_str(),"w");
 	if(fid!=NULL && pPC2!=NULL)
 	{
 		for(unsigned int i=0;i<pPC2->width;++i)
 		{
-			float* elem = (float*)&(pPC2->data[i*pPC2->point_step]);
-			fprintf(fid,"%f\t%f\t%f\t%f\n",*elem,*(elem+1),*(elem+2),*(elem+3));
+			float* elemf = (float*)&(pPC2->data[i*pPC2->point_step]);
+			int* elemi = (int*)&(pPC2->data[i*pPC2->point_step+3*sizeof(float)]);
+			fprintf(fid,"%f\t%f\t%f\t%d\t%d\t%d\n",*elemf,*(elemf+1),*(elemf+2),*(elemi),*(elemi+1),*(elemi+2));
 		}
 		fclose(fid);
+		ROS_INFO_STREAM("Point cloud exported to: " << filename);
 	}
 	else if(fid==NULL)
 		ROS_WARN_STREAM("could not open file: " << filename);
 	else
-		ROS_WARN_STREAM("Could not export pointcloud to file. Do we actually have one to export?");
+		ROS_WARN_STREAM("Could not export point cloud to file. Do we actually have one to export?");
 }
 
+void saveMap(std::string prefix)
+{
+	FILE* fid;
+	std::string strnsec;
+	std::stringstream out;
+	out << ros::Time::now().nsec;
+	strnsec = out.str();
+
+	std::string slash ="/";
+	std::string strkf ="_KF";
+	std::string filename = pw->pw_dir+slash+prefix+strnsec+strkf;
+	fid = fopen(filename.c_str(),"w");
+	if((fid!=NULL) & (pPC2!=NULL) & (tripodshistory.getAxes().markers.size()>0) & (path.points.size()>0))
+	{
+
+		std::vector<visualization_msgs::Marker> cubes = tripodshistory.getAxes().markers;
+		for(unsigned int i=0;i<cubes.size();i+=3)	// 3 markers per tripod
+		{
+			fprintf(fid,"%d\t%f\t%f\t%f\t%f\t%f\t%f\t%f\n",cubes[i].id/10,	// ID is stored by *10 since for each tripod there are 3 markers
+					cubes[i].pose.position.x,cubes[i].pose.position.y,cubes[i].pose.position.z,
+					cubes[i].pose.orientation.w,cubes[i].pose.orientation.x,cubes[i].pose.orientation.y,cubes[i].pose.orientation.z);
+		}
+		fclose(fid);
+		ROS_INFO_STREAM("KFs exported to: " << filename);
+
+		std::string strpath ="_Path";
+		filename = pw->pw_dir+slash+prefix+strnsec+strpath;
+		fid = fopen(filename.c_str(),"w");
+		for(unsigned int i=0;i<path.points.size();++i)	// 3 markers per tripod
+		{
+			fprintf(fid,"%f\t%f\t%f\n",path.points[i].x,path.points[i].y,path.points[i].z);
+		}
+		fclose(fid);
+		ROS_INFO_STREAM("Path exported to: " << filename);
+
+		std::string strpc ="_PC";
+		filename = pw->pw_dir+slash+prefix+strnsec+strpc;
+		fid = fopen(filename.c_str(),"w");
+		for(unsigned int i=0;i<pPC2->width;++i)
+		{
+			float* elemf = (float*)&(pPC2->data[i*pPC2->point_step]);
+			int* elemi = (int*)&(pPC2->data[i*pPC2->point_step+3*sizeof(float)]);
+			fprintf(fid,"%f\t%f\t%f\t%d\t%d\t%d\n",*elemf,*(elemf+1),*(elemf+2),*(elemi),*(elemi+1),*(elemi+2));
+		}
+		fclose(fid);
+		ROS_INFO_STREAM("Point cloud exported to: " << filename);
+	}
+	else if(fid==NULL)
+		ROS_WARN_STREAM("could not open file: " << filename);
+	else
+		ROS_WARN_STREAM("Could not export KFs and path to file. Do we actually have one to export?");
+}
 
 void Config(ptam::PTAMVisualizerParamsConfig& config, uint32_t level)
 {
@@ -204,5 +258,10 @@ void Config(ptam::PTAMVisualizerParamsConfig& config, uint32_t level)
 	{
 		config.ExportPC=false;
 		exportPC(config.ExportPrefix);
+	}
+	if(config.SaveMap)
+	{
+		config.SaveMap=false;
+		saveMap(config.ExportPrefix);
 	}
 }
