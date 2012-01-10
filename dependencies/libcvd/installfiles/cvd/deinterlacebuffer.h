@@ -19,9 +19,8 @@
     51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
 // PAS 17/6/04 (revised 16/2/05)
-
-#ifndef __CVD_DEINTERLACEBUFFER_H
-#define __CVD_DEINTERLACEBUFFER_H
+#ifndef CVD_INCLUDE_DEINTERLACEBUFFER_H
+#define CVD_INCLUDE_DEINTERLACEBUFFER_H
 
 #include <cvd/videobuffer.h>
 #include <cvd/deinterlaceframe.h>
@@ -73,23 +72,27 @@ namespace Exceptions
 /// CVD::Exceptions::DeinterlaceBuffer
 /// @param T The pixel type of the original VideoBuffer
 /// @ingroup gVideoBuffer
+
+/// Used to select which fields, and in which order, to extract from the frame
+struct DeinterlaceBufferFields
+{
+	enum Fields{
+		OddOnly, ///< Odd fields only
+		EvenOnly, ///< Even fields only
+		OddEven, ///< Both fields, presenting the odd lines from each frame first 
+		EvenOdd ///< Both fields, presenting the even lines from each frame first
+	}; 
+};
+
 template <typename T>
 class DeinterlaceBuffer : public VideoBuffer<T>
 {
 	public:
-		/// Used to select which fields, and in which order, to extract from the frame
-		enum Fields{
-			OddOnly, ///< Odd fields only
-			EvenOnly, ///< Even fields only
-			OddEven, ///< Both fields, presenting the odd lines from each frame first 
-			EvenOdd ///< Both fields, presenting the even lines from each frame first
-		}; 
-		
-	public:
+		typedef DeinterlaceBufferFields Fields;
 		/// Construct a DeinterlaceBuffer by wrapping it around another VideoBuffer
 		/// @param buf The buffer that will provide the raw frames
 		/// @param fields The fields to 
-   		DeinterlaceBuffer(CVD::VideoBuffer<T>& buf, Fields fields = OddEven);
+   		DeinterlaceBuffer(CVD::VideoBuffer<T>& buf, Fields::Fields fields = Fields::OddEven, bool line_double=false);
  
 		/// The size of the VideoFrames returns by this buffer. This will be half the 
 		/// height of the original frames.
@@ -110,7 +113,7 @@ class DeinterlaceBuffer : public VideoBuffer<T>
 		/// buffer's rate.
 		virtual double frame_rate()
 	  	{
-	  		if(m_fields == OddOnly || m_fields == EvenOnly)
+	  		if(m_fields == Fields::OddOnly || m_fields == Fields::EvenOnly)
 	  			return m_vidbuf.frame_rate();
 			else
 		  		return m_vidbuf.frame_rate() * 2.0;
@@ -119,27 +122,33 @@ class DeinterlaceBuffer : public VideoBuffer<T>
    private:
 		CVD::VideoFrame<T>* my_realframe;
 		CVD::VideoBuffer<T>& m_vidbuf;
-		Fields m_fields;
+		Fields::Fields m_fields;
 		bool m_loadnewframe;
 		ImageRef m_size;
 		unsigned int m_linebytes;
+		bool line_double;
 };
 
 //
 // CONSTRUCTOR
 //
 template <typename T>
-DeinterlaceBuffer<T>::DeinterlaceBuffer(CVD::VideoBuffer<T>& vidbuf, Fields fields) :
+DeinterlaceBuffer<T>::DeinterlaceBuffer(CVD::VideoBuffer<T>& vidbuf, Fields::Fields fields, bool l) :
 	VideoBuffer<T>(vidbuf.type()),
 	m_vidbuf(vidbuf),
 	m_fields(fields),
-	m_loadnewframe(true)
+	m_loadnewframe(true),
+	line_double(l)
 {
 	// Check it has an even number of lines
 	if(m_vidbuf.size().y % 2 != 0)
 		throw Exceptions::DeinterlaceBuffer::OddNumberOfLines();
 	
-	m_size = ImageRef(m_vidbuf.size().x, m_vidbuf.size().y / 2);
+	if(line_double == false)
+		m_size = ImageRef(m_vidbuf.size().x, m_vidbuf.size().y / 2);
+	else
+		m_size = m_vidbuf.size();
+
 	m_linebytes = sizeof(T) * m_size.x;
 }
 
@@ -163,37 +172,69 @@ VideoFrame<T>* DeinterlaceBuffer<T>::get_frame()
 	if(!m_loadnewframe)
 		time += frame_rate(); 
 	
-	T* data = new T[m_size.x * m_size.y];
-	DeinterlaceFrame<T>* frame = new DeinterlaceFrame<T>(time, data, m_size);
-	if(m_fields == OddOnly || 
-		(m_fields == OddEven && m_loadnewframe) ||
-		(m_fields == EvenOdd && !m_loadnewframe))
+	Image<T> im(size());
+	DeinterlaceFrame<T>* frame = new DeinterlaceFrame<T>(time, im);
+
+
+	if(m_fields == Fields::OddOnly || 
+		(m_fields == Fields::OddEven && m_loadnewframe) ||
+		(m_fields == Fields::EvenOdd && !m_loadnewframe))
 	{
+
 		// We want the odd field
-		CVD::byte* podd = reinterpret_cast<CVD::byte*>(frame->data());
-		const CVD::byte* pframe = reinterpret_cast<const CVD::byte*>(my_realframe->data());
-		for(int i = 0; i < m_size.y; i++)
+		if(line_double)
 		{
-			memcpy(podd, pframe, m_linebytes);
-			pframe += 2 * m_linebytes;
-			podd += m_linebytes;
+			//Copy line 0 from line 1, and copy over line 1 to line 1
+			for(int y=0; y < 2; y++)
+				for(int x=0; x < m_size.x; x++)
+					(*frame)[y][x] = (*my_realframe)[0][x];
+
+			//Done 0, 1. next 2, 3
+
+			for(int y=3; y < m_size.y; y+=2)
+				for(int x=0; x < m_size.x; x++)
+				{
+					(*frame)[y][x] = (*my_realframe)[y][x];
+					(*frame)[y-1][x] = ((*my_realframe)[y][x] + (*my_realframe)[y-2][x])/2;
+				}
 		}
+		else
+		{
+			for(int y=0; y < m_size.y; y++)
+				for(int x=0; x < m_size.x; x++)
+					(*frame)[y][x] = (*my_realframe)[2*y+1][x];
+		}
+		
 	}
 	else
 	{
 		// We want the even field
-		CVD::byte* peven = reinterpret_cast<CVD::byte*>(frame->data());
-		const CVD::byte* pframe = reinterpret_cast<const CVD::byte*>(my_realframe->data()) + m_linebytes;
-		for(int i = 0; i < m_size.y; i++)
+		// We want the odd field
+		if(line_double)
 		{
-			memcpy(peven, pframe, m_linebytes);
-			pframe += 2 * m_linebytes;
-			peven += m_linebytes;
+			//Copy over and double the first set of lines
+			for(int y=0; y < m_size.y-2; y+=2)
+				for(int x=0; x < m_size.x; x++)
+				{
+					(*frame)[y][x] = (*my_realframe)[y][x];
+					(*frame)[y+1][x] = ((*my_realframe)[y][x] + (*my_realframe)[y+2][x])/2;
+				}
+			
+			//Copy the last line.
+			for(int y=m_size.y-2; y < m_size.y; y++)
+				for(int x=0; x < m_size.x; x++)
+					(*frame)[y][x] = (*my_realframe)[m_size.y-2][x];
+		}
+		else
+		{
+			for(int y=0; y < m_size.y; y++)
+				for(int x=0; x < m_size.x; x++)
+					(*frame)[y][x] = (*my_realframe)[2*y][x];
 		}
 	}
 	frame->real_frame = my_realframe;
 	
-	if(m_fields == OddEven || m_fields == EvenOdd)
+	if(m_fields == Fields::OddEven || m_fields == Fields::EvenOdd)
 	{
 		// If we're taking both fields, we only load a frame every other field
 		m_loadnewframe = !m_loadnewframe;
@@ -208,8 +249,7 @@ VideoFrame<T>* DeinterlaceBuffer<T>::get_frame()
 template <typename T>
 ImageRef DeinterlaceBuffer<T>::size()
 {
-	ImageRef size = m_vidbuf.size();
-	return ImageRef(size.x, size.y / 2);
+	return m_size;
 }
 
 //
@@ -225,7 +265,6 @@ void DeinterlaceBuffer<T>::put_frame(CVD::VideoFrame<T>* frame)
 	}
 	
 	// And delete the data for my current deinterlaced frame
-	delete[] frame->data();
 	delete dynamic_cast<DeinterlaceFrame<T>*>(frame);
 }
 

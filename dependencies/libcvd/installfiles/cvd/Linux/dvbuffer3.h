@@ -25,6 +25,7 @@
 #include <cvd/videobuffer.h>
 #include <cvd/byte.h>
 #include <cvd/rgb.h>
+#include <inttypes.h>
 #include <cvd/colourspaces.h>
 
 namespace CVD
@@ -90,12 +91,24 @@ namespace CVD
       { static const DV3ColourSpace space = RAW8; }; 
     template<> struct CSConvert<bayer_rggb>
       { static const DV3ColourSpace space = RAW8; }; 
+    template<> struct CSConvert<bayer_bggr16be>
+      { static const DV3ColourSpace space = RAW16; }; 
+    template<> struct CSConvert<bayer_gbrg16be>
+      { static const DV3ColourSpace space = RAW16; }; 
+    template<> struct CSConvert<bayer_grbg16be>
+      { static const DV3ColourSpace space = RAW16; }; 
+    template<> struct CSConvert<bayer_rggb16be>
+      { static const DV3ColourSpace space = RAW16; }; 
 
     template<class C> struct CSFilter { static const DV3ColourFilter filter = UNDEFINED; };
     template<> struct CSFilter<bayer_bggr> { static const DV3ColourFilter filter = BGGR; };
     template<> struct CSFilter<bayer_gbrg> { static const DV3ColourFilter filter = GBRG; };
     template<> struct CSFilter<bayer_grbg> { static const DV3ColourFilter filter = GRBG; };
     template<> struct CSFilter<bayer_rggb> { static const DV3ColourFilter filter = RGGB; };
+    template<> struct CSFilter<bayer_bggr16be> { static const DV3ColourFilter filter = BGGR; };
+    template<> struct CSFilter<bayer_gbrg16be> { static const DV3ColourFilter filter = GBRG; };
+    template<> struct CSFilter<bayer_grbg16be> { static const DV3ColourFilter filter = GRBG; };
+    template<> struct CSFilter<bayer_rggb16be> { static const DV3ColourFilter filter = RGGB; };
 
     struct LibDCParams;
 #endif
@@ -104,7 +117,7 @@ namespace CVD
     /// typed video frames, you should use DVBuffer 3 instead..
     /// The implementation of this class depends on which version of libDC1394 is 
     /// installed on the system. Format 7 support is only present for libDC1394 V2.
-    class RawDVBuffer3
+    class RawDVBuffer3: public virtual RawVideoBuffer
     {
     public:
       /// Mode-selecting constructor for all standard modes & Format 7. First it tries
@@ -116,12 +129,18 @@ namespace CVD
       /// @param fFrameRate Requested frame-rate; if negative, use fastest available
       /// @param irOffset offset of video frame in CCD; if left at (-1,-1) use default modes or center window
       RawDVBuffer3(DV3ColourSpace colourspace,
-		   unsigned int nCamNumber=0, 
+		   int nCamNumber=0, 
+		   uint64_t cam_guid=-1,
+		   int cam_unit=-1,
+		   bool verbose=0,
+		   bool bus_reset=0,
 		   ImageRef irSize = ImageRef(-1,-1),
 		   float fFrameRate=-1.0, 
-		   ImageRef irOffset = ImageRef(-1,-1));
+		   ImageRef irOffset = ImageRef(-1,-1),
+		   int format7_mode=-1);
       
       ~RawDVBuffer3();
+      static void stopAllTransmissions(void);
       inline ImageRef size() {return mirSize;}
       inline ImageRef offset() {return mirOffset;}
       inline double frame_rate() {return mdFramerate;}
@@ -138,6 +157,7 @@ namespace CVD
       void power_on_off(DV3Feature nFeature, bool bValue);
       
     private:
+	  
       ImageRef mirSize;
       ImageRef mirOffset;
       double mdFramerate;
@@ -159,9 +179,12 @@ namespace CVD
     DVBuffer3(unsigned int nCamNumber=0, 
 	      ImageRef irSize = ImageRef(-1,-1), 
 	      float fFPS = -1.0, 
-	      ImageRef irOffset = ImageRef(-1,-1))
+	      ImageRef irOffset = ImageRef(-1,-1),
+		  bool verbose=0,
+		  bool bus_reset=0,
+		  int format7_mode=-1)
       : VideoBuffer<pixel_T>(VideoBufferType::Live),
-	    RawDVBuffer3(DV3::CSConvert<pixel_T>::space, nCamNumber, irSize, fFPS, irOffset)
+	    RawDVBuffer3(DV3::CSConvert<pixel_T>::space, nCamNumber, 0, -1, verbose, bus_reset, irSize, fFPS, irOffset, format7_mode)
 	{
 		if(DV3::CSFilter<pixel_T>::filter != DV3::UNDEFINED && colour_filter() != DV3::CSFilter<pixel_T>::filter )
 			throw(Exceptions::DVBuffer3::All("wrong colour filter expected"));

@@ -52,6 +52,7 @@ namespace FITS
 			~reader();
 
 			ImageRef size();
+			bool top_row_first();
 
 			void get_raw_pixel_line(unsigned char*);
 			void get_raw_pixel_line(signed short*);
@@ -155,7 +156,7 @@ namespace FITS
 	class writer
 	{
 		public:
-			writer(std::ostream&, ImageRef size, const std::string& type);
+			writer(std::ostream&, ImageRef size, const std::string& type, const std::map<std::string, Parameter<> >& p);
 			~writer();
 
 			void write_raw_pixel_line(const unsigned char*);
@@ -184,6 +185,7 @@ namespace FITS
 				typedef typename ComponentMapper<Incoming>::type type;
 			};		
 
+			static const int top_row_first=1;
 		private:
 			WritePimpl* t; 
 	};

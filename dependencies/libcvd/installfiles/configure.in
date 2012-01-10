@@ -90,7 +90,7 @@ dnl option corresponds to the first parameter for the corresponding
 dnl AC_ARG_WITH. If the library is present, then have_option and CVD_HAVE_OPTION
 dnl are set. If with_option is "", it will be set to yes.
 dnl
-dnl The test code shall do nothing on success, and set the shell variable a to 1
+dnl The test code shall do nothing on success, and set the shell variable a
 dnl on failure. For convenience, LIBS  and CXXFLAGS are checkpointed 
 dnl automatically. On failure, they are restored automatically.
 dnl
@@ -413,7 +413,7 @@ AC_ARG_WITH(dc1394v1v2,[  --with-dc1394v1v2       Force libDC1394 v1 and v2 co-e
 AC_ARG_WITH(dc1394v1,  [  --without-dc1394v1      do not use libDC1394v1 (use try v2 instead) for dvbuffer3 (Linux/OSX). Disable dvbuffer (Linux).])
 AC_ARG_WITH(dc1394v2,  [  --without-dc1394v2      do not use libDC1394v2 (use try v1 instead) for dvbuffer3 (Linux/OSX). ])
 AC_ARG_WITH(v4l1buffer,[  --without-v4l1buffer	  compile without v4l1bffer (Video4Linux) support (Linux only)])
-AC_ARG_WITH(v4l2,      [  --without-v4l2buffer	  compile without v4l2buffer (Video4Linux2) support (Linux only)])
+AC_ARG_WITH(v4l2buffer,[  --without-v4l2buffer	  compile without v4l2buffer (Video4Linux2) support (Linux only)])
 AC_ARG_WITH(o2buffer,  [  --without-o2buffer	  compile without sgi video (IRIX only)])
 AC_ARG_WITH(qtbuffer,  [  --without-qtbuffer	  compile without quicktime buffer support (MacOSX only)])
 
@@ -440,7 +440,7 @@ CHECK_FOR_OPTION(dc1394v2, [
 
 case "$host" in
 	*linux*)
-		os_all_options="dc1394v2 dc1394v1 v4l2buffer v4l1buffer v4lbuffer"
+		os_all_options="dc1394v2 dc1394v1 v4l2buffer v4l1buffer"
 		
 		if test "$have_dc1394v2" != yes || test "$with_dc1394v1v2" == "yes"
 		then
@@ -455,7 +455,7 @@ case "$host" in
 			AC_MSG_CHECKING(for v4l2)
 			AC_COMPILE_IFELSE([	#include <sys/types.h>
 								#include <linux/types.h>
-								#include <linux/videodev.h>
+								#include <linux/videodev2.h>
 								int main(){V4L2_PIX_FMT_GREY;return 0;}], 
 								[AC_MSG_RESULT(yes)],
 								[AC_MSG_RESULT(no); a=1])
@@ -542,6 +542,10 @@ case "$host" in
 			echo "I hope all SGIs have stuff needed for O2buffer. Disable (--without-o2buffer) if I'm wrong."
 		])
 		;;
+	*windows*)
+		AC_SUBST(have_windows, yes)
+		;;
+		
 esac
 
 
@@ -589,22 +593,28 @@ AC_ARG_WITH(lapack, [  --without-lapack        Disable BLAS and LAPACK.])
 AC_ARG_WITH(acml, [  --with-acml[[=directory]] Use BLAS and LAPACK routines from the ACML library [[located in the specified directory]] ], [opt_acml_dir=$withval])
 
 CHECK_FOR_OPTION(videodisplay,[
-	AC_PATH_X
-	if test x$x_includes != x
-	then
-		APPEND(CXXFLAGS, -I$x_includes)
-	fi
 
 	if test "$host_vendor" == apple
 	then
-		APPEND(LIBS, [-L$x_libraries -lX11 -lXext -dylib_file /System/Library/Frameworks/OpenGL.framework/Versions/A/Libraries/libGL.dylib:/System/Library/Frameworks/OpenGL.framework/Versions/A/Libraries/libGL.dylib])
+		APPEND(LIBS, [ -framework OpenGL /usr/X11R6/lib/libX11.dylib /usr/X11R6/lib/libGLU.dylib /usr/X11R6/lib/libGL.dylib])
+		# all of the following is already covered in the framework
+		# AC_CHECK_LIB(GL,glDrawPixels, [], [a=1])
+		# AC_CHECK_HEADERS(GL/glu.h, [], [a=1])
+		# AC_CHECK_LIB(GLU,gluGetString, [], [a=1])
 	else
+
+		AC_PATH_X
+		if test x$x_includes != x
+		then
+			APPEND(CXXFLAGS, -I$x_includes)
+		fi
+
 		APPEND(LIBS, [-L$x_libraries -lX11 -lXext])
+		AC_CHECK_LIB(GL,glDrawPixels, [], [a=1])
+		AC_CHECK_HEADERS(GL/glu.h, [], [a=1])
+		AC_CHECK_LIB(GLU,gluGetString, [], [a=1])
 	fi
 	
-	AC_CHECK_LIB(GL,glDrawPixels, [], [a=1])
-	AC_CHECK_HEADERS(GL/glu.h, [], [a=1])
-	AC_CHECK_LIB(GLU,gluGetString, [], [a=1])
 ])
 
 CHECK_FOR_OPTION(tr1_shared_ptr, [
@@ -705,11 +715,26 @@ CHECK_FOR_OPTION(pthread, [
 	# check for existence of pthread_yield
 	# Mac OS X only has pthread_yield_np
 	a=
-	AC_CHECK_FUNC(pthread_yield, AC_DEFINE(CVD_HAVE_PTHREAD_YIELD),a=1$a)
-	AC_CHECK_FUNC(pthread_yield_np, AC_DEFINE(CVD_HAVE_PTHREAD_YIELD_NP),a=1$a)
-	if test x$a = x11
+	AC_CHECK_FUNC(sched_yield, AC_SUBST(have_sched_yield, yes), a=sy)
+
+	if test x$a != x
+	then
+		AC_CHECK_FUNC(pthread_yield, AC_SUBST(have_pthread_yield, yes),a=py)
+	fi
+
+
+	if test x$a != x
+	then
+		AC_CHECK_FUNC(pthread_yield_np, AC_SUBST(have_pthread_yield_np, yes),a=pyn)
+	fi
+
+	if test x$a = xpyn
 	then
 		APPEND(dodginess_options, no_pthread_yield)
+		APPEND(dodginess_options, no_sched_yield)
+	elif test x$a = py
+	then
+		APPEND(dodginess_options, no_sched_yield)
 	fi
 ])
 
@@ -719,6 +744,13 @@ CHECK_FOR_OPTION(pthread, [
 CHECK_FOR_OPTION(png, [
 	AC_CHECK_HEADERS(png.h, [], [a=1])
 	AC_CHECK_LIB(png, png_init_io, [], [a=1])
+	oldpng=0
+	AC_CHECK_LIB(png, png_set_expand_gray_1_2_4_to_8, [], [oldpng=1])
+	if test $oldpng == 1
+	then
+		APPEND(dodginess_options, oldpng)
+		AC_DEFINE(CVD_INTERNAL_HAVE_OLD_PNG, 1)
+	fi
 ])
 
 CHECK_FOR_OPTION(jpeg, [
@@ -782,23 +814,31 @@ fi
 CHECK_FOR_OPTION(ffmpeg, [
 	if test "$enable_gpl" != no && test "$enable_gpl" != ""
 	then
+		AC_MSG_CHECKING([for ffmpeg headers])
+		AC_COMPILE_IFELSE([
+			#define __STDC_CONSTANT_MACROS
+			#include <libavcodec/avcodec.h>
+			#include <libavformat/avformat.h>
+			#include <libswscale/swscale.h>
+			int main(){}
+		], [ ffmpeg_new_headers=1], [])
 
-		AC_CHECK_HEADERS(ffmpeg/avcodec.h ffmpeg/avformat.h ffmpeg/swscale.h, [ffmpeg_old_headers=1], [])
-		AC_CHECK_HEADERS(libavcodec/avcodec.h libavformat/avformat.h libswscale/swscale.h, [ffmpeg_new_headers=1], [])
-
-
-		if test "$ffmpeg_old_headers" == 1 || test "$ffmpeg_new_headers" == 1
+		if test "$ffmpeg_new_headers" == 1
 		then
-			if test "$ffmpeg_old_headers" == 1
-			then
-				AC_DEFINE(CVD_INTERNAL_HAVE_FFMPEG_OLD_HEADERS, 1)
-			fi
 
 			AC_CHECK_LIB(avutil, main, [], [a=1])
 			AC_CHECK_LIB(avformat, av_open_input_file, [], [a=1])
 			AC_CHECK_LIB(avformat, av_read_frame, [ffmpeg_recent=yes], [a=1]) #only in >= 0.4.9
 			AC_CHECK_LIB(avcodec, avcodec_open, [], [a=1])
 			AC_CHECK_LIB(swscale, sws_getContext, [], [a=1])
+
+			have_avcodec_decode_video2=0
+			AC_CHECK_LIB(avcodec, avcodec_decode_video2, [have_avcodec_decode_video2=1])
+			if test $have_avcodec_decode_video2==1
+			then
+				AC_DEFINE(CVD_INTERNAL_FFMPEG_USE_AVCODEC_DECODE_VIDEO2)
+			fi
+
 		else
 			a=1
 		fi
@@ -806,22 +846,6 @@ CHECK_FOR_OPTION(ffmpeg, [
 		a=1
 		AC_MSG_WARN([FFMPEG currently requires the use of --enable-gpl])
 	fi
-	#if test "$with_ffmpeg" != yes
-	#then
-#		APPEND(LIBS, [-L $with_ffmpeg])
-#	fi
-#	if test "`$CXX -dumpversion`" = 4.1.0
-#	then
-#		APPEND(CXXFLAGS, -D__STDC_CONSTANT_MACROS)
-#	fi
-
-	#Old ffmpeg?
-	#AC_CHECK_HEADERS(ffmpeg/avcodec.h ffmpeg/avformat.h, [], [a=1])
-	#AC_CHECK_LIB(avutil, main, [], [a=1])
-	#AC_CHECK_LIB(avformat, av_open_input_file, [], [a=1])
-	#AC_CHECK_LIB(avformat, av_read_frame, [ffmpeg_recent=yes], [a=1]) #only in >= 0.4.9
-	#AC_CHECK_LIB(avcodec, avcodec_open, [], [a=1])
-
 ])
 
 AC_CHECK_PROG(docs, doxygen, docs, no)
@@ -939,10 +963,9 @@ cvd_src/i686/yuv411_to_stuff_MMX			inline_asm mmxext 32bit x86
 cvd_src/i686/yuv411_to_stuff_MMX_64			inline_asm mmxext x86
 cvd_src/yuv411_to_stuff					END
 
-cvd_src/i686/halfsample,INTERNAL_HALFSAMPLE_MMX8		mmx 32bit x86 assembler END
-INTERNAL_HALFSAMPLE_SSE16							sse2 END
-
-INTERNAL_YV402P_MMX									mmx END
+cvd_src/SSE2/half_sample							sse2
+cvd_src/i686/halfsample,cvd_src/MMX/half_sample		mmx 32bit x86 assembler
+cvd_src/noarch/half_sample	 						END
 
 cvd_src/i686/rgb_to_gray,cvd_src/i686/convert_rgb_to_y	32bit mmxext x86 assembler
 cvd_src/noarch/convert_rgb_to_y					END
@@ -954,6 +977,10 @@ cvd_src/noarch/convolve_gaussian			END
 
 cvd_src/i686/gradient						sse2
 cvd_src/noarch/gradient						END
+
+
+cvd_src/i686/yuv420p_to_rgb,cvd_src/i686/yuv420p_to_rgb_runner mmx 32bit x86 assembler
+cvd_src/noarch/yuv420p_to_rgb_runner    END
 
 cvd_src/i686/yuv422_to_rgb,cvd_src/i686/yuv422_to_grey,cvd_src/i686/yuv422_wrapper mmxext 32bit x86 assembler
 cvd_src/noarch/yuv422_wrapper						END
@@ -982,14 +1009,14 @@ cvd_src/fast/fast_10_detect,cvd_src/fast/fast_10_score									fast10  END
 cvd_src/fast/fast_11_detect,cvd_src/fast/fast_11_score,cvd_src/slower_corner_11	fast11  END
 cvd_src/fast/fast_12_detect,cvd_src/fast/fast_12_score									fast12  END
 
-cvd_src/faster_corner_9							sse2 ssefast9 fast9
-cvd_src/slower_corner_9							fast9							END	
+cvd_src/SSE2/faster_corner_9				        sse2 ssefast9 fast9
+cvd_src/noarch/slower_corner_9						fast9							END	
 
-cvd_src/faster_corner_10						sse2 ssefast10 fast10
-cvd_src/slower_corner_10						fast10							END
+cvd_src/SSE2/faster_corner_10						sse2 ssefast10 fast10
+cvd_src/noarch/slower_corner_10						fast10							END
 
-cvd_src/faster_corner_12						sse2 ssefast12 fast12
-cvd_src/slower_corner_12						fast12							END
+cvd_src/SSE2/faster_corner_12						sse2 ssefast12 fast12
+cvd_src/noarch/slower_corner_12						fast12							END
 
 #General OS specific bits
 
@@ -1014,23 +1041,37 @@ cvd_src/IRIX/O2buffer,cvd_src/IRIX/sgi-video	o2buffer END
 cvd_src/OSX/qtbuffer,cvd_src/OSX/videosource_qtbuffer	   qtbuffer
 cvd_src/OSX/videosource_noqtbuffer		                   END 
 
+cvd_src/cvd_timer			windows
 cvd_src/posix/timer								posix_rt
 cvd_src/cvd_timer								END
 
 #Libraries
 cvd_src/synchronized,cvd_src/eventobject,cvd_src/thread		pthread END
+
+cvd_src/posix/sched_yield                       pthread sched_yield
+cvd_src/posix/pthread_yield                     pthread pthread_yield
+cvd_src/posix/pthread_yield_np                  pthread pthread_yield_np
+nothing                                         END
+
 cvd_src/thread/runnable_batch                   tr1_shared_ptr pthread
 cvd_src/nothread/runnable_batch                 tr1_shared_ptr END
+
+nothing											windows
 cvd_src/noarch/posix_memalign                   memalign
 cvd_src/noarch/default_memalign                 END
 
+cvd_src/Win32/glwindow,cvd_src/gltext	windows
 cvd_src/videodisplay,cvd_src/glwindow,cvd_src/gltext         videodisplay END
 pnm_src/jpeg									jpeg END
 pnm_src/tiff,pnm_src/tiffwrite					tiff END
 pnm_src/png										png END
 cvd_src/videofilebuffer,cvd_src/videosource_videofilebuffer	 ffmpeg 
 cvd_src/videosource_novideofilebuffer           END
+
+nothing											windows
 cvd_src/globlist    							glob END
+
+cvd_src/Win32/win32								windows END
 
 #Numerics dependencies
 cvd_src/tensor_voting,cvd_src/brezenham			toon END
@@ -1057,13 +1098,8 @@ progs/se3_pre_mul          toon          lapack    	END
 progs/se3_post_mul         toon          lapack     END
 progs/se3_inv              toon			 lapack 	END
 progs/calibrate	           toon          videodisplay lapack END
-progs/img_play             videodisplay          	END
 progs/cvd_display_image    videodisplay          	END
-progs/img_play_bw          videodisplay          	END
-progs/img_play_deinterlace videodisplay          	END
 progs/video_play_source    videodisplay  END
-progs/video_play           videodisplay  ffmpeg  	END
-progs/video_play_bw        videodisplay  ffmpeg  	END
 ENDPROGS
 
 AC_SUBST(progs, ["`cat config.dep_progs | tr '\n' ' ' `"])
@@ -1087,14 +1123,10 @@ test/v4l1buffer_bayer 			videodisplay v4l1buffer 		END
 test/v4l1buffer_rgb  			videodisplay v4l1buffer			END
 test/qtbuffer_yuvrgb            videodisplay qtbuffer 			END
 test/font                       videodisplay                    END
+test/bayer_test													END
 ENDPROGS
 AC_SUBST(testprogs, ["`cat config.dep_testprogs | tr '\n' ' ' `"])
 
-
-if echo "$dep_objects" | grep -q v4lbuffer
-then
-	APPEND(options, v4lbuffer)	
-fi
 
 echo
 echo
@@ -1131,7 +1163,11 @@ echo -n 'Generating config... '
 cat << FOO > cvd/config_tmp.h
 #ifndef CVD_CONFIG_H
 #define CVD_CONFIG_H
+#ifdef WIN32
+	#include <cvd/internal/win.h>
+#endif
 FOO
+
 echo '#define CVD_HAVE_CPU_'$host_cpu 1 | cat - confdefs.h | grep CVD_ | sort | sed 's/#define CVD_.*HAVE_\(.*\) .*/#ifndef CVD_DISABLE_\1\
     &\
 #endif/' >> cvd/config_tmp.h

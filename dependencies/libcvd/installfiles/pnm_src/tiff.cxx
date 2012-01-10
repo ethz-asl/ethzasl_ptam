@@ -216,6 +216,15 @@ TIFFPimpl::~TIFFPimpl()
 	TIFFClose(tif);
 }
 
+//#define CVD_INTERNAL_VERBOSE_TIFF
+#ifdef CVD_INTERNAL_VERBOSE_TIFF
+	#define LOG(X) do{ cerr << X; }while(0)
+	#define VAR(X) #X << " = " << X
+#else
+	#define LOG(X)
+	#define VAR(X)
+#endif
+
 
 TIFFPimpl::TIFFPimpl(istream& is)
 :i(is),row(0)
@@ -237,6 +246,19 @@ TIFFPimpl::TIFFPimpl(istream& is)
 	if(tif == NULL)
 		throw MalformedImage(error_msg);
 
+
+	#ifdef CVD_INTERNAL_VERBOSE_TIFF
+	{
+		int dircount=1;
+		for(; TIFFReadDirectory(tif); dircount++)
+		{}
+
+		LOG(VAR(dircount));
+		TIFFSetDirectory(tif, 0);
+
+	}
+	#endif
+
 	//Libtiff types
 	uint32 w=0, h=0;
 	uint16 bitspersample=0, spp=0, sampleformat=0, photo=0, pl_type=0;
@@ -245,15 +267,26 @@ TIFFPimpl::TIFFPimpl(istream& is)
 	TIFFGetField(tif, TIFFTAG_IMAGEWIDTH, &w);
 	TIFFGetField(tif, TIFFTAG_IMAGELENGTH, &h);	
 	TIFFGetField(tif, TIFFTAG_BITSPERSAMPLE, &bitspersample);
-	TIFFGetField(tif, TIFFTAG_SAMPLESPERPIXEL, &spp);
+	
+	TIFFGetFieldDefaulted(tif, TIFFTAG_SAMPLESPERPIXEL, &spp);
+
 	TIFFGetField(tif, TIFFTAG_PHOTOMETRIC, &photo);	
 	TIFFGetField(tif, TIFFTAG_PLANARCONFIG, &pl_type);
+
+	LOG(VAR(w) << endl);
+	LOG(VAR(h) << endl);
+	LOG(VAR(bitspersample) << endl);
+	LOG(VAR(spp) << endl);
+	LOG(VAR(photo) << endl);
+	LOG(VAR(pl_type) << endl);
+
 
 	//Read the sample format. If it is missing, then it
 	//defaults to unsigned int as per the spec.
 	if(TIFFGetField(tif, TIFFTAG_SAMPLEFORMAT, &sampleformat) == 0)
 		sampleformat = SAMPLEFORMAT_UINT;
 
+	LOG(VAR(sampleformat) << endl);
 
 	my_size.x = w;
 	my_size.y = h;
@@ -310,23 +343,26 @@ TIFFPimpl::TIFFPimpl(istream& is)
 
 		use_cooked_rgba_interface=0;
 	}
-		
+
 	keep_cooked:;
 	if(use_cooked_rgba_interface == 1)
 	{	
 		//The format is "complex" and we don't know how to read it.
-		type = "CVD::Rgb<unsigned char>";
+		type = "CVD::Rgba<unsigned char>";
 		inverted_grey=0;
 	}
 
 	if(type == "bool")
 		bool_rowbuf.resize((size().x + 7)/8);
 
+	LOG(VAR(type) << endl);
+	LOG(VAR(use_cooked_rgba_interface) << endl);
+
 
 
 	if(use_cooked_rgba_interface)
 	{
-		raster_data.resize(my_size.x, my_size.y);
+		raster_data.resize(my_size.x* my_size.y);
 
 		#ifdef CVD_INTERNAL_HAVE_TIFF_ORIENTED
 			//Read the whole image
@@ -382,6 +418,10 @@ string tiff_reader::name()
 	return "TIFF";
 }
 
+bool tiff_reader::top_row_first()
+{
+	return true;
+};
 ImageRef tiff_reader::size()
 {
 	return t->size();

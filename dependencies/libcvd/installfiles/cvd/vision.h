@@ -24,6 +24,7 @@
 
 #include <vector>
 #include <memory>
+#include <algorithm>
 
 #include <cvd/vision_exceptions.h>
 #include <cvd/image.h>
@@ -37,9 +38,9 @@
 #endif
 
 namespace CVD{
-/** Subsamples an image to 2/3 of its size by averaging 3x3 blocks in to 2x2 blocks.
+/** Subsamples an image to 2/3 of its size by averaging 3x3 blocks into 2x2 blocks.
 @param in input image
-@param out output image (muze be <code>out.size() == in.size()/2*3 </code>)
+@param out output image (must be <code>out.size() == in.size()/3*2 </code>)
 @throw IncompatibleImageSizes if out does not have the correct dimensions.
 @ingroup gVision
 */
@@ -99,7 +100,7 @@ void twoThirdsSample(const SubImage<byte>& in, SubImage<byte>& out);
   #else
   	///Subsamples an image by averaging 3x3 blocks in to 2x2 ones.
 	/// Note that this is performed using lazy evaluation, so subsampling
-	/// happns on assignment, and memory allocation is not performed if
+	/// happens on assignment, and memory allocation is not performed if
 	/// unnecessary.
     /// @param from The image to convert from
 	/// @return The converted image
@@ -269,12 +270,12 @@ void gradient(const BasicImage<byte>& im, BasicImage<short[2]>& out);
 #endif
 
 
-template <class T, class S> inline void sample(const BasicImage<S>& im, double x, double y, T& result)
+template <class T, class S, typename Precision> inline void sample(const SubImage<S>& im, Precision x, Precision y, T& result)
 {
   typedef typename Pixel::Component<S>::type SComp;
   typedef typename Pixel::Component<T>::type TComp;
-  int lx = (int)x;
-  int ly = (int)y;
+  const int lx = (int)x;
+  const int ly = (int)y;
   x -= lx;
   y -= ly;
   for(unsigned int i = 0; i < Pixel::Component<T>::count; i++){
@@ -284,27 +285,27 @@ template <class T, class S> inline void sample(const BasicImage<S>& im, double x
   }
  }
 
-template <class T, class S> inline T sample(const BasicImage<S>& im, double x, double y){
+template <class T, class S, typename Precision> inline T sample(const SubImage<S>& im, Precision x, Precision y){
     T result;
     sample( im, x, y, result);
     return result;
 }
 
-inline void sample(const BasicImage<float>& im, double x, double y, float& result)
-  {
-    int lx = (int)x;
-    int ly = (int)y;
-    int w = im.size().x;
+inline void sample(const SubImage<float>& im, double x, double y, float& result)
+{
+    const int lx = (int)x;
+    const int ly = (int)y;
+    const int w = im.row_stride();
     const float* base = im[ly]+lx;
-    float a = base[0];
-    float b = base[1];
-    float c = base[w];
-    float d = base[w+1];
-    float e = a-b;
+    const float a = base[0];
+    const float b = base[1];
+    const float c = base[w];
+    const float d = base[w+1];
+    const float e = a-b;
     x-=lx;
     y-=ly;
     result = (float)(x*(y*(e-c+d)-e)+y*(c-a)+a);
-  }
+}
 
 #if defined (CVD_HAVE_TOON)
 
@@ -318,24 +319,24 @@ inline void sample(const BasicImage<float>& im, double x, double y, float& resul
  * @return the number of pixels not in the in image 
  * @Note: this will collide with transform in the std namespace
  */
-template <class T, class S>
-int transform(const BasicImage<S>& in, BasicImage<T>& out, const TooN::Matrix<2>& M, const TooN::Vector<2>& inOrig, const TooN::Vector<2>& outOrig, const T defaultValue = T())
+template <typename T, typename S, typename P>
+int transform(const SubImage<S>& in, SubImage<T>& out, const TooN::Matrix<2, 2, P>& M, const TooN::Vector<2, P>& inOrig, const TooN::Vector<2, P>& outOrig, const T defaultValue = T())
 {
     const int w = out.size().x, h = out.size().y, iw = in.size().x, ih = in.size().y; 
-    const TooN::Vector<2> across = M.T()[0];
-    const TooN::Vector<2> down =   M.T()[1];
+    const TooN::Vector<2, P> across = M.T()[0];
+    const TooN::Vector<2, P> down =   M.T()[1];
    
-    const TooN::Vector<2> p0 = inOrig - M*outOrig;
-    const TooN::Vector<2> p1 = p0 + w*across;
-    const TooN::Vector<2> p2 = p0 + h*down;
-    const TooN::Vector<2> p3 = p0 + w*across + h*down;
+    const TooN::Vector<2, P> p0 = inOrig - M*outOrig;
+    const TooN::Vector<2, P> p1 = p0 + w*across;
+    const TooN::Vector<2, P> p2 = p0 + h*down;
+    const TooN::Vector<2, P> p3 = p0 + w*across + h*down;
         
     // ul --> p0
     // ur --> w*across + p0
     // ll --> h*down + p0
     // lr --> w*across + h*down + p0
-    double min_x = p0[0], min_y = p0[1];
-    double max_x = min_x, max_y = min_y;
+    P min_x = p0[0], min_y = p0[1];
+    P max_x = min_x, max_y = min_y;
    
     // Minimal comparisons needed to determine bounds
     if (across[0] < 0)
@@ -356,13 +357,13 @@ int transform(const BasicImage<S>& in, BasicImage<T>& out, const TooN::Matrix<2>
 	max_y += h*down[1];
    
     // This gets from the end of one row to the beginning of the next
-    const TooN::Vector<2> carriage_return = down - w*across;
+    const TooN::Vector<2, P> carriage_return = down - w*across;
 
     //If the patch being extracted is completely in the image then no 
     //check is needed with each point.
     if (min_x >= 0 && min_y >= 0 && max_x < iw-1 && max_y < ih-1) 
     {
-	TooN::Vector<2> p = p0;
+	TooN::Vector<2, P> p = p0;
 	for (int i=0; i<h; ++i, p+=carriage_return)
 	    for (int j=0; j<w; ++j, p+=across) 
 		sample(in,p[0],p[1],out[i][j]);
@@ -371,10 +372,10 @@ int transform(const BasicImage<S>& in, BasicImage<T>& out, const TooN::Matrix<2>
     else // Check each source location
     {
 	// Store as doubles to avoid conversion cost for comparison
-	const double x_bound = iw-1;
-	const double y_bound = ih-1;
+	const P x_bound = iw-1;
+	const P y_bound = ih-1;
 	int count = 0;
-	TooN::Vector<2> p = p0;
+	TooN::Vector<2, P> p = p0;
 	for (int i=0; i<h; ++i, p+=carriage_return) {
 	    for (int j=0; j<w; ++j, p+=across) {
 		//Make sure that we are extracting pixels in the image
@@ -415,14 +416,50 @@ int transform(const BasicImage<S>& in, BasicImage<T>& out, const TooN::Matrix<2>
       }
     }
   }
+  
+/// warp or unwarps an image according to two camera models.
+template <typename T, typename CAM1, typename CAM2>
+void warp( const SubImage<T> & in, const CAM1 & cam_in, SubImage<T> & out, const CAM2 & cam_out){
+	const ImageRef size = out.size();
+	for(int y = 0; y < size.y; ++y){
+		for(int x = 0; x < size.x; ++x){
+			TooN::Vector<2> l = cam_in.project(cam_out.unproject(TooN::makeVector(x,y)));
+			if(l[0] >= 0 && l[0] <= in.size().x - 1 && l[1] >= 0 && l[1] <= in.size().y -1){
+				sample(in, l[0], l[1], out[y][x]);
+			} else 
+				out[y][x] = T();
+		}
+	}
+}
+
+/// warps or unwarps an image according to two camera models and
+/// returns the result image. The size of the output image needs to be
+/// passed in as well.
+template <typename T, typename CAM1, typename CAM2>
+Image<T> warp( const SubImage<T> & in, const CAM1 & cam_in, const ImageRef & size, const CAM2 & cam_out){
+	Image<T> result(size);
+	warp(in, cam_in, result, cam_out);
+	return result;
+}
+
+/// warps or unwarps an image according to two camera models and
+/// returns the result image. The size of the output image is the
+/// same as the input image size.
+template <typename T, typename CAM1, typename CAM2>
+Image<T> warp( const SubImage<T> & in, const CAM1 & cam_in, const CAM2 & cam_out){
+	Image<T> result(in.size());
+	warp(in, cam_in, result, cam_out);
+	return result;
+}
+
 #endif
 
 /// flips an image vertically in place.
 template <class T> void flipVertical( Image<T> & in )
 {
   int w = in.size().x;
-  std::auto_ptr<T> buffer_auto(new T[w]);
-  T* buffer = buffer_auto.get();
+  std::vector<T> buf(w);
+  T* buffer = &buf[0];
   T * top = in.data();
   T * bottom = top + (in.size().y - 1)*w;
   while( top < bottom )
@@ -432,6 +469,26 @@ template <class T> void flipVertical( Image<T> & in )
     std::copy(buffer, buffer+w, bottom);
     top += w;
     bottom -= w;
+  }
+}
+
+/// flips an image horizontally in place.
+template <class T> void flipHorizontal( Image<T> & in )
+{
+  int w = in.size().x;
+  int h = in.size().y;
+  std::auto_ptr<T> buffer_auto(new T[w]);
+  T* buffer = buffer_auto.get();
+  T * left = in.data();
+  T * right = left + w;
+  int row = 0;
+  while(row < h)
+  {
+    std::copy(left, right, buffer);
+    std::reverse_copy(buffer, buffer+w-1, left);
+    row++;
+    left += w;
+    right += w;
   }
 }
 

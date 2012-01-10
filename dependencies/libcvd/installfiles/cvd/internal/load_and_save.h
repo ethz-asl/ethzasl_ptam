@@ -21,10 +21,17 @@
 #ifndef CVD_LOAD_AND_SAVE_H
 #define CVD_LOAD_AND_SAVE_H
 
+#include <iostream>
+#include <string>
+#include <typeinfo>
+#include <map>
+#include <memory>
 #include <cvd/exceptions.h>
 #include <cvd/image_convert.h>
+#include <cvd/colourspace_convert.h>
 #include <cvd/internal/convert_pixel_types.h>
 #include <cvd/internal/name_CVD_rgb_types.h>
+#include <cvd/internal/io/parameter.h>
 
 namespace CVD {
 
@@ -127,8 +134,7 @@ namespace CVD {
 
 		}
 	}
-
-
+	
 	namespace Internal
 	{
 		template<class C, int i> struct save_default_
@@ -183,7 +189,14 @@ namespace CVD {
 				for(int row = 0; row < r.size().y; row++)
 				{
 					r.get_raw_pixel_line(rowbuf.data());
-					Pixel::ConvertPixels<DiskPixelType, PixelType>::convert(rowbuf.data(), im[row], r.size().x);
+					PixelType* rowptr;
+
+					if(r.top_row_first())
+						rowptr = im[row];
+					else
+						rowptr = im[im.size().y - row-1];
+
+					Pixel::ConvertPixels<DiskPixelType, PixelType>::convert(rowbuf.data(), rowptr, r.size().x);
 				}
 			}
 		};
@@ -193,7 +206,21 @@ namespace CVD {
 			static void exec(SubImage<PixelType>& im, ImageLoader& r)
 			{
 				for(int row = 0; row < r.size().y; row++)
-					r.get_raw_pixel_line(im[row]);
+					if(r.top_row_first())
+						r.get_raw_pixel_line(im[row]);
+					else
+						r.get_raw_pixel_line(im[im.size().y - row-1]);
+			}
+		};
+
+		template<class PixelType, class DiskPixelType, class ImageLoader> struct read_and_then_process
+		{
+			static void exec(BasicImage<PixelType>& im, ImageLoader& r)
+			{
+				Image<DiskPixelType> imgbuf(r.size());
+				read_and_maybe_process<DiskPixelType,DiskPixelType, ImageLoader>::exec(imgbuf, r);
+
+				convert_image(imgbuf, im);
 			}
 		};
 
@@ -204,11 +231,17 @@ namespace CVD {
 		//
 		template<class PixelType, class ImageLoader, class List > struct Reader
 		{	
-			static void read(SubImage<PixelType>& im, ImageLoader& r)
+			static void read(BasicImage<PixelType>& im, ImageLoader& r)
 			{
 				if(r.datatype() == PNM::type_name<typename List::Type>::name())
 				{
-					read_and_maybe_process<PixelType, typename List::Type, ImageLoader>::exec(im, r);
+					//std::cout << "converting " << r.datatype() << " -> " << PNM::type_name<PixelType>::name() << " PixelByPixel: " << PixelByPixelConvertible<typename List::Type, PixelType>::is << " Convertible: " << IsConvertible<typename List::Type, PixelType>::is << std::endl;
+					if (PixelByPixelConvertible<typename List::Type, PixelType>::is)
+						read_and_maybe_process<PixelType, typename List::Type, ImageLoader>::exec(im, r);
+					else if (IsConvertible<typename List::Type, PixelType>::is)
+						read_and_then_process<PixelType, typename List::Type, ImageLoader>::exec(im, r);
+					else
+						throw CVD::Exceptions::Image_IO::ReadTypeMismatch(r.datatype(), PNM::type_name<PixelType>::name());
 				}
 				else
 					Reader<PixelType, ImageLoader, typename List::Next>::read(im, r);
@@ -217,7 +250,7 @@ namespace CVD {
 
 		template<class PixelType, class ImageLoader> struct Reader<PixelType, ImageLoader, Head>
 		{
-			static void read(SubImage<PixelType>&, ImageLoader& r)
+			static void read(BasicImage<PixelType>&, ImageLoader& r)
 			{	
 				throw Exceptions::Image_IO::UnsupportedImageSubType(r.name(), r.datatype() + " not yet supported");
 			}
@@ -229,12 +262,12 @@ namespace CVD {
 		// Driver functions for loading images.
 		//
 
-		template<class T, class ImageLoader> void readImage(SubImage<T>& im, ImageLoader& r)
+		template<class T, class ImageLoader> void readImage(BasicImage<T>& im, ImageLoader& r)
 		{
 			Reader<T, ImageLoader, typename ImageLoader::Types>::read(im, r);
 		}
 
-		template <class T, class ImageLoader> void readImage(SubImage<T>& im, std::istream& in)
+		template <class T, class ImageLoader> void readImage(BasicImage<T>& im, std::istream& in)
 		{
 			ImageLoader loader(in);
 			ImageRef size = loader.size();
@@ -274,32 +307,45 @@ namespace CVD {
 		//
 		template<class Pixel, class ImageWriter, class OutgoingPixel> struct maybe_process_and_write
 		{	
-			static void write(std::ostream& os, const SubImage<Pixel>& im)
+			static void write(std::ostream& os, const SubImage<Pixel>& im, const std::map<std::string, Parameter<> >& p)
 			{
-				ImageWriter w(os, im.size(), CVD::PNM::type_name<OutgoingPixel>::name());
+				ImageWriter w(os, im.size(), CVD::PNM::type_name<OutgoingPixel>::name(), p);
 				Image<OutgoingPixel> row(ImageRef(im.size().x, 1));
 
-				for(int r=0; r < im.size().y; r++)
-				{
-					CVD::Pixel::ConvertPixels<Pixel, OutgoingPixel>::convert(im[r], row.data(), im.size().x);
-					w.write_raw_pixel_line(row.data());
-				}
+				if(w.top_row_first)
+					for(int r=0; r < im.size().y; r++)
+					{
+						CVD::Pixel::ConvertPixels<Pixel, OutgoingPixel>::convert(im[r], row.data(), im.size().x);
+						w.write_raw_pixel_line(row.data());
+					}
+				else
+					for(int r=im.size().y-1; r >= 0; r--)
+					{
+						CVD::Pixel::ConvertPixels<Pixel, OutgoingPixel>::convert(im[r], row.data(), im.size().x);
+						w.write_raw_pixel_line(row.data());
+					}
 			}
 		};
 
 		template<class Pixel, class ImageWriter> struct maybe_process_and_write<Pixel, ImageWriter, Pixel>
 		{	
-			static void write(std::ostream& os, const SubImage<Pixel>& im)
+			static void write(std::ostream& os, const SubImage<Pixel>& im, const std::map<std::string, Parameter<> >& p)
 			{
-				ImageWriter w(os, im.size(), CVD::PNM::type_name<Pixel>::name());
-				for(int r=0; r < im.size().y; r++)
-					w.write_raw_pixel_line(im[r]);
+				ImageWriter w(os, im.size(), CVD::PNM::type_name<Pixel>::name(), p);
+
+				if(w.top_row_first)
+					for(int r=0; r < im.size().y; r++)
+						w.write_raw_pixel_line(im[r]);
+				else
+					for(int r=im.size().y-1; r >= 0; r--)
+						w.write_raw_pixel_line(im[r]);
+
 			}
 		};
 
-		template<class Pixel, class Writer> void writeImage(const SubImage<Pixel>& im, std::ostream& o)
+		template<class Pixel, class Writer> void writeImage(const SubImage<Pixel>& im, std::ostream& o, const std::map<std::string, Parameter<> >& p)
 		{
-			maybe_process_and_write<Pixel, Writer, typename Writer::template Outgoing<Pixel>::type>::write(o, im);
+			maybe_process_and_write<Pixel, Writer, typename Writer::template Outgoing<Pixel>::type>::write(o, im, p);
 		}
 
 	

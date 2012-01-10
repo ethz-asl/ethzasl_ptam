@@ -11,6 +11,7 @@
 #include <cvd/config.h>
 
 #include <cvd/colourspacebuffer.h>
+#include <cvd/deinterlacebuffer.h>
 #include <cvd/colourspaces.h>
 #include <cvd/videobufferwithdata.h>
 #include <cvd/readaheadvideobuffer.h>
@@ -71,7 +72,43 @@ namespace CVD {
 
 	void get_jpegstream_options(const VideoSource& vs, int& fps);
 
- 
+
+	////////////////////////////////////////////////////////////////////////////////
+	//
+	// Deinterlace buffer
+	//
+	void get_deinterlace_options(const VideoSource& vs, DeinterlaceBufferFields::Fields& fields, bool&);
+
+	
+	namespace Internal{
+		template<class T> struct CanDeinterlace
+		{
+			static const bool can = std::numeric_limits<T>::is_specialized;
+		};
+
+		template<class T> struct CanDeinterlace<Rgb<T> >
+		{
+			static const bool can = CanDeinterlace<T>::can;
+		};
+	};
+
+	template<class T,  bool B = Internal::CanDeinterlace<T>::can> struct makeDeinterlaceBuffer
+	{
+		static VideoBuffer<T>* make(DeinterlaceBufferFields::Fields f, bool& linedouble, const std::string& url)
+		{
+			std::auto_ptr<VideoBuffer<T> > source  = std::auto_ptr<VideoBuffer<T> > (static_cast<VideoBuffer<T>*>(open_video_source<T>(url)));
+			std::auto_ptr<VideoBuffer<T> > de_int  = std::auto_ptr<VideoBuffer<T> > (static_cast<DeinterlaceBuffer<T>*>(new DeinterlaceBuffer<T>(*source, f, linedouble)));
+			return new VideoBufferWithData<T, VideoBuffer<T> >(de_int, source);
+		}
+	};
+
+	template<class T> struct makeDeinterlaceBuffer<T, 0>
+	{
+		static VideoBuffer<T>* make(DeinterlaceBufferFields::Fields, bool&, const std::string&)
+		{
+			throw  VideoSourceException("DeinterlaceBuffer cannot handle input type");
+ 		}
+ 	};
     ////////////////////////////////////////////////////////////////////////////////
 	//
 	// Colourspace conversion buffer
@@ -131,6 +168,14 @@ namespace CVD {
 			return makeConvertBufferBit<T, bayer_grbg>(r);
 		else if(c == "bayer_rggb")
 			return makeConvertBufferBit<T, bayer_rggb>(r);
+		else if(c == "bayer_bggr16be")
+			return makeConvertBufferBit<T, bayer_bggr16be>(r);
+		else if(c == "bayer_gbrg16be")
+			return makeConvertBufferBit<T, bayer_gbrg16be>(r);
+		else if(c == "bayer_grbg16be")
+			return makeConvertBufferBit<T, bayer_grbg16be>(r);
+		else if(c == "bayer_rggb16be")
+			return makeConvertBufferBit<T, bayer_rggb16be>(r);
 		else
 			throw  VideoSourceException("ColorspaceBuffer cannot handle type " + c);
 	}
@@ -140,23 +185,34 @@ namespace CVD {
 	// DiskBuffer2 buffer
 	//
 
+	// This has to be done with conditional compilation.
+
+
 #ifdef CVD_HAVE_GLOB
 	template<class T, bool Implemented = Pixel::DefaultConvertible<T>::is> struct makeDiskBuffer2
 	{
-		static VideoBuffer<T>* make(const std::vector<std::string>& files, double fps, VideoBufferFlags::OnEndOfBuffer eob)
+		static VideoBuffer<T>* make(const std::string& files, double fps, VideoBufferFlags::OnEndOfBuffer eob)
 		{
-			return new DiskBuffer2<T>(files, fps, eob);    
+			return new DiskBuffer2<T>(globlist(files), fps, eob);    
 		}
 	};
 
 	template<class T> struct makeDiskBuffer2<T, false>
 	{
-		static VideoBuffer<T>* make(const std::vector<std::string>& , double , VideoBufferFlags::OnEndOfBuffer)
+		static VideoBuffer<T>* make(const std::string& , double , VideoBufferFlags::OnEndOfBuffer)
 		{
 			throw VideoSourceException("DiskBuffer2 cannot handle type " + PNM::type_name<T>::name());
 		}
 	};
 
+#else
+	template<class T, bool Implemented = 0> struct makeDiskBuffer2
+	{
+		static VideoBuffer<T>* make(const std::string& , double , VideoBufferFlags::OnEndOfBuffer)
+		{
+			throw VideoSourceException("DiskBuffer2 (shell glob expansion) is not compiled in to libcvd.");
+		}
+	};
 #endif
 
 	void get_files_options(const VideoSource& vs, int& fps, int& ra_frames, VideoBufferFlags::OnEndOfBuffer& eob);
@@ -217,22 +273,26 @@ namespace CVD {
 	//
 	// DC1394 buffer
 	//
-	template <class T> VideoBuffer<T>* makeDVBuffer2(int , ImageRef , float , ImageRef)
+	template <class T> VideoBuffer<T>* makeDVBuffer2(int , ImageRef , float , ImageRef, bool, bool, int)
 	{
 		throw VideoSourceException("DVBuffer2 cannot handle " + PNM::type_name<T>::name());
 	}
 	
-	template <> VideoBuffer<byte>* makeDVBuffer2(int cam, ImageRef size, float fps, ImageRef offset);
-	template <> VideoBuffer<unsigned short>* makeDVBuffer2(int cam, ImageRef size, float fps, ImageRef offset);
-	template <> VideoBuffer<yuv411>* makeDVBuffer2(int cam, ImageRef size, float fps, ImageRef offset);
-	template <> VideoBuffer<yuv422>* makeDVBuffer2(int cam, ImageRef size, float fps, ImageRef offset);
-	template <> VideoBuffer<Rgb<byte> >* makeDVBuffer2(int cam, ImageRef size, float fps, ImageRef offset);
-	template <> VideoBuffer<bayer_bggr>* makeDVBuffer2(int cam, ImageRef size, float fps, ImageRef offset);
-	template <> VideoBuffer<bayer_gbrg>* makeDVBuffer2(int cam, ImageRef size, float fps, ImageRef offset);
-	template <> VideoBuffer<bayer_grbg>* makeDVBuffer2(int cam, ImageRef size, float fps, ImageRef offset);
-	template <> VideoBuffer<bayer_rggb>* makeDVBuffer2(int cam, ImageRef size, float fps, ImageRef offset);
+	template <> VideoBuffer<byte>* makeDVBuffer2(int cam, ImageRef size, float fps, ImageRef offset, bool verbose, bool bus_reset, int format7_mode);
+	template <> VideoBuffer<unsigned short>* makeDVBuffer2(int cam, ImageRef size, float fps, ImageRef offset, bool verbose, bool bus_reset, int format7_mode);
+	template <> VideoBuffer<yuv411>* makeDVBuffer2(int cam, ImageRef size, float fps, ImageRef offset, bool verbose, bool bus_reset, int format7_mode);
+	template <> VideoBuffer<yuv422>* makeDVBuffer2(int cam, ImageRef size, float fps, ImageRef offset, bool verbose, bool bus_reset, int format7_mode);
+	template <> VideoBuffer<Rgb<byte> >* makeDVBuffer2(int cam, ImageRef size, float fps, ImageRef offset, bool verbose, bool bus_reset, int format7_mode);
+	template <> VideoBuffer<bayer_bggr>* makeDVBuffer2(int cam, ImageRef size, float fps, ImageRef offset, bool verbose, bool bus_reset, int format7_mode);
+	template <> VideoBuffer<bayer_gbrg>* makeDVBuffer2(int cam, ImageRef size, float fps, ImageRef offset, bool verbose, bool bus_reset, int format7_mode);
+	template <> VideoBuffer<bayer_grbg>* makeDVBuffer2(int cam, ImageRef size, float fps, ImageRef offset, bool verbose, bool bus_reset, int format7_mode);
+	template <> VideoBuffer<bayer_rggb>* makeDVBuffer2(int cam, ImageRef size, float fps, ImageRef offset, bool verbose, bool bus_reset, int format7_mode);
+	template <> VideoBuffer<bayer_bggr16be>* makeDVBuffer2(int cam, ImageRef size, float fps, ImageRef offset, bool verbose, bool bus_reset, int format7_mode);
+	template <> VideoBuffer<bayer_gbrg16be>* makeDVBuffer2(int cam, ImageRef size, float fps, ImageRef offset, bool verbose, bool bus_reset, int format7_mode);
+	template <> VideoBuffer<bayer_grbg16be>* makeDVBuffer2(int cam, ImageRef size, float fps, ImageRef offset, bool verbose, bool bus_reset, int format7_mode);
+	template <> VideoBuffer<bayer_rggb16be>* makeDVBuffer2(int cam, ImageRef size, float fps, ImageRef offset, bool verbose, bool bus_reset, int format7_mode);
 
-	void get_dc1394_options(const VideoSource& vs, ImageRef& size, float& fps, ImageRef& offset);
+	void get_dc1394_options(const VideoSource& vs, ImageRef& size, float& fps, ImageRef& offset, bool& verbose, bool& bus_reset, int& format7_mode);
 
 	////////////////////////////////////////////////////////////////////////////////
 	//
@@ -273,6 +333,15 @@ namespace CVD {
 				return new VideoBufferWithData<T, VideoBuffer<T> >(b, jpeg_buffer);
 			}
 		}
+		else if(vs.protocol == "deinterlace")
+		{
+			DeinterlaceBufferFields::Fields f=DeinterlaceBufferFields::OddEven;
+			bool linedouble=false;
+
+			get_deinterlace_options(vs, f, linedouble);
+
+			return makeDeinterlaceBuffer<T>::make(f, linedouble, vs.identifier);
+		}
 		else if(vs.protocol == "colourspace")
 		{
 			std::string from = "byte";
@@ -284,7 +353,7 @@ namespace CVD {
 			int fps, ra_frames=0;
 			VideoBufferFlags::OnEndOfBuffer eob;
 			get_files_options(vs, fps, ra_frames, eob);
-			VideoBuffer<T>* vb = makeDiskBuffer2<T>::make(globlist(vs.identifier), fps, eob);
+			VideoBuffer<T>* vb = makeDiskBuffer2<T>::make(vs.identifier, fps, eob);
 			if (ra_frames)
 				vb = new ReadAheadVideoBuffer<T>(*vb, ra_frames);
 			return vb;
@@ -305,8 +374,11 @@ namespace CVD {
 			int cam_no = atoi(vs.identifier.c_str());
 			ImageRef size, offset;
 			float fps;
-			get_dc1394_options(vs, size, fps, offset);
-			return makeDVBuffer2<T>(cam_no, size, fps, offset);
+			bool verbose;
+			bool bus_reset;
+			int  format7_mode;
+			get_dc1394_options(vs, size, fps, offset, verbose, bus_reset, format7_mode);
+			return makeDVBuffer2<T>(cam_no, size, fps, offset, verbose, bus_reset, format7_mode);
 		} 
 		else if (vs.protocol == "file") {
 			int ra_frames = 0;
@@ -360,10 +432,13 @@ around the video buffer dealing with the hardware and so does not provide
 access to the controls. The underlying buffer can be accessed with 
 VideoBuffer::root_buffer().
 
+Threre are also several pseudo buffers (such as deinterlacing and colorspace
+conversion) which are chained to other buffers by taking a URL as an argument.
+
 The url syntax is the following:
 @verbatim
 url		 := protocol ':' [ '[' options ']' ] // identifier
-protocol := "files" | "file" | "v4l2" | "v4l1" | "jpegstream" | "dc1394" | "qt" | "colourspace"
+protocol := "files" | "file" | "v4l2" | "v4l1" | "jpegstream" | "dc1394" | "qt" | "colourspace" | "deinterlace"
 options  := option [ ',' options ]
 option	 := name [ '=' value ]
 @endverbatim
@@ -456,6 +531,9 @@ Options supported by the various protocols are:
 	   fps = <number> (default is camera default)
 	   size = <size>
 	   offset = <offset>
+	   verbose [ = <bool> ]
+	   reset [ = <bool> ]
+	   mode | format7 | format7_mode = <number>
 
 'qt' protocol (QTBuffer): identifier is camera number
 	  size = vga | qvga | <width>x<height>	(default vga)
@@ -464,6 +542,13 @@ Options supported by the various protocols are:
 
 'jpegstream' protocol (ServerPushJpegBuffer): identifier is path to file
 	  read_ahead  [= <number>] (default is 50 if specified without value)
+
+'deinterlace' protcol (DeinterlaceBuffer): identifier is a video URL
+      oddonly  [ = <bool> ]
+      evenonly [ = <bool> ]
+      oddeven  [ = <bool> ]   (default)
+      evenodd  [ = <bool> ]
+	  double   [ = <bool> ]  (perform line doubling by averaging)
 
 'colourspace' protcol (ColourspaceBuffer): identifier is a video URL
       from = byte | mono | gray | grey | yuv411 | yuv422 | rgb<byte> 

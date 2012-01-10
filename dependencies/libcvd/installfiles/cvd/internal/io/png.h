@@ -23,14 +23,11 @@
 #include <iostream>
 #include <vector>
 #include <string>
+#include <memory>
 
 #include <cvd/image.h>
 #include <cvd/internal/load_and_save.h>
 #include <cvd/internal/convert_pixel_types.h>
-
-struct png_struct_def;
-struct png_info_struct;
-
 
 namespace CVD{
 namespace PNG{
@@ -39,6 +36,8 @@ using CVD::Internal::TypeList;
 using CVD::Internal::Head;
 
 
+class PNGPimpl;
+class WriterPimpl;
 
 class png_reader
 {
@@ -47,6 +46,7 @@ class png_reader
 		~png_reader();
 
 		ImageRef size();
+		bool top_row_first();
 
 		void get_raw_pixel_line(bool*);
 		void get_raw_pixel_line(unsigned char*);
@@ -69,18 +69,8 @@ class png_reader
 				                              Head> > > > > > > Types;
 
 	private:
-		
-		std::istream& i;
-		std::string type;
-		unsigned long row;
-		png_struct_def* png_ptr;
-		png_info_struct* info_ptr, *end_info;
-
-		std::string error_string;
-		ImageRef my_size;
-
-		template<class C> void read_pixels(C*);
-
+		std::auto_ptr<PNGPimpl> p;
+	
 };
 
 
@@ -138,7 +128,7 @@ template<> struct ComponentMapper<Rgb8>
 class png_writer
 {
 	public:
-		png_writer(std::ostream&, ImageRef size, const std::string& type);
+		png_writer(std::ostream&, ImageRef size, const std::string& type, const std::map<std::string, Parameter<> >& p);
 		~png_writer();
 
 		void write_raw_pixel_line(const bool*);
@@ -154,19 +144,10 @@ class png_writer
 		{		
 			typedef typename ComponentMapper<Incoming>::type type;
 		};		
+		static const int top_row_first=1;
+
 	private:
-
-		template<class P> void write_line(const P*);
-
-	long row;
-	std::ostream& o;
-	ImageRef size;
-	std::string type;
-	std::string error_string;
-
-	png_struct_def* png_ptr;
-	png_info_struct* info_ptr, *end_info;
-
+		std::auto_ptr<WriterPimpl> p;
 };
 
 

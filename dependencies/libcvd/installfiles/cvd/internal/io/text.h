@@ -44,6 +44,7 @@ namespace TEXT
 			~reader();
 
 			ImageRef size();
+			bool top_row_first();
 
 			void get_raw_pixel_line(double*);
 
@@ -67,7 +68,7 @@ namespace TEXT
 	class writer
 	{
 		public:
-			writer(std::ostream&, ImageRef size, const std::string& type);
+			writer(std::ostream&, ImageRef size, const std::string& type, const std::map<std::string, Parameter<> >& p);
 			~writer();
 
 			void write_raw_pixel_line(const double*);
@@ -78,6 +79,7 @@ namespace TEXT
 				typedef double type;
 			};		
 
+			static const int top_row_first=1;
 		private:
 			std::auto_ptr<WritePimpl> t; 
 	};

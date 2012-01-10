@@ -23,6 +23,7 @@
 
 #include <iostream>
 #include <map>
+#include <utility>
 
 #include <cvd/image_ref.h>
 #include <cvd/image.h>
@@ -35,8 +36,17 @@
 #ifdef WIN32
 #include <windows.h>
 #endif
+
+#ifdef _OSX
+#include <OpenGL/gl.h>
+#include <OpenGL/glu.h>
+#else
 #include <GL/gl.h>
 #include <GL/glu.h>
+#endif
+
+
+
 #include <cvd/internal/gl_types.h>
 
 #ifdef CVD_HAVE_TOON
@@ -523,13 +533,31 @@ namespace CVD
 		glColor4f(c.red, c.green, c.blue, c.alpha);
 	}
 
+	namespace Internal{
+			static inline int alignof(const void* ptr)
+			{
+				size_t p = (size_t)ptr;
+
+				if(p&3)
+					if(p&1)
+						return 1;
+					else 
+						return 2;
+				else
+					if(p&4)
+						return 4;
+					else
+						return 8;
+			}
+	}
+
  	/// Draw an image to the frame buffer at the current raster position.
 	/// Use glRasterPos to set the current raster position
 	/// @param i The image to draw
 	///@ingroup gGL
 	template<class C> inline void glDrawPixels(const SubImage<C>& i)
 	{
-		::glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+		::glPixelStorei(GL_UNPACK_ALIGNMENT, std::min(Internal::alignof(i[0]), Internal::alignof(i[1])));
 		::glPixelStorei(GL_UNPACK_ROW_LENGTH, i.row_stride());
 		::glDrawPixels(i.size().x, i.size().y, gl::data<C>::format, gl::data<C>::type, i.data());
 		::glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);

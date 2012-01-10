@@ -89,13 +89,16 @@ CVD_OBJS=   \
 			cvd_src/exceptions.o                            \
 			cvd_src/image_io.o                              \
 			cvd_src/bayer.o                                 \
+			cvd_src/morphology.o                            \
 			cvd_src/colourspace_convert.o                   \
-			cvd_src/half_sample.o                           \
 			cvd_src/draw.o                                  \
 			cvd_src/yuv422.o                                \
 			cvd_src/yuv420.o                                \
 			pnm_src/pnm_grok.o                              \
 			pnm_src/bmp.o                                   \
+			pnm_src/bmp_read.o                              \
+			pnm_src/bmp_write.o                             \
+			pnm_src/cvdimage.o                              \
 			pnm_src/fits.o                                  \
 			pnm_src/fitswrite.o                             \
 			pnm_src/save_postscript.o                       \
@@ -249,8 +252,6 @@ install-libs-debug:$(dsoname) libcvd_debug.a
 	cp libcvd_debug.a $(DESTDIR)$(libdir)
 
 
-
-
 clean:
 	/bin/rm -f tmp libcvd.a $(sos) libcvd_debug.a $(dsos)
 	find . -name '*.o' | xargs rm -f
@@ -310,5 +311,9 @@ debug/%.o: %.s debug
 
 %: %.o
 	$(CXX) -o $@ $< $(LDFLAGS) -lcvd  $(LOADLIBES)
+
+printlibs:
+	@echo $(LOADLIBES)
+
 
 include .deps

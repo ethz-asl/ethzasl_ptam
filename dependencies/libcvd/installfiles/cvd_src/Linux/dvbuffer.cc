@@ -21,7 +21,7 @@
 /**************************************************************************
 **       Title: grab one gray image using libdc1394
 **    $RCSfile: dvbuffer.cc,v $
-**   $Revision: 1.16 $$Name: RELEASE_20100119 $
+**   $Revision: 1.16 $$Name:  $
 **       $Date: 2009/06/04 17:10:20 $
 **   Copyright: LGPL $Author: edrosten $
 ** Description:

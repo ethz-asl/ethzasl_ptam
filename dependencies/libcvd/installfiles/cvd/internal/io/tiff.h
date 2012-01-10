@@ -50,6 +50,7 @@ namespace TIFF
 			~tiff_reader();
 
 			ImageRef size();
+			bool top_row_first();
 
 			void get_raw_pixel_line(bool*);
 			void get_raw_pixel_line(unsigned char*);
@@ -146,7 +147,7 @@ namespace TIFF
 	class tiff_writer
 	{
 		public:
-			tiff_writer(std::ostream&, ImageRef size, const std::string& type);
+			tiff_writer(std::ostream&, ImageRef size, const std::string& type, const std::map<std::string, Parameter<> >& p);
 			~tiff_writer();
 
 			void write_raw_pixel_line(const bool*);
@@ -170,6 +171,7 @@ namespace TIFF
 				typedef typename ComponentMapper<Incoming>::type type;
 			};		
 
+			static const int top_row_first=1;
 		private:
 			std::auto_ptr<TIFFWritePimpl> t; 
 	};

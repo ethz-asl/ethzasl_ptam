@@ -20,8 +20,8 @@
 */
 // PAS 17/6/04 (revised 16/2/05)
 
-#ifndef __CVD_DEINTERLACEBUFFER_H
-#define __CVD_DEINTERLACEBUFFER_H
+#ifndef CVD_INCLUDE_COLOURSPACEBUFFER_H
+#define CVD_INCLUDE_COLOURSPACEBUFFER_H
 
 #include <cvd/localvideobuffer.h>
 #include <cvd/image_convert.h>
@@ -77,7 +77,7 @@ template <class T, class From> class ColourspaceBuffer : public CVD::LocalVideoB
 			
 		virtual void seek_to(double t)
 		{
-			return m_vidbuf.seek_to(t);
+			m_vidbuf.seek_to(t);
 		}
 			
 		virtual double frame_rate()

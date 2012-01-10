@@ -48,6 +48,7 @@ namespace JPEG
 			~reader();
 
 			ImageRef size();
+			bool top_row_first();
 
 			void get_raw_pixel_line(unsigned char*);
 			void get_raw_pixel_line(Rgb<unsigned char>*);
@@ -70,7 +71,7 @@ namespace JPEG
 	class writer
 	{
 		public:
-			writer(std::ostream&, ImageRef size, const std::string& type);
+			writer(std::ostream&, ImageRef size, const std::string& type, const std::map<std::string, Parameter<> >& p);
 			~writer();
 
 			void write_raw_pixel_line(const byte*);
@@ -81,6 +82,7 @@ namespace JPEG
 				typedef byte type;
 			};		
 
+			static const int top_row_first=1;
 		protected:
 			std::auto_ptr<WritePimpl> t; 
 	};

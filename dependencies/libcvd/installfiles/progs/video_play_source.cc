@@ -44,6 +44,63 @@
 using namespace std;
 using namespace CVD;
 
+
+class Actions: public GLWindow::EventHandler
+{	
+	public:
+		int paused;
+		int advance_one;
+		int back_one;
+		int expose;
+		int quit;
+
+		Actions()
+		:paused(0),advance_one(0),expose(0),quit(0)
+		{}
+
+		void clear()
+		{
+			advance_one=0;
+			expose=0;
+			back_one=0;
+		}
+
+		virtual void on_key_down(GLWindow&, int key)
+		{
+			if(key == ' ' || key == 'p')
+				paused = !paused;
+			else if(key == '.')
+			{
+				advance_one=1;
+				paused=1;
+			}
+			else if(key == ',')
+			{
+				back_one=1;
+				paused=1;
+			}
+		}
+
+		virtual void on_event(GLWindow&, int e)
+		{
+			if(e == GLWindow::EVENT_EXPOSE)
+				expose=1;
+			else if(e == GLWindow::EVENT_CLOSE)
+				quit=1;
+		}
+
+		virtual void on_resize(GLWindow&, ImageRef size)
+		{
+			glViewport(0, 0, size.x, size.y);
+			glMatrixMode(GL_PROJECTION);
+			glLoadIdentity();
+			glRasterPos2f(-1, 1);
+			glOrtho(-0.375, size.x-0.375, size.y-0.375, -0.375, -1 , 1); //offsets to make (0,0) the top left pixel (rather than off the display)
+		}
+
+};
+
+
 template<class C> void play(string s)
 {
 	VideoBuffer<C> *buffer = open_video_source<C>(s);
@@ -51,10 +108,10 @@ template<class C> void play(string s)
 	GLWindow display(buffer->size());
 	glDrawBuffer(GL_BACK);
 	
-	//while(buffer->frame_pending())
+	double dt = 1.001/buffer->frame_rate();
 	
-	cout << "FPS: " << buffer->frame_rate();
-	cout << "Size: " << buffer->size();
+	cout << "FPS: " << buffer->frame_rate() << " " << dt << endl;
+	cout << "Size: " << buffer->size() << endl;
 
 	RawVideoBuffer* root = buffer->root_buffer();
 
@@ -67,15 +124,86 @@ template<class C> void play(string s)
 		}
 	#endif
 
+	GLenum texTarget;
+	#ifdef GL_TEXTURE_RECTANGLE_ARB
+	texTarget=GL_TEXTURE_RECTANGLE_ARB;
+	#else
+	#ifdef GL_TEXTURE_RECTANGLE_NV
+	texTarget=GL_TEXTURE_RECTANGLE_NV;
+	#else
+	texTarget=GL_TEXTURE_RECTANGLE_EXT;
+	#endif
+	#endif
+
+
+
+	VideoFrame<C>* frame=0;
+	bool f=1;
+	GLWindow::EventSummary e;
+	glDisable(GL_BLEND);
+	glEnable(texTarget);
+	glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
+	glTexParameterf( texTarget, GL_TEXTURE_MIN_FILTER, GL_NEAREST );
+	glTexParameterf( texTarget, GL_TEXTURE_MAG_FILTER, GL_NEAREST );
+	glPixelStorei(GL_UNPACK_ALIGNMENT,1);
+	bool new_frame=0;
+
+	Actions a;
+
 	for(;;)
 	{
-		VideoFrame<C>* frame = buffer->get_frame();
-		glDrawPixels(*frame);
-		buffer->put_frame(frame);
-		glFlush();
+		a.clear();
+		display.handle_events(a);
 
-		display.swap_buffers();
+		if(a.quit)
+			break;
+
+		new_frame=0;
+		if(!a.paused || a.advance_one || a.back_one)
+		{
+			if(a.back_one)
+			{
+				buffer->seek_to(frame->timestamp() - dt);
+			}
+
+			if(frame)
+				buffer->put_frame(frame);
+			frame = buffer->get_frame();
+			new_frame=1;
+			glTexImage2D(*frame, 0, GL_TEXTURE_RECTANGLE_NV);
+		}
+		
+		if(a.expose || new_frame)
+		{
+			cerr << a.expose << endl;
+			glBegin(GL_QUADS);
+			glTexCoord2i(0, 0);
+			glVertex2i(0,0);
+			glTexCoord2i(frame->size().x, 0);
+			glVertex2i(display.size().x,0);
+			glTexCoord2i(frame->size().x,frame->size().y);
+			glVertex2i(display.size().x,display.size().y);
+			glTexCoord2i(0, frame->size().y);
+			glVertex2i(0, display.size().y);
+			glEnd ();
+			glFlush();
+			display.swap_buffers();
+		}
+
+		if(f)
+		{
+			cout << "frame size: " << frame->size() << endl;
+			f=0;
+		}
+
+		if(a.paused)
+			usleep(100000);
 	}
+
+	if(frame)
+		buffer->put_frame(frame);
+
+	cout << "Exiting\n";
 }
 
 int main(int argc, char* argv[])

@@ -4,6 +4,7 @@
 
 #include <png.h>
 #include <cstdlib>
+#include <iostream>
 
 using namespace CVD;
 using namespace CVD::Exceptions;
@@ -17,7 +18,7 @@ using namespace std;
 // 
 static void error_fn(png_structp png_ptr, png_const_charp error_msg)
 {
-	*(string*)(png_ptr->error_ptr) = error_msg;
+	*(string*)png_get_error_ptr(png_ptr) = error_msg;
 }
 
 static void warn_fn(png_structp, png_const_charp )
@@ -49,35 +50,75 @@ static void flush_fn(png_structp png_ptr)
 
 ////////////////////////////////////////////////////////////////////////////////
 //
+// Implementation of PNGPimpl
+//
+
+class CVD::PNG::PNGPimpl
+{
+	public:
+		template<class C> void read_pixels(C*);
+		PNGPimpl(std::istream& in);
+		~PNGPimpl();
+		std::string datatype();
+		std::string name();
+		ImageRef size();
+	
+	private:
+		std::istream& i;
+		std::string type;
+		unsigned long row;
+		png_structp png_ptr;
+		png_infop info_ptr, end_info;
+
+		std::string error_string;
+		ImageRef my_size;
+};
+
+////////////////////////////////////////////////////////////////////////////////
+//
 // PNG reading functions
 // 
 
-string png_reader::datatype()
+string PNGPimpl::datatype()
 {
 	return type;
 }
 
-string png_reader::name()
+string PNGPimpl::name()
 {
 	return "PNG";
 }
 
-ImageRef png_reader::size()
+ImageRef PNGPimpl::size()
 {
 	return my_size;
 }
 
+#ifdef CVD_INTERNAL_VERBOSE_PNG
+	#include <map>
 
-//Mechanically generate the pixel reading calls.
-#define GEN1(X) void png_reader::get_raw_pixel_line(X*d){read_pixels(d);}
-#define GEN3(X) GEN1(X) GEN1(Rgb<X>) GEN1(Rgba<X>)
-GEN1(bool)
-GEN3(unsigned char)
-GEN3(unsigned short)
+	#define LOG(X) do{ cerr << X; }while(0)
 
+	static string lookup_color_type(int i)
+	{
+		map<int, string> m;
+		#define ADD(X) m[X] = #X
+		ADD(PNG_COLOR_TYPE_GRAY);
+		ADD(PNG_COLOR_TYPE_GRAY_ALPHA);
+		ADD(PNG_COLOR_TYPE_PALETTE);
+		ADD(PNG_COLOR_TYPE_RGB);
+		ADD(PNG_COLOR_TYPE_RGB_ALPHA);
+		ADD(PNG_COLOR_MASK_PALETTE);
+		ADD(PNG_COLOR_MASK_COLOR);
+		ADD(PNG_COLOR_MASK_ALPHA);
 
+		return m[i];
+	}
+#else
+	#define LOG(X)
+#endif
 
-template<class P> void png_reader::read_pixels(P* data)
+template<class P> void PNGPimpl::read_pixels(P* data)
 {
 	if(datatype() != PNM::type_name<P>::name())
 		throw ReadTypeMismatch(datatype(), PNM::type_name<P>::name());
@@ -97,7 +138,7 @@ template<class P> void png_reader::read_pixels(P* data)
 
 
 
-png_reader::png_reader(std::istream& in)
+PNGPimpl::PNGPimpl(std::istream& in)
 :i(in),type(""),row(0),png_ptr(0),info_ptr(0),end_info(0)
 {
 	//Read the header and make sure it really is a PNG...
@@ -108,7 +149,8 @@ png_reader::png_reader(std::istream& in)
 	if(png_sig_cmp(header, 0, 8))
 		throw Exceptions::Image_IO::MalformedImage("Not a PNG image");
 
-	
+	LOG("PNG header found\n");
+
 	png_ptr = png_create_read_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
 
 
@@ -150,6 +192,18 @@ png_reader::png_reader(std::istream& in)
 	int colour, interlace, dummy, depth;
 
 	png_get_IHDR(png_ptr, info_ptr, &w, &h, &depth, &colour, &interlace, &dummy, &dummy);
+
+	LOG("w         = " << w << endl);
+	LOG("h         = " << h << endl);
+	LOG("depth     = " << depth << endl);
+	LOG("colour    = " << colour<< ": " << lookup_color_type(colour) << endl);
+	LOG("  palette = " << (colour & PNG_COLOR_MASK_PALETTE) << endl);
+	LOG("  color   = " << (colour & PNG_COLOR_MASK_COLOR) << endl);
+	LOG("  alpha   = " << (colour & PNG_COLOR_MASK_ALPHA) << endl);
+	LOG("interlace = " << interlace<< endl);
+	LOG("channels  = " << (int)png_get_channels(png_ptr, info_ptr) << endl);
+
+	LOG("tRNS?     = " << png_get_valid(png_ptr, info_ptr, PNG_INFO_tRNS) << endl);
 	
 	my_size.x = w;
 	my_size.y = h;
@@ -165,12 +219,34 @@ png_reader::png_reader(std::istream& in)
 	{
 		//Expand nonbool colour depths up to 8bpp
 		if(depth < 8)
-			png_set_gray_1_2_4_to_8(png_ptr);
+		{
+			#ifdef CVD_INTERNAL_HAVE_OLD_PNG
+				png_set_gray_1_2_4_to_8(png_ptr);
+			#else
+				png_set_expand_gray_1_2_4_to_8(png_ptr);
+			#endif
+
+		}
 
 		type = PNM::type_name<unsigned char>::name();
 	}
 	else
 		type = PNM::type_name<unsigned short>::name();
+	
+	//Get rid of palette, by transforming it to RGB
+	if(colour == PNG_COLOR_TYPE_PALETTE)
+	{
+		png_set_palette_to_rgb(png_ptr);
+
+		//Check to see if there is a tRNS palette chunk. Note that the PNG_COLOR_MASK_ALPHA is
+		//only valid for non indexed images, not paletted ones. So, we need to check here for
+		//transparency data.
+		if(png_get_valid(png_ptr, info_ptr, PNG_INFO_tRNS))
+		{
+			colour |= PNG_COLOR_MASK_ALPHA;
+			png_set_tRNS_to_alpha(png_ptr);
+		}
+	}
 
 	
 	if(colour & PNG_COLOR_MASK_COLOR)
@@ -184,10 +260,6 @@ png_reader::png_reader(std::istream& in)
 		else
 			type = type;
 	
-	//Get rid of palette, by transforming it to RGB
-	if(colour == PNG_COLOR_TYPE_PALETTE)
-		png_set_palette_to_rgb(png_ptr);
-
 	if(interlace != PNG_INTERLACE_NONE)
 		throw Exceptions::Image_IO::UnsupportedImageSubType("PNG", "Interlace not yet supported");
 
@@ -197,7 +269,7 @@ png_reader::png_reader(std::istream& in)
 	#endif
 }
 
-png_reader::~png_reader()
+PNGPimpl::~PNGPimpl()
 {
 	//Clear the stream of any remaining PNG bits.
 	//It doesn't matter if there's an error here
@@ -211,10 +283,72 @@ png_reader::~png_reader()
 
 ////////////////////////////////////////////////////////////////////////////////
 //
+// Implementation of PNG reader class
+//
+
+png_reader::~png_reader()
+{
+}
+
+png_reader::png_reader(istream& i)
+:p(new PNGPimpl(i))
+{
+}
+
+string png_reader::datatype()
+{
+	return p->datatype();
+}
+
+string png_reader::name()
+{
+	return p->name();
+}
+
+ImageRef png_reader::size()
+{
+	return p->size();
+}
+
+
+bool png_reader::top_row_first()
+{
+	return true;
+}
+//Mechanically generate the pixel reading calls.
+#define GEN1(X) void png_reader::get_raw_pixel_line(X*d){p->read_pixels(d);}
+#define GEN3(X) GEN1(X) GEN1(Rgb<X>) GEN1(Rgba<X>)
+GEN1(bool)
+GEN3(unsigned char)
+GEN3(unsigned short)
+
+////////////////////////////////////////////////////////////////////////////////
+//
 // PNG writing functions.
 //
 
-png_writer::png_writer(ostream& out, ImageRef sz, const string& type_)
+class CVD::PNG::WriterPimpl
+{
+	public:
+		WriterPimpl(std::ostream&, ImageRef size, const std::string& type);
+		~WriterPimpl();
+		template<class P> void write_line(const P*);
+
+	private:
+
+	long row;
+	std::ostream& o;
+	ImageRef size;
+	std::string type;
+	std::string error_string;
+
+	png_structp png_ptr;
+	png_infop info_ptr, end_info;
+
+};
+
+
+WriterPimpl::WriterPimpl(ostream& out, ImageRef sz, const string& type_)
 :row(0),o(out),size(sz),type(type_)
 {
 	//Create required structs
@@ -307,18 +441,12 @@ png_writer::png_writer(ostream& out, ImageRef sz, const string& type_)
 
 }
 
-//Mechanically generate the pixel writing calls.
-#undef GEN1
-#undef GEN3
-#define GEN1(X) void png_writer::write_raw_pixel_line(const X*d){write_line(d);}
-#define GEN3(X) GEN1(X) GEN1(Rgb<X>) GEN1(Rgba<X>)
-GEN1(bool)
-GEN1(Rgb8)
-GEN3(unsigned char)
-GEN3(unsigned short)
+////////////////////////////////////////////////////////////////////////////////
+//
+// Main interface funtions
+//
 
-
-template<class P> void png_writer::write_line(const P* data)
+template<class P> void WriterPimpl::write_line(const P* data)
 {
 	unsigned char* chardata = const_cast<unsigned char*>(reinterpret_cast<const unsigned char*>(data));
 
@@ -342,8 +470,26 @@ template<class P> void png_writer::write_line(const P* data)
 	row++;
 }
 
-png_writer::~png_writer()
+WriterPimpl::~WriterPimpl()
 {
 	png_write_end(png_ptr, info_ptr);
 	png_destroy_write_struct(&png_ptr, &info_ptr);
 }
+
+png_writer::png_writer(std::ostream&o, ImageRef size, const std::string& type, const std::map<std::string, Parameter<> >&)
+:p(new WriterPimpl(o, size, type))
+{
+}
+
+png_writer::~png_writer()
+{
+}
+//Mechanically generate the pixel writing calls.
+#undef GEN1
+#undef GEN3
+#define GEN1(X) void png_writer::write_raw_pixel_line(const X*d){p->write_line(d);}
+#define GEN3(X) GEN1(X) GEN1(Rgb<X>) GEN1(Rgba<X>)
+GEN1(bool)
+GEN1(Rgb8)
+GEN3(unsigned char)
+GEN3(unsigned short)

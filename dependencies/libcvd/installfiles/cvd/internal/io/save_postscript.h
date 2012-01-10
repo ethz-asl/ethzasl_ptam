@@ -28,6 +28,7 @@
 #include <cvd/byte.h>
 #include <cvd/rgb.h>
 #include <cvd/internal/convert_pixel_types.h>
+#include <cvd/internal/io/parameter.h>
 
 namespace CVD
 {
@@ -40,7 +41,7 @@ namespace PS
 	class writer
 	{
 		public:
-			writer(std::ostream&, ImageRef size, const std::string& type);
+			writer(std::ostream&, ImageRef size, const std::string& type, const std::map<std::string, Parameter<> >& p);
 			~writer();
 
 			void write_raw_pixel_line(const byte*);
@@ -51,6 +52,7 @@ namespace PS
 				typedef byte type;
 			};		
 
+			static const int top_row_first=0;
 		protected:
 			std::auto_ptr<WritePimpl> t; 
 	};
@@ -75,7 +77,7 @@ namespace PS
 	class eps_writer
 	{
 		public:
-			eps_writer(std::ostream&, ImageRef size, const std::string& type);
+			eps_writer(std::ostream&, ImageRef size, const std::string& type, const std::map<std::string, Parameter<> >& p);
 			~eps_writer();
 
 			void write_raw_pixel_line(const byte*);
@@ -86,6 +88,7 @@ namespace PS
 				typedef typename writer::Outgoing<Incoming>::type type;
 			};		
 
+			static const int top_row_first=1;
 		protected:
 			std::auto_ptr<WritePimpl> t; 
 	};

@@ -18,9 +18,9 @@
 	Foundation, Inc., 
     51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
+#include "cvd/config.h"
 #include "cvd/internal/io/fits.h"
 #include "cvd/image_io.h"
-#include "cvd/config.h"
 #include <algorithm>
 #include <vector>
 #include <deque>
@@ -408,6 +408,11 @@ ImageRef reader::size()
 {
 	return t->size();
 };
+
+bool reader::top_row_first()
+{
+	return true;
+}
 
 //Mechanically generate the pixel reading calls.
 #define GEN1(X) void reader::get_raw_pixel_line(X*d){t->get_raw_pixel_line(d);}

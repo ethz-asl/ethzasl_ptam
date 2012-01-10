@@ -265,6 +265,27 @@ namespace CVD {
 		}
 	}
 
+	void get_deinterlace_options(const VideoSource& vs, DeinterlaceBufferFields::Fields& fields, bool& line_double)
+	{
+		
+		for (VideoSource::option_list::const_iterator it=vs.options.begin(); it != vs.options.end(); ++it)
+		{		
+			if(it->first == "oddonly" && parseBoolFlag(it->second) == true)
+				fields = DeinterlaceBufferFields::OddOnly;
+			else if(it->first == "evenonly" && parseBoolFlag(it->second) == true)
+				fields = DeinterlaceBufferFields::EvenOnly;
+			else if(it->first == "oddeven" && parseBoolFlag(it->second) == true)
+				fields = DeinterlaceBufferFields::OddEven;
+			else if(it->first == "evenodd" && parseBoolFlag(it->second) == true)
+				fields = DeinterlaceBufferFields::EvenOdd;
+			else if(it->first == "double" && parseBoolFlag(it->second) == true)
+				line_double = true;
+			else
+				throw VideoSourceException("invalid option for files protocol: "+it->first +
+										   "\n\t valid options: oddonly, evenonly, oddeven, evenodd, double");
+		}
+	}
+
 	void get_colourspace_options(const VideoSource& vs, string& colourspace)
 	{
 		colourspace = "mono";
@@ -365,10 +386,13 @@ namespace CVD {
 	}
 
 
-	void get_dc1394_options(const VideoSource& vs, ImageRef& size, float& fps, ImageRef& offset)
+	void get_dc1394_options(const VideoSource& vs, ImageRef& size, float& fps, ImageRef& offset, bool& verbose, bool& bus_reset, int& format7_mode)
 	{ 
 		size = offset = ImageRef(-1, -1);
 		fps = -1;
+		verbose = 0;
+		bus_reset = 0;
+		format7_mode = -1;
 
 		for (VideoSource::option_list::const_iterator it=vs.options.begin(); it != vs.options.end(); ++it) {
 			if (it->first == "fps")
@@ -377,8 +401,14 @@ namespace CVD {
 				size = parseImageRef(it->second, true);
 			else if (it->first == "offset")
 				offset = parseImageRef(it->second, false);
+			else if (it->first == "verbose")
+				verbose = parseBoolFlag(it->second);
+			else if (it->first == "reset")
+				bus_reset = parseBoolFlag(it->second);
+			else if(it->first == "mode" || it->first == "format7_mode" || it->first == "format7")
+				format7_mode = atoi(it->second.c_str());
 			else
-				throw VideoSourceException("invalid option for dc1394 protocol: "+it->first+"\n\t valid options: fps, size, offset");
+				throw VideoSourceException("invalid option for dc1394 protocol: "+it->first+"\n\t valid options: fps, size, offset, verbose");
 		}
    }
 	
