@@ -887,7 +887,7 @@ void Tracker::TrackMap()
 	//static gvar3<int> gvnMaxPatchesPerFrame("Tracker.MaxPatchesPerFrame", 1000, SILENT);
 	//}
 	int nFinePatchesToUse = gvnMaxPatchesPerFrame - vIterationSet.size();
-	if((int) vNextToSearch.size() > nFinePatchesToUse & nFinePatchesToUse>0)
+	if(((int) vNextToSearch.size() > nFinePatchesToUse) && (nFinePatchesToUse>0))
 	{
 		random_shuffle(vNextToSearch.begin(), vNextToSearch.end());
 		vNextToSearch.resize(nFinePatchesToUse); // Chop!
