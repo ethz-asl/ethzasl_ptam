@@ -1,1 +1,1 @@
-libcvd 0.8 Snapshot 2010_01_19
+libcvd Snapshot 970152ccea0debd9b914ee01211e5841eb637b16 
