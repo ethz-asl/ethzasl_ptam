@@ -9,10 +9,10 @@
   <review status="unreviewed" notes=""/>
   <url>http://ros.org/wiki/ptam</url>
   <depend package="roscpp"/>
-  <depend package="TooN"/>
+  <!--depend package="TooN"/>
   <depend package="libcvd"/>
   <depend package="agast"/>
-  <depend package="gvars3"/>
+  <depend package="gvars3"/-->
   <depend package="std_msgs"/>
   <depend package="ptam_com"/>
   <depend package="cv_bridge"/>

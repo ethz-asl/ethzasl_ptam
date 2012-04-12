@@ -1,9 +1,0 @@
-<stack>
-  <description brief="dependencies">dependencies</description>
-  <author>Maintained by ASL</author>
-  <license>BSD</license>  
-  <review status="unreviewed" notes=""/>
-  <url>http://ros.org/wiki/dependencies</url>
-  <depend stack="ros" />
-
-</stack>

@@ -84,10 +84,12 @@ SET(CALIBRATOR_FILES
     src/Params.cpp 
 	)	
 	
+subdirs(thirdparty)
 
-
-#include_directories(/usr/local/include) 
-set(PTAM_LIBRARIES GL glut)
+include_directories(${PROJECT_SOURCE_DIR}/thirdparty/TooN/include ${PROJECT_SOURCE_DIR}/thirdparty/libcvd/include ${PROJECT_SOURCE_DIR}/thirdparty/gvars3/include ${PROJECT_SOURCE_DIR}/thirdparty/agast/include) 
+# include_directories(${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/libcvd/include) 
+link_directories(${PROJECT_SOURCE_DIR}/thirdparty/libcvd/lib ${PROJECT_SOURCE_DIR}/thirdparty/gvars3/lib/)
+set(PTAM_LIBRARIES GL glut cvd GVars3 agast)
 
 #common commands for building c++ executables and libraries
 #rosbuild_add_library(${PROJECT_NAME} src/example.cpp)
