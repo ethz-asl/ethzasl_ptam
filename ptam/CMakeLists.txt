@@ -83,26 +83,30 @@ SET(CALIBRATOR_FILES
 	src/ATANCamera.cc 
     src/Params.cpp 
 	)	
-	
-subdirs(thirdparty)
 
-include_directories(${PROJECT_SOURCE_DIR}/thirdparty/TooN/include ${PROJECT_SOURCE_DIR}/thirdparty/libcvd/include ${PROJECT_SOURCE_DIR}/thirdparty/gvars3/include ${PROJECT_SOURCE_DIR}/thirdparty/agast/include) 
-# include_directories(${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/libcvd/include) 
-link_directories(${PROJECT_SOURCE_DIR}/thirdparty/libcvd/lib ${PROJECT_SOURCE_DIR}/thirdparty/gvars3/lib/)
-set(PTAM_LIBRARIES GL glut cvd GVars3 agast)
+include_directories(
+  ${PROJECT_SOURCE_DIR}/thirdparty/TooN/include 
+  ${PROJECT_SOURCE_DIR}/thirdparty/libcvd/include 
+  ${PROJECT_SOURCE_DIR}/thirdparty/gvars3/include 
+  ${PROJECT_SOURCE_DIR}/thirdparty/agast/include
+)  
 
-#common commands for building c++ executables and libraries
-#rosbuild_add_library(${PROJECT_NAME} src/example.cpp)
-#target_link_libraries(${PROJECT_NAME} another_library)
-#rosbuild_add_boost_directories()
+link_directories(
+  ${PROJECT_SOURCE_DIR}/thirdparty/libcvd/lib 
+  ${PROJECT_SOURCE_DIR}/thirdparty/gvars3/lib 
+  ${PROJECT_SOURCE_DIR}/thirdparty/agast/lib
+)
+
+set(PTAM_LIBRARIES GL glut cvd GVars3 agast lapack)
 
 add_definitions(-DKF_REPROJ)
+
 
 # PTAM executable
 rosbuild_add_executable(ptam ${PTAM_SOURCE_FILES} ${PTAM_HEADER_FILES})
 rosbuild_add_compile_flags(ptam -D_LINUX -D_REENTRANT -Wall  -O3 -march=nocona -msse3)
 target_link_libraries(ptam ${PTAM_LIBRARIES})
-#rosbuild_link_boost(ptam thread signals system)
+
 
 # Camera calibrator 
 rosbuild_add_executable(cameracalibrator ${CALIBRATOR_FILES})
@@ -124,6 +128,5 @@ if (PKG_CONFIG_FOUND AND UNIX AND NOT APPLE)
 endif(PKG_CONFIG_FOUND AND UNIX AND NOT APPLE)
 rosbuild_add_executable(remote_ptam src/RemotePtam.cpp)
 target_link_libraries(remote_ptam ${GTK_LIBRARIES})
-
 
 rosbuild_add_executable(pointcloudpublisher src/PTAMVisualizer.cpp)
