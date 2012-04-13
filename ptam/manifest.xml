@@ -4,15 +4,11 @@
      ptam
 
   </description>
-  <author>Markus Achtelik</author>
-  <license>BSD</license>
-  <review status="unreviewed" notes=""/>
+  <author>Markus Achtelik, Stephan Weiss, Simon Lynen</author>
+  <license>see http://www.robots.ox.ac.uk/~gk/PTAM/download.html </license>
+  <review status="unreviewed" notes="under active development"/>
   <url>http://ros.org/wiki/ptam</url>
   <depend package="roscpp"/>
-  <!--depend package="TooN"/>
-  <depend package="libcvd"/>
-  <depend package="agast"/>
-  <depend package="gvars3"/-->
   <depend package="std_msgs"/>
   <depend package="ptam_com"/>
   <depend package="cv_bridge"/>
@@ -22,6 +18,9 @@
   <depend package="tf"/>
   <depend package="visualization_msgs"/>
   <depend package="dynamic_reconfigure"/>
+  <rosdep name="lapack"/>
+  <rosdep name="blas"/>	
+  <rosdep name="glut"/>	
 </package>
 
 

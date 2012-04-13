@@ -1,0 +1,6 @@
+lapack:
+  ubuntu: liblapack-dev
+
+blas:
+  ubuntu: libblas-dev
+
