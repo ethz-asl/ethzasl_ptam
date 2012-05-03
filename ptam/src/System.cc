@@ -30,7 +30,6 @@ System::System() :
   srvKF_ = nh_.advertiseService("keyframes", &System::keyframesservice,this);
 
   sub_imu_ = nh_.subscribe("imu", 100, &System::imuCallback, this);
-  sub_predicted_pose_ = nh_.subscribe("predicted_pose", 100, &System::pposeCallback, this);
   sub_kb_input_ = nh_.subscribe("key_pressed", 100, &System::keyboardCallback, this);
 
   image_nh_.setCallbackQueue(&image_queue_);
@@ -182,13 +181,6 @@ void System::imuCallback(const sensor_msgs::ImuConstPtr & msg)
   imu_msgs_.push(*msg);
   if (imu_msgs_.size() > 100)
     imu_msgs_.pop();
-}
-
-void System::pposeCallback(const geometry_msgs::PoseWithCovarianceStampedConstPtr & msg)
-{
-  predicted_poses_.push(*msg);
-  if (predicted_poses_.size() > 100)
-    predicted_poses_.pop();
 }
 
 template<class T>

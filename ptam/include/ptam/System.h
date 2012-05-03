@@ -56,7 +56,6 @@ private:
   ros::NodeHandle nh_, image_nh_;
   ros::Subscriber sub_imu_;
   ros::Subscriber sub_calibration_;
-  ros::Subscriber sub_predicted_pose_;
   ros::Subscriber sub_kb_input_;
   tf::TransformBroadcaster tf_pub_;
   tf::TransformListener tf_sub_;
@@ -70,7 +69,6 @@ private:
   ros::CallbackQueue image_queue_;
 
   ImuQueue imu_msgs_;
-  PoseQueue predicted_poses_;
 
   bool first_frame_;
 
@@ -96,7 +94,6 @@ private:
 
   void imageCallback(const sensor_msgs::ImageConstPtr & img);
   void imuCallback(const sensor_msgs::ImuConstPtr & msg);
-  void pposeCallback(const geometry_msgs::PoseWithCovarianceStampedConstPtr & msg);
   void keyboardCallback(const std_msgs::StringConstPtr & kb_input);
 
   bool transformQuaternion(const std::string & target_frame, const std_msgs::Header & header, const geometry_msgs::Quaternion & q_in, TooN::SO3<double> & r_out);
