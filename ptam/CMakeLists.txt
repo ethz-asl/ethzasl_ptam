@@ -125,4 +125,4 @@ endif(PKG_CONFIG_FOUND AND UNIX AND NOT APPLE)
 rosbuild_add_executable(remote_ptam src/RemotePtam.cpp)
 target_link_libraries(remote_ptam ${GTK_LIBRARIES})
 
-rosbuild_add_executable(pointcloudpublisher src/PTAMVisualizer.cpp)
+rosbuild_add_executable(ptam_visualizer src/PTAMVisualizer.cpp)
