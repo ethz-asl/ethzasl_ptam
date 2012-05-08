@@ -1,4 +1,3 @@
-gui: true
 ImageSizeX: 752
 ImageSizeY: 480
 ARBuffer_width: 1200
@@ -7,75 +6,7 @@ WiggleScale: 0.1
 BundleMEstimator: Tukey
 TrackerMEstimator: Tukey
 MinTukeySigma: 0.4
-CandidateMinSTScore: 70
-# --- generic 130 deg ---
-#Cam_fx: 0.392001
-#Cam_fy: 0.613001
-#Cam_cx: 0.484001
-#Cam_cy: 0.476001
-#Cam_s: 0.967001
-# ---------------------
-# --- camera on pelican ---
-#Cam_fx: 0.86977
-#Cam_fy: 1.3638
-#Cam_cx: 0.473415
-#Cam_cy: 0.481415
-#Cam_s: 1.03204
-#Cam_fx: 0.877577 
-#Cam_fy: 1.37372 
-#Cam_cx: 0.470857 
-#Cam_cy: 0.46887 
-#Cam_s: 1.02953
-# ---------------------
-# --- camera on hex  --- 
-#Cam_fx: 0.810578
-#Cam_fy: 1.26376
-#Cam_cx: 0.428774
-#Cam_cy: 0.558996
-#Cam_s: 1.05933
-#Cam_fx: 0.810578
-#Cam_fy: 1.26376
-#Cam_cx: 0.428774
-#Cam_cy: 0.558996
-#Cam_s: 1.05933
-# ---------------------
-# --- camera new on hex 1 --- 
-#Cam_fx: 0.577878
-#Cam_fy: 0.90834
-#Cam_cx: 0.545881
-#Cam_cy: 0.484062
-#Cam_s: 0.917388
-# ---------------------
-# --- camera new on hex 2 --- 
-#Cam_fx: 0.575219
-#Cam_fy: 0.901372
-#Cam_cx: 0.546876
-#Cam_cy: 0.484111
-#Cam_s: 0.910117
-# ---------------------
-# --- camera 150 firefly --- 
-#Cam_fx: 0.388104
-#Cam_fy: 0.607978
-#Cam_cx: 0.541567
-#Cam_cy: 0.504643
-#Cam_s: 0.966441
-# ---------------------
-# --- bluefox camera on hex  --- 
-Cam_fx: 0.570905
-Cam_fy: 0.893487
-Cam_cx: 0.538077
-Cam_cy: 0.523616
-Cam_s: 0.928057
-# ---------------------
-# --- AQUA camera of Barbados dataset  --- 
-#Cam_fx: 0.790764
-#Cam_fy: 1.05914
-#Cam_cx: 0.524618
-#Cam_cy: 0.576256
-#Cam_s: 1.05129
-
-    
-
+CandidateMinSTScore: 70  
 Calibrator_BlurSigma: 1.0
 Calibrator_MeanGate: 10
 Calibrator_MinCornersForGrabbedImage: 20
@@ -84,14 +15,25 @@ Calibrator_Show: 0
 Calibrator_NoDistortion: 0
 CameraCalibrator_MaxStepDistFraction: 0.3
 CameraCalibrator_CornerPatchSize: 20
-GLWindowMenu_Enable: 1
+GLWindowMenu_Enable: 0
 GLWindowMenu_mgvnMenuItemWidth: 90
 GLWindowMenu_mgvnMenuTextOffset: 20
 InitLevel: 1
 MaxKFDistWiggleMult: 1
 MaxPatchesPerFrame: 300
-MaxKF: 0
+MaxKF: 15
 parent_frame: world
 TrackingQualityFoundPixels: 50
-UseKFPixelDist: 0
-GLWindowMenu_Enable: True
+UseKFPixelDist: True
+NoLevelZeroMapPoints: True
+FASTMethod: OAST16
+MaxStereoInitLoops: 4
+AutoInitPixel: 20
+
+# --- sample camera calibration  --- 
+Cam_fx: 0.570905
+Cam_fy: 0.893487
+Cam_cx: 0.538077
+Cam_cy: 0.523616
+Cam_s: 0.928057
+# -----------------------------------

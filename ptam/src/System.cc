@@ -306,10 +306,7 @@ void System::publishPoseAndInfo(const std_msgs::Header & header)
       for (unsigned int i = 0; i < msg_pose->pose.covariance.size(); i++)
         msg_pose->pose.covariance[i] = sqrt(fabs(covar[i % 6][i / 6]));
 
-      msg_pose->pose.covariance[1] = mpTracker->GetCurrentKF().dSceneDepthMedian;
-
       msg_pose->header = header;
-
       pub_pose_.publish(msg_pose);
     }
 
