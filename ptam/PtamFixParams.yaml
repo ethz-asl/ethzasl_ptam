@@ -1,3 +1,4 @@
+gui: True
 ImageSizeX: 752
 ImageSizeY: 480
 ARBuffer_width: 1200
@@ -15,7 +16,7 @@ Calibrator_Show: 0
 Calibrator_NoDistortion: 0
 CameraCalibrator_MaxStepDistFraction: 0.3
 CameraCalibrator_CornerPatchSize: 20
-GLWindowMenu_Enable: 0
+GLWindowMenu_Enable: True
 GLWindowMenu_mgvnMenuItemWidth: 90
 GLWindowMenu_mgvnMenuTextOffset: 20
 InitLevel: 1
