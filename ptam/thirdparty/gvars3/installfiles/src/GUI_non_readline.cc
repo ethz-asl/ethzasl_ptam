@@ -57,9 +57,12 @@ namespace GVars3
     char line[1000];
     GUI.SetupReadlineCompletion();
 
+
     while(1)
       {
 	cout << "> ";  
+
+    	cin.clear();
 	cin.getline (line, 1000);
 
 	if(quit || !line)
