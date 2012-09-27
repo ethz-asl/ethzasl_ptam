@@ -73,7 +73,7 @@ void KeyFrame::MakeKeyFrame_Lite(BasicImage<CVD::byte> &im)
 
 		if (pPars->AdaptiveThrs)
 		{
-			buff = lev.vCorners.size()-pPars->AdaptiveThrsMult*pPars->MaxPatchesPerFrame/pow(2,i);
+			buff = lev.vCorners.size()-pPars->AdaptiveThrsMult*pPars->MaxPatchesPerFrame/pow(2.0,i);
 			thrs[i] = thrs[i]+(buff>0)-(buff<0);
 	//		printf("0: %d 1: %d 2: %d 3: %d N: %d\n",thrs[0],thrs[1],thrs[2],thrs[3],lev.vCorners.size());
 		}
