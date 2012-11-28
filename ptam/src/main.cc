@@ -5,7 +5,8 @@
 #include <gvars3/instances.h>
 #include "ptam/System.h"
 #include <ptam/Params.h>
-//#include "ptam/RosNode.h"
+
+#include "ros/ros.h"
 
 using namespace std;
 using namespace GVars3;
@@ -30,7 +31,7 @@ int main(int argc, char** argv)
 		System s;
 		s.Run();
 	}
-	catch(CVD::Exceptions::All e)
+	catch(CVD::Exceptions::All & e)
 	{
 		cout << endl;
 		cout << "!! Failed to run system; got exception. " << endl;

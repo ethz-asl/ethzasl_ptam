@@ -22,7 +22,7 @@
 #include <fstream>
 #include <fcntl.h>
 #include <math.h>
-
+#include <vector>
 
 using namespace CVD;
 using namespace std;
@@ -483,9 +483,9 @@ void Tracker::TrackForInitialMap()
 					for(unsigned int ip=0;ip<mMap.vpPoints.size();ip++)
 					{
 //						if(mMap.vpPoints[ip]->pPatchSourceKF==mMap.vpKeyFrames[0])
-							medianvec1.push_back((mMap.vpKeyFrames[0]->se3CfromW*mMap.vpPoints[ip]->v3WorldPos)[2]);
+							medianvec1.push_back(static_cast<double>((mMap.vpKeyFrames[0]->se3CfromW*mMap.vpPoints[ip]->v3WorldPos)[2]));
 //						else //if(mMap.vpPoints[ip]->pPatchSourceKF==mMap.vpKeyFrames[1])
-							medianvec2.push_back((mMap.vpKeyFrames[1]->se3CfromW*mMap.vpPoints[ip]->v3WorldPos)[2]);
+							medianvec2.push_back(static_cast<double>((mMap.vpKeyFrames[1]->se3CfromW*mMap.vpPoints[ip]->v3WorldPos)[2]));
 					}
 					std::vector<double>::iterator first = medianvec1.begin();
 					std::vector<double>::iterator last = medianvec1.end();
@@ -1121,7 +1121,7 @@ Vector<6> Tracker::CalcPoseUpdate(vector<TrackerData*> vTD, double dOverrideSigm
 		if(!TD.bFound)
 			continue;
 		TD.v2Error_CovScaled = TD.dSqrtInvNoise* (TD.v2Found - TD.v2Image);
-		vdErrorSquared.push_back(TD.v2Error_CovScaled * TD.v2Error_CovScaled);
+		vdErrorSquared.push_back(static_cast<double>(TD.v2Error_CovScaled * TD.v2Error_CovScaled));
 	};
 
 	// No valid measurements? Return null update.
