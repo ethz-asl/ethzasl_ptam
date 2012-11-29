@@ -271,6 +271,14 @@ void System::publishPoseAndInfo(const std_msgs::Header & header)
   static float fps = 0;
   static double last_time = 0;
 
+  std::string frame_id(header.frame_id);
+
+  if (frame_id == "")
+  {
+    ROS_WARN_ONCE("camera frame id not set, will set it to \"ptam\"");
+    frame_id = "ptam";
+  }
+
   if (scale <= 0)
   {
     ROS_WARN_STREAM("scale ("<<scale<<") <= 0, set to 1");
