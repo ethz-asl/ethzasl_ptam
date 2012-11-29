@@ -291,8 +291,8 @@ void System::publishPoseAndInfo(const std_msgs::Header & header)
     TooN::Matrix<3, 3, double> r = pose.get_rotation().get_matrix();
     TooN::Vector<3, double> & t = pose.get_translation();
 
-    tf::StampedTransform transform(tf::Transform(btMatrix3x3(r(0, 0), r(0, 1), r(0, 2), r(1, 0), r(1, 1), r(1, 2),
-                                                             r(2, 0), r(2, 1), r(2, 2)), btVector3(t[0] / scale, t[1]
+    tf::StampedTransform transform(tf::Transform(tf::Matrix3x3(r(0, 0), r(0, 1), r(0, 2), r(1, 0), r(1, 1), r(1, 2),
+							       r(2, 0), r(2, 1), r(2, 2)), tf::Vector3(t[0] / scale, t[1]
         / scale, t[2] / scale)), header.stamp, header.frame_id, Params.fixParams->parent_frame);
 
     tf_pub_.sendTransform(transform);
@@ -520,10 +520,10 @@ bool System::keyframesservice(ptam_com::KeyFrame_srvRequest & req, ptam_com::Key
 			pose = (*rit)->se3CfromW;
 			rot =pose.get_rotation().get_matrix();
 			trans = pose.get_translation();
-			tf::Transform transform(btMatrix3x3(rot(0, 0), rot(0, 1), rot(0, 2),
+			tf::Transform transform(tf::Matrix3x3(rot(0, 0), rot(0, 1), rot(0, 2),
 																	rot(1, 0), rot(1, 1), rot(1, 2),
 																	rot(2, 0), rot(2, 1), rot(2, 2)),
-																	btVector3(trans[0] / scale, trans[1]/ scale, trans[2] / scale));
+						tf::Vector3(trans[0] / scale, trans[1]/ scale, trans[2] / scale));
 			q = transform.getRotation();
 			t = transform.getOrigin();
 			buffpose.header.seq=seq;
