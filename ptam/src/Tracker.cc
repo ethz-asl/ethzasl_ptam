@@ -17,7 +17,7 @@
 #include <gvars3/instances.h>
 #include <gvars3/GStringUtil.h>
 
-#include <cv.h>
+#include <opencv/cv.h>
 
 #include <fstream>
 #include <fcntl.h>

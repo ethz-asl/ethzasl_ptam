@@ -11,15 +11,15 @@
   <depend package="roscpp"/>
   <depend package="std_msgs"/>
   <depend package="ptam_com"/>
-  <depend package="cv_bridge"/>
   <depend package="sensor_msgs"/>
   <depend package="image_transport"/>
-  <depend package="opencv2"/>
   <depend package="tf"/>
   <depend package="visualization_msgs"/>
   <depend package="dynamic_reconfigure"/>
+  <depend package="cv_bridge"/>
   <rosdep name="atlas"/>	
   <rosdep name="glut"/>	
+  <rosdep name="opencv2"/>
 </package>
 
 

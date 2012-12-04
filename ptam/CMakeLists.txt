@@ -19,6 +19,8 @@ rosbuild_find_ros_package(dynamic_reconfigure)
 include(${dynamic_reconfigure_PACKAGE_PATH}/cmake/cfgbuild.cmake)
 gencfg()
 
+find_package(OpenCV REQUIRED)
+
 set(PTAM_SOURCE_FILES         
 	src/GLWindow2.cc       
 	src/main.cc      
@@ -100,12 +102,12 @@ add_definitions(-DKF_REPROJ)
 # PTAM executable
 rosbuild_add_executable(ptam ${PTAM_SOURCE_FILES} ${PTAM_HEADER_FILES})
 rosbuild_add_compile_flags(ptam -D_LINUX -D_REENTRANT -Wall  -O3 -march=nocona -msse3)
-target_link_libraries(ptam ${PTAM_LIBRARIES})
+target_link_libraries(ptam ${PTAM_LIBRARIES} ${OpenCV_LIBS})
 
 
 # Camera calibrator 
 rosbuild_add_executable(cameracalibrator ${CALIBRATOR_FILES})
-target_link_libraries(cameracalibrator ${PTAM_LIBRARIES})
+target_link_libraries(cameracalibrator ${PTAM_LIBRARIES} ${OpenCV_LIBS})
 
 # PTAM remote control
 # this is unfortunately neccessary to close app, when opencvwindow gets closed
@@ -123,6 +125,6 @@ if (PKG_CONFIG_FOUND AND UNIX AND NOT APPLE)
 endif(PKG_CONFIG_FOUND AND UNIX AND NOT APPLE)
 
 rosbuild_add_executable(remote_ptam src/RemotePtam.cpp)
-target_link_libraries(remote_ptam ${GTK_LIBRARIES})
+target_link_libraries(remote_ptam ${GTK_LIBRARIES} ${OpenCV_LIBS})
 
 rosbuild_add_executable(ptam_visualizer src/PTAMVisualizer.cpp)
