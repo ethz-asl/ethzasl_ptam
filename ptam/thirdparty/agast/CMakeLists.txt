@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 2.4.6)
     
-add_definitions(-D_REENTRANT -Wall -O3 -march=nocona -Wextra -Winit-self -Woverloaded-virtual -Wnon-virtual-dtor -Wsign-promo -Wno-long-long )
+add_definitions(-D_REENTRANT -Wall -O3 -Wextra -Winit-self -Woverloaded-virtual -Wnon-virtual-dtor -Wsign-promo -Wno-long-long )
 
 #where the demo will be placed
 set(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/installfiles)
