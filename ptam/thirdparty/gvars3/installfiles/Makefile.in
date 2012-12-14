@@ -119,6 +119,11 @@ ifeq (@build_cpu@,x86_64)
     CPPFLAGS+=-fPIC
 endif
 
+#slynen{ ARM
+ifeq (@build_cpu@,armv7l)
+    CPPFLAGS+=-fPIC
+endif
+#}
 
 ifeq (@osx_hacks@,yes)
 	hsoname=libGVars3_headless.dylib
