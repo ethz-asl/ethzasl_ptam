@@ -14,7 +14,7 @@
 #include "oast9_16.h"
 #include <cvd/image.h>
 #include <cvd/byte.h>
-#include <opencv/cv.h>
+#include <opencv2/core/core.hpp>
 
 namespace agast{
 

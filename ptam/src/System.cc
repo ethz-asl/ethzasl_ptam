@@ -12,7 +12,7 @@
 #include "ptam/MapPoint.h"
 
 #include <ptam_com/ptam_info.h>
-#include <opencv/cv.h>
+#include <opencv2/core/core.hpp>
 #include <cvd/vision.h>
 
 using namespace CVD;
@@ -365,9 +365,8 @@ void System::publishPreviewImage(CVD::Image<CVD::byte> & img, const std_msgs::He
     CVD::halfSample(img, img_sub);
 
     // set opencv pointer to image
-    IplImage * ocv_img = cvCreateImageHeader(cvSize(img_sub.size().x, img_sub.size().y), IPL_DEPTH_8U, 1);
-    ocv_img->imageData = (char*)&img_msg->data[0];
-
+   cv::Mat ocv_img(img_sub.size().x, img_sub.size().y, CV_8UC1, (char*)&img_msg->data[0]);
+   
     int dim0 = grid.size().x;
     int dim1 = grid.size().y;
 
@@ -376,13 +375,13 @@ void System::publishPreviewImage(CVD::Image<CVD::byte> & img, const std_msgs::He
       for (int i = 0; i < dim0; i++)
       {
         for (int j = 0; j < dim1 - 1; j++)
-          cvLine( ocv_img, cvPoint(grid[i][j][0]/2, grid[i][j][1]/2), cvPoint(grid[i][j + 1][0]/2, grid[i][j + 1][1]/2),
-                 CV_RGB(50, 50, 50)
+          cv::line( ocv_img, cv::Point(grid[i][j][0]/2, grid[i][j][1]/2), cv::Point(grid[i][j + 1][0]/2, grid[i][j + 1][1]/2),
+                  cv::Scalar(50)
           );
 
         for (int j = 0; j < dim1 - 1; j++)
-          cvLine(ocv_img, cvPoint(grid[j][i][0]/2, grid[j][i][1]/2), cvPoint(grid[j + 1][i][0]/2, grid[j + 1][i][1]/2),
-                 CV_RGB(50, 50, 50)
+          cv::line(ocv_img, cv::Point(grid[j][i][0]/2, grid[j][i][1]/2), cv::Point(grid[j + 1][i][0]/2, grid[j + 1][i][1]/2),
+                 cv::Scalar(50)
           );
       }
     }
@@ -395,14 +394,13 @@ void System::publishPreviewImage(CVD::Image<CVD::byte> & img, const std_msgs::He
 
       for (std::list<Trail>::iterator i = trails.begin(); i != trails.end(); i++)
       {
-        cvLine(ocv_img, cvPoint(LevelZeroPos(i->irCurrentPos.x, level)/2, LevelZeroPos(i->irCurrentPos.y, level)/2),
-               cvPoint(LevelZeroPos(i->irInitialPos.x, level)/2, LevelZeroPos(i->irInitialPos.y, level)/2),
-               CV_RGB(0, 0, 0), 2);
+        cv::line(ocv_img, cv::Point(LevelZeroPos(i->irCurrentPos.x, level)/2, LevelZeroPos(i->irCurrentPos.y, level)/2),
+               cv::Point(LevelZeroPos(i->irInitialPos.x, level)/2, LevelZeroPos(i->irInitialPos.y, level)/2),
+               cv::Scalar(0), 2);
       }
     }
 
     pub_preview_image_.publish(img_msg);
-    cvReleaseImageHeader(&ocv_img);
   }
 }
 
