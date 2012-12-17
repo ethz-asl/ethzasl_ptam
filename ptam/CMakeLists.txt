@@ -110,8 +110,8 @@ target_link_libraries(ptam ${PTAM_LIBRARIES} ${OpenCV_LIBS})
 
 
 # Camera calibrator 
-#rosbuild_add_executable(cameracalibrator ${CALIBRATOR_FILES})
-#target_link_libraries(cameracalibrator ${PTAM_LIBRARIES} ${OpenCV_LIBS})
+rosbuild_add_executable(cameracalibrator ${CALIBRATOR_FILES})
+target_link_libraries(cameracalibrator ${PTAM_LIBRARIES} ${OpenCV_LIBS})
 
 # PTAM remote control
 # this is unfortunately neccessary to close app, when opencvwindow gets closed
