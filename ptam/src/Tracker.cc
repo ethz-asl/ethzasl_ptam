@@ -1056,11 +1056,7 @@ int Tracker::SearchForPoints(vector<TrackerData*> &vTD, int nRange, int nSubPixI
     manMeasAttempted[Finder.GetLevel()]++;  // Stats for tracking quality assessmenta
 
     bool bFound =
-<<<<<<< HEAD
         Finder.FindPatchCoarse(ir(TD.v2Image), mCurrentKF, nRange);
-=======
-        Finder.FindPatchCoarse(ir(TD.v2Image), *mCurrentKF, nRange);
->>>>>>> ecb757bc57873c86bf29d03d1781200602779dd9
     TD.bSearched = true;
     if(!bFound)
     {

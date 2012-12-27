@@ -356,7 +356,7 @@ bool MapMaker::InitFromStereo(KeyFrame::Ptr kF,
     p->RefreshPixelVectors();
 
     // Do sub-pixel alignment on the second image
-    finder.MakeTemplateCoarseNoWarp(*p);
+    finder.MakeTemplateCoarseNoWarp(p);
     finder.MakeSubPixTemplate();
     finder.SetSubPixPos(vec(vTrailMatches[i].second));
     bool bGood = finder.IterateSubPixToConvergence(*pkSecond,10);
@@ -730,7 +730,7 @@ bool MapMaker::AddPointEpipolar(KeyFrame::Ptr kSrc,
 
   // Find current-frame corners which might match this
   PatchFinder Finder;
-  Finder.MakeTemplateCoarseNoWarp(*kSrc, nLevel, irLevelPos);
+  Finder.MakeTemplateCoarseNoWarp(kSrc, nLevel, irLevelPos);
   if(Finder.TemplateBad())  return false;
 
   vector<Vector<2> > &vv2Corners = kTarget->aLevels[nLevel].vImplaneCorners;
@@ -1188,7 +1188,7 @@ bool MapMaker::ReFind_Common(KeyFrame::Ptr k, MapPoint::Ptr p)
     p->pMMData->sNeverRetryKFs.insert(k);
     return false;
   }
-  bool bFound = Finder.FindPatchCoarse(ir(v2Image), *k, 4);  // Very tight search radius!
+  bool bFound = Finder.FindPatchCoarse(ir(v2Image), k, 4);  // Very tight search radius!
   if(!bFound)
   {
     p->pMMData->sNeverRetryKFs.insert(k);
