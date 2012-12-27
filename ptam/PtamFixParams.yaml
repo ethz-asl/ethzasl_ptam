@@ -1,5 +1,5 @@
 gui: True
-ImageSizeX: 752
+ImageSizeX: 640
 ImageSizeY: 480
 ARBuffer_width: 1200
 ARBuffer_height: 900
@@ -31,10 +31,11 @@ FASTMethod: OAST16
 MaxStereoInitLoops: 4
 AutoInitPixel: 20
 
-# --- sample camera calibration  --- 
-Cam_fx: 0.570905
-Cam_fy: 0.893487
-Cam_cx: 0.538077
-Cam_cy: 0.523616
-Cam_s: 0.928057
+# --- bluefox - low distort lens  --- 
+Cam_fx: 0.795574
+Cam_fy: 1.25149
+Cam_cx: 0.50417
+Cam_cy: 0.51687
+Cam_s: 0.482014
 # -----------------------------------
+

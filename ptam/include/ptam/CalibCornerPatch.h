@@ -20,12 +20,12 @@ public:
     double dMean;
     double dGain;
   };
-  
+
   CalibCornerPatch(int nSideSize = 8);
   bool IterateOnImage(Params &params, CVD::Image<CVD::byte> &im);
   bool IterateOnImageWithDrawing(Params &params, CVD::Image<CVD::byte> &im);
 
- protected:
+protected:
   void MakeTemplateWithCurrentParams();
   void FillTemplate(CVD::Image<float> &im, Params params);
   double Iterate(CVD::Image<CVD::byte> &im);
@@ -33,7 +33,7 @@ public:
   CVD::Image<float> mimTemplate;
   CVD::Image<Vector<2> > mimGradients;
   CVD::Image<Vector<2> > mimAngleJacs;
-  
+
   void MakeSharedTemplate();
   static CVD::Image<float> mimSharedSourceTemplate;
 

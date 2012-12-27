@@ -4,7 +4,7 @@ libcvd_built:
 	mkdir -p build
 	cp -rup installfiles/* build
 	cd build && export CPATH=../../TooN/include && ./configure --without-ffmpeg --without-dc1394v1 --without-dc1394v2 --with-lapack
-	cd build && export CPATH=../../TooN/include && make
+	cd build && export CPATH=../../TooN/include && make -j8 CC=distcc 
 	mkdir -p include
 	mkdir -p lib
 	cp build/*.so* lib

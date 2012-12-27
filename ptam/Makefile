@@ -1,9 +1,9 @@
 all:
 	cd thirdparty && make
-	make -f Makefile_ptam
+	make -j8 -f Makefile_ptam
 
 .DEFAULT:
 	cd thirdparty && make $@
-	make -f Makefile_ptam $@
+	make -j8 -f Makefile_ptam $@
 
 

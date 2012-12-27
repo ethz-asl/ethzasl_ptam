@@ -17,7 +17,7 @@ public:
   CameraCalibrator();
   ~CameraCalibrator();
   void Run();
-  
+
 protected:
   void Reset();
   void init();
@@ -27,7 +27,7 @@ protected:
 
   std::vector<CalibImage> mvCalibImgs;
   void OptimizeOneStep();
-  
+
   bool mbGrabNextFrame;
 
   GVars3::gvar3<int> mgvnOptimizing;

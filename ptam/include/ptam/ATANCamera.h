@@ -66,7 +66,7 @@ class CalibImage;
 // 4 - w (distortion parameter)
 
 class ATANCamera {
- public:
+public:
   ATANCamera(std::string sName);
 
   // Image size get/set: updates the internal projection params to that target image size.
@@ -74,24 +74,24 @@ class ATANCamera {
   inline void SetImageSize(CVD::ImageRef irImageSize) {SetImageSize(vec(irImageSize));};
   inline Vector<2> GetImageSize() {return mvImageSize;};
   void RefreshParams();
-  
+
   // Various projection functions
   Vector<2> Project(const Vector<2>& camframe); // Projects from camera z=1 plane to pixel coordinates, with radial distortion
   inline Vector<2> Project(CVD::ImageRef ir) { return Project(vec(ir)); }
   Vector<2> UnProject(const Vector<2>& imframe); // Inverse operation
   inline Vector<2> UnProject(CVD::ImageRef ir)  { return UnProject(vec(ir)); }
-  
+
   Vector<2> UFBProject(const Vector<2>& camframe);
   Vector<2> UFBUnProject(const Vector<2>& camframe);
   inline Vector<2> UFBLinearProject(const Vector<2>& camframe);
   inline Vector<2> UFBLinearUnProject(const Vector<2>& fbframe);
-  
+
   Matrix<2,2> GetProjectionDerivs(); // Projection jacobian
-  
+
   inline bool Invalid() {  return mbInvalid;}
   inline double LargestRadiusInImage() {  return mdLargestRadius; }
   inline double OnePixelDist() { return mdOnePixelDist; }
-  
+
   // The z=1 plane bounding box of what the camera can see
   inline Vector<2> ImplaneTL(); 
   inline Vector<2> ImplaneBR(); 
@@ -101,23 +101,23 @@ class ATANCamera {
 
   // Feedback for Camera Calibrator
   double PixelAspectRatio() { return mvFocal[1] / mvFocal[0];}
-  
-  
+
+
   // Useful for gvar-related reasons (in case some external func tries to read the camera params gvar, and needs some defaults.)
   static const Vector<NUMTRACKERCAMPARAMETERS> mvDefaultParams;
 
-//Weiss{
+  //Weiss{
   // GVars3::gvar3<Vector<NUMTRACKERCAMPARAMETERS> > mgvvCameraParams; // The actual camera parameters
   Vector<NUMTRACKERCAMPARAMETERS> mgvvCameraParams; // The actual camera parameters
-//}
-  
- protected:
+  //}
 
-  
+protected:
+
+
   Matrix<2, NUMTRACKERCAMPARAMETERS> GetCameraParameterDerivs();
   void UpdateParams(Vector<NUMTRACKERCAMPARAMETERS> vUpdate);
   void DisableRadialDistortion();
-  
+
   // Cached from the last project/unproject:
   Vector<2> mvLastCam;      // Last z=1 coord
   Vector<2> mvLastIm;       // Last image/UFB coord
@@ -126,7 +126,7 @@ class ATANCamera {
   double mdLastDistR;       // Last z=1 distorted radius
   double mdLastFactor;      // Last ratio of z=1 radii
   bool mbInvalid;           // Was the last projection invalid?
-  
+
   // Cached from last RefreshParams:
   double mdLargestRadius; // Largest R in the image
   double mdMaxR;          // Largest R for which we consider projection valid
@@ -145,7 +145,7 @@ class ATANCamera {
   Vector<2> mvUFBLinearCenter;
   Vector<2> mvImplaneTL;   
   Vector<2> mvImplaneBR;
-  
+
   // Radial distortion transformation factor: returns ration of distorted / undistorted radius.
   inline double rtrans_factor(double r)
   {
@@ -162,7 +162,7 @@ class ATANCamera {
       return r;
     return(tan(r * mdW) * mdOneOver2Tan);
   };
-  
+
   std::string msName;
 
   friend class CameraCalibrator;   // friend declarations allow access to calibration jacobian and camera update function.

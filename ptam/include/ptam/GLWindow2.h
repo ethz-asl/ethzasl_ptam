@@ -18,14 +18,14 @@ class GLWindow2 : public CVD::GLWindow, public CVD::GLWindow::EventHandler
 {
 public:
   GLWindow2(CVD::ImageRef irSize, std::string sTitle);
-  
+
   // The preferred event handler..
   void HandlePendingEvents();
-  
+
   // Menu interface:
   void AddMenu(std::string sName, std::string sTitle);
   void DrawMenus();
-  
+
   // Some OpenGL helpers:
   void SetupViewport();
   void SetupVideoOrtho();
@@ -36,20 +36,20 @@ public:
   // Text display functions:
   void PrintString(CVD::ImageRef irPos, std::string s);
   void DrawCaption(std::string s);
-  
+
   // Map viewer mouse interface:
   std::pair<TooN::Vector<6>, TooN::Vector<6> > GetMousePoseUpdate();
-  
+
 
 protected:
   void GUICommandHandler(std::string sCommand, std::string sParams);
   static void GUICommandCallBack(void* ptr, std::string sCommand, std::string sParams);
-  
+
   // User interface menus:
   std::vector<GLWindowMenu*> mvpGLWindowMenus;
 
   CVD::ImageRef mirVideoSize;   // The size of the source video material.
-  
+
 
   // Event handling routines:
   virtual void on_key_down(GLWindow&, int key);
@@ -61,7 +61,7 @@ protected:
   // Storage for map viewer updates:
   TooN::Vector<6> mvMCPoseUpdate;
   TooN::Vector<6> mvLeftPoseUpdate;
-  
+
 
 };
 

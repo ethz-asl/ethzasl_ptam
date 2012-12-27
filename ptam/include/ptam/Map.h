@@ -17,6 +17,7 @@
 #include <vector>
 #include <TooN/se3.h>
 #include <cvd/image.h>
+#include <boost/shared_ptr.hpp>
 
 struct MapPoint;
 struct KeyFrame;
@@ -26,13 +27,13 @@ struct Map
   Map();
   inline bool IsGood() {return bGood;}
   void Reset();
-  
+
   void MoveBadPointsToTrash();
   void EmptyTrash();
-  
-  std::vector<MapPoint*> vpPoints;
-  std::vector<MapPoint*> vpPointsTrash;
-  std::vector<KeyFrame*> vpKeyFrames;
+
+  std::vector<boost::shared_ptr<MapPoint> > vpPoints;
+  std::vector<boost::shared_ptr<MapPoint> > vpPointsTrash;
+  std::vector<boost::shared_ptr<KeyFrame> > vpKeyFrames;
 
   bool bGood;
 };
