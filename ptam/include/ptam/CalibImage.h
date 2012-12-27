@@ -20,16 +20,16 @@ struct CalibGridCorner
     NeighborState() {val = N_NOT_TRIED;}
     int val;
   };
-  
+
   CalibCornerPatch::Params Params;
   CVD::ImageRef irGridPos;
   NeighborState aNeighborStates[4];
-  
+
   Matrix<2> GetSteps(std::vector<CalibGridCorner> &vgc); 
   Matrix<2> mInheritedSteps;
-  
+
   void Draw();
-  
+
   double ExpansionPotential();
 };
 
@@ -53,17 +53,17 @@ public:
   std::vector<ErrorAndJacobians> Project(ATANCamera &Camera);
 
   CVD::Image<CVD::byte> mim;
-  
+
 protected:
   std::vector<CVD::ImageRef> mvCorners;
   std::vector<CalibGridCorner> mvGridCorners;
-  
-  
+
+
   bool ExpandByAngle(int nSrc, int nDirn);
   int NextToExpand();
   void ExpandByStep(int n);
   CVD::ImageRef IR_from_dirn(int nDirn);
- 
+
 };
 
 

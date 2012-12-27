@@ -12,7 +12,7 @@ using namespace GVars3;
 using namespace TooN;
 
 GLWindow2::GLWindow2(ImageRef irSize, string sTitle)
-  : GLWindow(irSize, sTitle)
+: GLWindow(irSize, sTitle)
 {
 
 #ifdef WIN32
@@ -21,13 +21,13 @@ GLWindow2::GLWindow2(ImageRef irSize, string sTitle)
   static bool bGLEWIsInit = false;
   if(!bGLEWIsInit)
   {
-	GLenum err = glewInit();
-	if (GLEW_OK != err)
-	{
-		fprintf(stderr, "GLEW Error: %s\n", glewGetErrorString(err));
-		exit(0);
-	}
-	bGLEWIsInit = true;
+    GLenum err = glewInit();
+    if (GLEW_OK != err)
+    {
+      fprintf(stderr, "GLEW Error: %s\n", glewGetErrorString(err));
+      exit(0);
+    }
+    bGLEWIsInit = true;
   }
 #endif
 
@@ -54,21 +54,21 @@ void GLWindow2::GUICommandHandler(string sCommand, string sParams)  // Called by
 {
   vector<string> vs=ChopAndUnquoteString(sParams);
   if(sCommand=="GLWindow.AddMenu")
+  {
+    switch(vs.size())
     {
-      switch(vs.size())
-	{
-	case 1:
-	  AddMenu(vs[0], "Root");
-	  return;
-	case 2:
-	  AddMenu(vs[0], vs[1]);
-	  return;
-	default:
-	  cout << "? AddMenu: need one or two params (internal menu name, [caption])." << endl;
-	  return;
-	};
+      case 1:
+        AddMenu(vs[0], "Root");
+        return;
+      case 2:
+        AddMenu(vs[0], vs[1]);
+        return;
+      default:
+        cout << "? AddMenu: need one or two params (internal menu name, [caption])." << endl;
+        return;
     };
-  
+  };
+
   // Should have returned to caller by now - if got here, a command which 
   // was not handled was registered....
   cout << "! GLWindow::GUICommandHandler: unhandled command "<< sCommand << endl;
@@ -90,17 +90,17 @@ void GLWindow2::DrawMenus()
   glLoadIdentity();
   SetupWindowOrtho();
   glLineWidth(1);
-  
+
   int nTop = 30;
   int nHeight = 30;
   for(vector<GLWindowMenu*>::iterator i = mvpGLWindowMenus.begin();
       i!= mvpGLWindowMenus.end();
       i++)
-    {
-      (*i)->Render(nTop, nHeight, size()[0], *this);
-      nTop+=nHeight+1;
-    }
-  
+  {
+    (*i)->Render(nTop, nHeight, size()[0], *this);
+    nTop+=nHeight+1;
+  }
+
 }
 
 void GLWindow2::SetupUnitOrtho()
@@ -152,7 +152,7 @@ void GLWindow2::DrawCaption(string s)
 {
   if(s.length() == 0)
     return;
-  
+
   SetupWindowOrtho();
   // Find out how many lines are in the caption:
   // Count the endls
@@ -161,18 +161,18 @@ void GLWindow2::DrawCaption(string s)
     string sendl("\n");
     string::size_type st=0;
     while(1)
-      {
-	nLines++;
-	st = s.find(sendl, st);
-	if(st==string::npos)
-	  break;
-	else
-	  st++;
-      }
+    {
+      nLines++;
+      st = s.find(sendl, st);
+      if(st==string::npos)
+        break;
+      else
+        st++;
+    }
   }
-  
+
   int nTopOfBox = size().y - nLines * 17;
-  
+
   // Draw a grey background box for the text
   glColor4f(0,0,0,0.4);
   glEnable(GL_BLEND);
@@ -183,7 +183,7 @@ void GLWindow2::DrawCaption(string s)
   glVertex2d(size().x, size().y);
   glVertex2d(-0.5, size().y);
   glEnd();
-  
+
   // Draw the caption text in yellow
   glColor3f(1,1,0);      
   PrintString(ImageRef(10,nTopOfBox + 13), s);
@@ -199,24 +199,24 @@ void GLWindow2::on_mouse_move(GLWindow& win, CVD::ImageRef where, int state)
 {
   ImageRef irMotion = where - mirLastMousePos;
   mirLastMousePos = where;
-  
+
   double dSensitivity = 0.01;
   if(state & BUTTON_LEFT && ! (state & BUTTON_RIGHT))
-    {
-      mvMCPoseUpdate[3] -= irMotion[1] * dSensitivity;
-      mvMCPoseUpdate[4] += irMotion[0] * dSensitivity;
-    }
+  {
+    mvMCPoseUpdate[3] -= irMotion[1] * dSensitivity;
+    mvMCPoseUpdate[4] += irMotion[0] * dSensitivity;
+  }
   else if(!(state & BUTTON_LEFT) && state & BUTTON_RIGHT)
-    {
-      mvLeftPoseUpdate[4] -= irMotion[0] * dSensitivity;
-      mvLeftPoseUpdate[3] += irMotion[1] * dSensitivity;
-    }
+  {
+    mvLeftPoseUpdate[4] -= irMotion[0] * dSensitivity;
+    mvLeftPoseUpdate[3] += irMotion[1] * dSensitivity;
+  }
   else if(state & BUTTON_MIDDLE  || (state & BUTTON_LEFT && state & BUTTON_RIGHT))
-    {
-      mvLeftPoseUpdate[5] -= irMotion[0] * dSensitivity;
-      mvLeftPoseUpdate[2] += irMotion[1] * dSensitivity;
-    }
-  
+  {
+    mvLeftPoseUpdate[5] -= irMotion[0] * dSensitivity;
+    mvLeftPoseUpdate[2] += irMotion[1] * dSensitivity;
+  }
+
 }
 
 void GLWindow2::on_mouse_down(GLWindow& win, CVD::ImageRef where, int state, int button)
@@ -249,7 +249,7 @@ void GLWindow2::on_key_down(GLWindow&, int k)
 {
   string s;
   switch(k)
-    {
+  {
     case XK_a:   case XK_A:  s="a"; break;
     case XK_b:   case XK_B:  s="b"; break;
     case XK_c:   case XK_C:  s="c"; break;
@@ -293,7 +293,7 @@ void GLWindow2::on_key_down(GLWindow&, int k)
     case XK_BackSpace:  s="BackSpace"; break;
     case XK_Escape:  s="Escape"; break;
     default: ;
-    }
+  }
 
   if(s!="")
     GUI.ParseLine("try KeyPress "+s);
@@ -305,22 +305,22 @@ void GLWindow2::on_key_down(GLWindow&, int k)
   // ASCI chars can be mapped directly:
   if( (k >= 48 && k <=57) || ( k >=97 && k <= 122) || (k >= 65 && k <= 90))
   {
-	char c = k;
-	if(c >= 65 && c <= 90)
-		c = c + 32;
-	s = c;
+    char c = k;
+    if(c >= 65 && c <= 90)
+      c = c + 32;
+    s = c;
   }
   else switch (k) // Some special chars are translated:
   {
-	case 33: s="PageUp"; break;
+    case 33: s="PageUp"; break;
     case 34: s="PageDown"; break;
     case 13: s="Enter"; break;
     case 32:  s="Space"; break;
     case 8:  s="BackSpace"; break;
     case 27:  s="Escape"; break;
-	default: break;
+    default: break;
   }
-  
+
   if(s!="")
     GUI.ParseLine("try KeyPress "+s);
 }

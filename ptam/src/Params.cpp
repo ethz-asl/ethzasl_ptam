@@ -27,7 +27,7 @@ void FixParams::readFixParams()
   if (!have_calibration)
   {
     ROS_ERROR("Camera calibration is missing!");
-//    ROS_BREAK();
+    //    ROS_BREAK();
   }
 
   nh.param("ImageSizeX", ImageSizeX, 640);

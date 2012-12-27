@@ -51,7 +51,7 @@ class System
 public:
   System();
   void Run();
-  
+
 private:
   ros::NodeHandle nh_, image_nh_;
   ros::Subscriber sub_imu_;
@@ -78,12 +78,12 @@ private:
 
   CVD::Image<CVD::byte > img_bw_;
   CVD::Image<CVD::Rgb<CVD::byte> > img_rgb_;
-  
+
   Map *mpMap; 
   MapMaker *mpMapMaker; 
   Tracker *mpTracker; 
   ATANCamera *mpCamera;
-  
+
   bool mbDone;
 
   void init(const CVD::ImageRef & size);

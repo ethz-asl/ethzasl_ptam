@@ -16,15 +16,15 @@ inline int MiniPatch::SSDAtPoint(CVD::BasicImage<CVD::byte> &im, const CVD::Imag
   int nDiff;
   int nSumSqDiff = 0;
   for(int nRow = 0; nRow < nRows; nRow++)
+  {
+    imagepointer = &im[irImgBase + ImageRef(0,nRow)];
+    templatepointer = &mimOrigPatch[ImageRef(0,nRow)];
+    for(int nCol = 0; nCol < nCols; nCol++)
     {
-      imagepointer = &im[irImgBase + ImageRef(0,nRow)];
-      templatepointer = &mimOrigPatch[ImageRef(0,nRow)];
-      for(int nCol = 0; nCol < nCols; nCol++)
-	{
-	  nDiff = imagepointer[nCol] - templatepointer[nCol];
-	  nSumSqDiff += nDiff * nDiff;
-	};
+      nDiff = imagepointer[nCol] - templatepointer[nCol];
+      nSumSqDiff += nDiff * nDiff;
     };
+  };
   return nSumSqDiff;
 }
 
@@ -32,10 +32,10 @@ inline int MiniPatch::SSDAtPoint(CVD::BasicImage<CVD::byte> &im, const CVD::Imag
 // If available, a row-corner LUT is used to speed up search through the
 // FAST corners
 bool MiniPatch::FindPatch(CVD::ImageRef &irPos, 
-			  CVD::BasicImage<CVD::byte> &im, 
-			  int nRange, 
-			  vector<ImageRef> &vCorners,
-			  std::vector<int> *pvRowLUT)
+                          CVD::BasicImage<CVD::byte> &im,
+                          int nRange,
+                          vector<ImageRef> &vCorners,
+                          std::vector<int> *pvRowLUT)
 {
   ImageRef irCenter = irPos;
   ImageRef irBest;
@@ -44,39 +44,39 @@ bool MiniPatch::FindPatch(CVD::ImageRef &irPos,
   ImageRef irBBoxBR = irPos + ImageRef(nRange, nRange);
   vector<ImageRef>::iterator i;
   if(!pvRowLUT)
-    {
-      for(i = vCorners.begin(); i!=vCorners.end(); i++)
-	if(i->y >= irBBoxTL.y) break;
-    }
+  {
+    for(i = vCorners.begin(); i!=vCorners.end(); i++)
+      if(i->y >= irBBoxTL.y) break;
+  }
   else
-    {
-      int nTopRow = irBBoxTL.y;
-      if(nTopRow < 0)
-	nTopRow = 0;
-      if(nTopRow >= (int) pvRowLUT->size())
-	nTopRow = (int) pvRowLUT->size() - 1;
-      i = vCorners.begin() + (*pvRowLUT)[nTopRow];
-    }
-  
+  {
+    int nTopRow = irBBoxTL.y;
+    if(nTopRow < 0)
+      nTopRow = 0;
+    if(nTopRow >= (int) pvRowLUT->size())
+      nTopRow = (int) pvRowLUT->size() - 1;
+    i = vCorners.begin() + (*pvRowLUT)[nTopRow];
+  }
+
   for(; i!=vCorners.end(); i++)
+  {
+    if(i->x < irBBoxTL.x  || i->x > irBBoxBR.x)
+      continue;
+    if(i->y > irBBoxBR.y)
+      break;
+    int nSSD = SSDAtPoint(im, *i);
+
+    if(nSSD < nBestSSD)
     {
-      if(i->x < irBBoxTL.x  || i->x > irBBoxBR.x)
-	continue;
-      if(i->y > irBBoxBR.y)
-	break;
-      int nSSD = SSDAtPoint(im, *i);
-      
-      if(nSSD < nBestSSD)
-	{
-	  irBest = *i;
-	  nBestSSD = nSSD;
-	}
+      irBest = *i;
+      nBestSSD = nSSD;
     }
+  }
   if(nBestSSD < mnMaxSSD)
-    {
-      irPos = irBest;
-      return true;
-    }
+  {
+    irPos = irBest;
+    return true;
+  }
   else
     return false;
 }

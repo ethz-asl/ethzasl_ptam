@@ -143,11 +143,11 @@ inline double Huber::ObjectiveScore(double dErrorSquared, const double dSigmaSqu
   if(dErrorSquared< dSigmaSquared)
     return 0.5 * dErrorSquared;
   else
-    {
-      double dSigma = sqrt(dSigmaSquared);
-      double dError = sqrt(dErrorSquared);
-      return dSigma * ( dError - 0.5 * dSigma);
-    }
+  {
+    double dSigma = sqrt(dSigmaSquared);
+    double dError = sqrt(dErrorSquared);
+    return dSigma * ( dError - 0.5 * dSigma);
+  }
 }
 
 

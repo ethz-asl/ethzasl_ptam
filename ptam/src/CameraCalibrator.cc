@@ -67,7 +67,7 @@ void CameraCalibrator::imageCallback(const sensor_msgs::ImageConstPtr & img)
 }
 
 CameraCalibrator::CameraCalibrator() :
-  mCamera("Camera"), mbDone(false), mCurrentImage(CVD::ImageRef(752, 480)), mDoOptimize(false), mNewImage(false)
+      mCamera("Camera"), mbDone(false), mCurrentImage(CVD::ImageRef(752, 480)), mDoOptimize(false), mNewImage(false)
 {
   ros::NodeHandle nh;
   image_transport::ImageTransport it(nh);
@@ -266,7 +266,7 @@ void CameraCalibrator::OptimizeOneStep()
   int nViews = mvCalibImgs.size();
   int nDim = 6 * nViews + NUMTRACKERCAMPARAMETERS;
   int nCamParamBase = nDim - NUMTRACKERCAMPARAMETERS;
-  
+
   Matrix<> mJTJ(nDim, nDim);
   Vector<> vJTe(nDim);
   mJTJ = Identity; // Weak stabilizing prior
@@ -274,39 +274,39 @@ void CameraCalibrator::OptimizeOneStep()
 
   if(*mgvnDisableDistortion) mCamera.DisableRadialDistortion();
 
-  
+
   double dSumSquaredError = 0.0;
   int nTotalMeas = 0;
-  
-  for(int n=0; n<nViews; n++)
-    {
-      int nMotionBase = n*6;
-      vector<CalibImage::ErrorAndJacobians> vEAJ = mvCalibImgs[n].Project(mCamera);
 
-      for(unsigned int i=0; i<vEAJ.size(); i++)
-	{
-	  CalibImage::ErrorAndJacobians &EAJ = vEAJ[i];
-	  // All the below should be +=, but the MSVC compiler doesn't seem to understand that. :(
+  for(int n=0; n<nViews; n++)
+  {
+    int nMotionBase = n*6;
+    vector<CalibImage::ErrorAndJacobians> vEAJ = mvCalibImgs[n].Project(mCamera);
+
+    for(unsigned int i=0; i<vEAJ.size(); i++)
+    {
+      CalibImage::ErrorAndJacobians &EAJ = vEAJ[i];
+      // All the below should be +=, but the MSVC compiler doesn't seem to understand that. :(
       mJTJ.slice(nMotionBase, nMotionBase, 6, 6) = 
-      mJTJ.slice(nMotionBase, nMotionBase, 6, 6) + EAJ.m26PoseJac.T() * EAJ.m26PoseJac;
+          mJTJ.slice(nMotionBase, nMotionBase, 6, 6) + EAJ.m26PoseJac.T() * EAJ.m26PoseJac;
       mJTJ.slice(nCamParamBase, nCamParamBase, NUMTRACKERCAMPARAMETERS, NUMTRACKERCAMPARAMETERS) = 
-      mJTJ.slice(nCamParamBase, nCamParamBase, NUMTRACKERCAMPARAMETERS, NUMTRACKERCAMPARAMETERS) + EAJ.m2NCameraJac.T() * EAJ.m2NCameraJac;
+          mJTJ.slice(nCamParamBase, nCamParamBase, NUMTRACKERCAMPARAMETERS, NUMTRACKERCAMPARAMETERS) + EAJ.m2NCameraJac.T() * EAJ.m2NCameraJac;
       mJTJ.slice(nMotionBase, nCamParamBase, 6, NUMTRACKERCAMPARAMETERS) =
-      mJTJ.slice(nMotionBase, nCamParamBase, 6, NUMTRACKERCAMPARAMETERS) + EAJ.m26PoseJac.T() * EAJ.m2NCameraJac;
+          mJTJ.slice(nMotionBase, nCamParamBase, 6, NUMTRACKERCAMPARAMETERS) + EAJ.m26PoseJac.T() * EAJ.m2NCameraJac;
       mJTJ.T().slice(nMotionBase, nCamParamBase, 6, NUMTRACKERCAMPARAMETERS) = 
-      mJTJ.T().slice(nMotionBase, nCamParamBase, 6, NUMTRACKERCAMPARAMETERS) + EAJ.m26PoseJac.T() * EAJ.m2NCameraJac;
+          mJTJ.T().slice(nMotionBase, nCamParamBase, 6, NUMTRACKERCAMPARAMETERS) + EAJ.m26PoseJac.T() * EAJ.m2NCameraJac;
       // Above does twice the work it needs to, but who cares..
 
       vJTe.slice(nMotionBase,6) = 
-      vJTe.slice(nMotionBase,6) + EAJ.m26PoseJac.T() * EAJ.v2Error;
+          vJTe.slice(nMotionBase,6) + EAJ.m26PoseJac.T() * EAJ.v2Error;
       vJTe.slice(nCamParamBase,NUMTRACKERCAMPARAMETERS) = 
-      vJTe.slice(nCamParamBase,NUMTRACKERCAMPARAMETERS) + EAJ.m2NCameraJac.T() * EAJ.v2Error;
+          vJTe.slice(nCamParamBase,NUMTRACKERCAMPARAMETERS) + EAJ.m2NCameraJac.T() * EAJ.v2Error;
 
-	  dSumSquaredError += EAJ.v2Error * EAJ.v2Error;
-	  ++nTotalMeas;
-	}
-    };
-  
+      dSumSquaredError += EAJ.v2Error * EAJ.v2Error;
+      ++nTotalMeas;
+    }
+  };
+
   if(nTotalMeas == 0)
   {
     ROS_WARN_THROTTLE(2, "No new measurements, this can happen for wide angle cameras when \"Camera.Project()\" gets invalid");

@@ -25,6 +25,7 @@ using namespace TooN;
 #include <vector>
 #include <set>
 #include <map>
+#include <boost/shared_ptr.hpp>
 
 #include "ptam/Params.h"
 
@@ -38,39 +39,39 @@ class TrackerData;
 // Candidate: a feature in an image which could be made into a map point
 struct Candidate
 {
-	CVD::ImageRef irLevelPos;
-	Vector<2> v2RootPos;
-	double dSTScore;
+  CVD::ImageRef irLevelPos;
+  Vector<2> v2RootPos;
+  double dSTScore;
 };
 
 // Measurement: A 2D image measurement of a map point. Each keyframe stores a bunch of these.
 struct Measurement
 {
-	int nLevel;   // Which image level?
-	bool bSubPix; // Has this measurement been refined to sub-pixel level?
-	Vector<2> v2RootPos;  // Position of the measurement, REFERED TO PYRAMID LEVEL ZERO
-	enum {SRC_TRACKER, SRC_REFIND, SRC_ROOT, SRC_TRAIL, SRC_EPIPOLAR} Source; // Where has this measurement come frome?
+  int nLevel;   // Which image level?
+  bool bSubPix; // Has this measurement been refined to sub-pixel level?
+  Vector<2> v2RootPos;  // Position of the measurement, REFERED TO PYRAMID LEVEL ZERO
+  enum {SRC_TRACKER, SRC_REFIND, SRC_ROOT, SRC_TRAIL, SRC_EPIPOLAR} Source; // Where has this measurement come frome?
 };
 
 // Each keyframe is made of LEVELS pyramid levels, stored in struct Level.
 // This contains image data and corner points.
 struct Level
 {
-	inline Level()
-	{
-		bImplaneCornersCached = false;
-	};
+  inline Level()
+  {
+    bImplaneCornersCached = false;
+  };
 
-	CVD::Image<CVD::byte> im;                // The pyramid level pixels
-	std::vector<CVD::ImageRef> vCorners;     // All FAST corners on this level
-	std::vector<int> vCornerRowLUT;          // Row-index into the FAST corners, speeds up access
-	std::vector<CVD::ImageRef> vMaxCorners;  // The maximal FAST corners
-	Level& operator=(const Level &rhs);
+  CVD::Image<CVD::byte> im;                // The pyramid level pixels
+  std::vector<CVD::ImageRef> vCorners;     // All FAST corners on this level
+  std::vector<int> vCornerRowLUT;          // Row-index into the FAST corners, speeds up access
+  std::vector<CVD::ImageRef> vMaxCorners;  // The maximal FAST corners
+  Level& operator=(const Level &rhs);
 
-	std::vector<Candidate> vCandidates;   // Potential locations of new map points
+  std::vector<Candidate> vCandidates;   // Potential locations of new map points
 
-	bool bImplaneCornersCached;           // Also keep image-plane (z=1) positions of FAST corners to speed up epipolar search
-	std::vector<Vector<2> > vImplaneCorners; // Corner points un-projected into z=1-plane coordinates
+  bool bImplaneCornersCached;           // Also keep image-plane (z=1) positions of FAST corners to speed up epipolar search
+  std::vector<Vector<2> > vImplaneCorners; // Corner points un-projected into z=1-plane coordinates
 };
 
 // The actual KeyFrame struct. The map contains of a bunch of these. However, the tracker uses this
@@ -78,42 +79,44 @@ struct Level
 // are then simply discarded, but sometimes they're then just added to the map.
 struct KeyFrame
 {
-	inline KeyFrame()
-	{
-		pSBI = NULL;
-		//slynen{ reprojection
-		for (unsigned int i = 0;i < iBestPointsCount; i++) apCurrentBestPoints[i] = NULL;
-		//}
-	}
-	SE3<> se3CfromW;    // The coordinate frame of this key-frame as a Camera-From-World transformation
-	bool bFixed;      // Is the coordinate frame of this keyframe fixed? (only true for first KF!)
-	Level aLevels[LEVELS];  // Images, corners, etc lives in this array of pyramid levels
-	std::map<MapPoint*, Measurement> mMeasurements;           // All the measurements associated with the keyframe
+  typedef boost::shared_ptr<KeyFrame> Ptr;
 
-	void MakeKeyFrame_Lite(CVD::BasicImage<CVD::byte> &im);   // This takes an image and calculates pyramid levels etc to fill the
-	// keyframe data structures with everything that's needed by the tracker..
-	void MakeKeyFrame_Rest();                                 // ... while this calculates the rest of the data which the mapmaker needs.
+  inline KeyFrame()
+  {
+    pSBI = NULL;
+  }
+  SE3<> se3CfromW;    // The coordinate frame of this key-frame as a Camera-From-World transformation
+  bool bFixed;      // Is the coordinate frame of this keyframe fixed? (only true for first KF!)
+  Level aLevels[LEVELS];  // Images, corners, etc lives in this array of pyramid levels
+  std::map<boost::shared_ptr<MapPoint>, Measurement> mMeasurements;           // All the measurements associated with the keyframe
 
-	//slynen{ reprojection
-	std::vector<MapPoint*> vpPoints;                          // stores the map points found in this keyframe
-	static const unsigned int iBestPointsCount = 5;                    // how many points to use for keyframe evaluation
-	MapPoint* apCurrentBestPoints[iBestPointsCount];	               // stores the currently best Points for Keyframe identification
-	void AddKeyMapPoint(MapPoint* mp);                        // checks whether to add a MapPoint to the KeyMapPoint of the KeyFrame
-	// those points help selecting the Keyframes which are visible for reprojection
-	//}
+  //slynen pcl interface{
+  int bID;
+  //}
+  void MakeKeyFrame_Lite(CVD::BasicImage<CVD::byte> &im);   // This takes an image and calculates pyramid levels etc to fill the
+  // keyframe data structures with everything that's needed by the tracker..
+  void MakeKeyFrame_Rest();                                 // ... while this calculates the rest of the data which the mapmaker needs.
 
-	double dSceneDepthMean;      // Hacky hueristics to improve epipolar search.
-	double dSceneDepthSigma;
+  //slynen{ reprojection
+  std::vector<boost::shared_ptr<MapPoint> > vpPoints;                          // stores the map points found in this keyframe
+  static const unsigned int iBestPointsCount = 5;                    // how many points to use for keyframe evaluation
+  boost::shared_ptr<MapPoint> apCurrentBestPoints[iBestPointsCount];	               // stores the currently best Points for Keyframe identification
+  void AddKeyMapPoint(boost::shared_ptr<MapPoint> mp);                        // checks whether to add a MapPoint to the KeyMapPoint of the KeyFrame
+  // those points help selecting the Keyframes which are visible for reprojection
+  //}
 
-//Weiss{
-	double dSceneDepthMedian;	// used to keep same scale after auto-re-init
-	int ID;			// KF id used to identify KFs when exporting them...
-//}
+  double dSceneDepthMean;      // Hacky hueristics to improve epipolar search.
+  double dSceneDepthSigma;
 
-	SmallBlurryImage *pSBI; // The relocaliser uses this
+  //Weiss{
+  double dSceneDepthMedian;	// used to keep same scale after auto-re-init
+  int ID;			// KF id used to identify KFs when exporting them...
+  //}
+
+  SmallBlurryImage *pSBI; // The relocaliser uses this
 };
 
-typedef std::map<MapPoint*, Measurement>::iterator meas_it;  // For convenience, and to work around an emacs paren-matching bug
+typedef std::map<boost::shared_ptr<MapPoint>, Measurement>::iterator meas_it;  // For convenience, and to work around an emacs paren-matching bug
 
 
 #endif
