@@ -59,17 +59,17 @@ public:
   // It also calculates which pyramid level we should search in, and this is
   // returned as an int. Negative level returned denotes an inappropriate 
   // transformation.
-  int CalcSearchLevelAndWarpMatrix(MapPoint& p, SE3<> se3CFromW, Matrix<2> &m2CamDerivs);
+  int CalcSearchLevelAndWarpMatrix(boost::shared_ptr<MapPoint> p, SE3<> se3CFromW, Matrix<2> &m2CamDerivs);
   inline int GetLevel() { return mnSearchLevel; }
   inline int GetLevelScale() { return LevelScale(mnSearchLevel); }
 
   // Step 2 Functions
   // Generates the NxN search template either from the pre-calculated warping matrix,
   // or an identity transformation.
-  void MakeTemplateCoarseCont(MapPoint::Ptr p); // If the warping matrix has already been pre-calced, use this.
-  void MakeTemplateCoarse(MapPoint::Ptr, SE3<> se3CFromW, Matrix<2> &m2CamDerivs); // This also calculates the warp.
-  void MakeTemplateCoarseNoWarp(MapPoint& p);  // Identity warp: just copies pixels from the source KF.
-  void MakeTemplateCoarseNoWarp(KeyFrame& k, int nLevel, CVD::ImageRef irLevelPos); // Identity warp if no MapPoint struct exists yet.
+  void MakeTemplateCoarseCont(boost::shared_ptr<MapPoint> p); // If the warping matrix has already been pre-calced, use this.
+  void MakeTemplateCoarse(boost::shared_ptr<MapPoint>, SE3<> se3CFromW, Matrix<2> &m2CamDerivs); // This also calculates the warp.
+  void MakeTemplateCoarseNoWarp(boost::shared_ptr<MapPoint> p);  // Identity warp: just copies pixels from the source KF.
+  void MakeTemplateCoarseNoWarp(boost::shared_ptr<KeyFrame> k, int nLevel, CVD::ImageRef irLevelPos); // Identity warp if no MapPoint struct exists yet.
 
   // If the template making failed (i.e. it needed pixels outside the source image),
   // this bool will return false.
@@ -79,7 +79,7 @@ public:
   // This is the raison d'etre of the class: finds the patch in the current input view,
   // centered around ir, Searching around FAST corner locations only within a radius nRange only.
   // Inputs are given in level-zero coordinates! Returns true if the patch was found.
-  bool FindPatchCoarse(CVD::ImageRef ir, KeyFrame& kf, unsigned int nRange);
+  bool FindPatchCoarse(CVD::ImageRef ir, boost::shared_ptr<KeyFrame> kf, unsigned int nRange);
   int ZMSSDAtPoint(CVD::BasicImage<CVD::byte> &im, const CVD::ImageRef &ir); // This evaluates the score at one location
   // Results from step 3:
   // All positions are in the scale of level 0.

@@ -29,17 +29,17 @@ PatchFinder::PatchFinder(int nPatchSize)
 
 
 // Find the warping matrix and search level
-int PatchFinder::CalcSearchLevelAndWarpMatrix(MapPoint& p,
+int PatchFinder::CalcSearchLevelAndWarpMatrix(MapPoint::Ptr p,
                                               SE3<> se3CFromW,
                                               Matrix<2> &m2CamDerivs)
 {
   // Calc point pos in new view camera frame
   // Slightly dumb that we re-calculate this here when the tracker's already done this!
-  Vector<3> v3Cam = se3CFromW * p.v3WorldPos;
+  Vector<3> v3Cam = se3CFromW * p->v3WorldPos;
   double dOneOverCameraZ = 1.0 / v3Cam[2];
   // Project the source keyframe's one-pixel-right and one-pixel-down vectors into the current view
-  Vector<3> v3MotionRight = se3CFromW.get_rotation() * p.v3PixelRight_W;
-  Vector<3> v3MotionDown = se3CFromW.get_rotation() * p.v3PixelDown_W;
+  Vector<3> v3MotionRight = se3CFromW.get_rotation() * p->v3PixelRight_W;
+  Vector<3> v3MotionDown = se3CFromW.get_rotation() * p->v3PixelDown_W;
   // Calculate in-image derivatives of source image pixel motions:
   mm2WarpInverse.T()[0] = m2CamDerivs * (v3MotionRight.slice<0,2>() - v3Cam.slice<0,2>() * v3MotionRight[2] * dOneOverCameraZ) * dOneOverCameraZ;
   mm2WarpInverse.T()[1] = m2CamDerivs * (v3MotionDown.slice<0,2>() - v3Cam.slice<0,2>() * v3MotionDown[2] * dOneOverCameraZ) * dOneOverCameraZ;
@@ -72,7 +72,7 @@ void PatchFinder::MakeTemplateCoarse(MapPoint::Ptr p,
                                      SE3<> se3CFromW,
                                      Matrix<2> &m2CamDerivs)
 {
-  CalcSearchLevelAndWarpMatrix(*p, se3CFromW, m2CamDerivs);
+  CalcSearchLevelAndWarpMatrix(p, se3CFromW, m2CamDerivs);
   MakeTemplateCoarseCont(p);
 };
 
@@ -129,10 +129,10 @@ void PatchFinder::MakeTemplateCoarseCont(MapPoint::Ptr p)
 // This makes a template without warping. Used for epipolar search, where we don't really know 
 // what the warping matrix should be. (Although to be fair, I should do rotation for epipolar,
 // which we could approximate without knowing patch depth!)
-void PatchFinder::MakeTemplateCoarseNoWarp(KeyFrame& k, int nLevel, ImageRef irLevelPos)
+void PatchFinder::MakeTemplateCoarseNoWarp(KeyFrame::Ptr k, int nLevel, ImageRef irLevelPos)
 {
   mnSearchLevel = nLevel;
-  Image<CVD::byte> &im = k.aLevels[nLevel].im;
+  Image<CVD::byte> &im = k->aLevels[nLevel].im;
   if(!im.in_image_with_border(irLevelPos, mnPatchSize / 2 + 1))
   {
     mbTemplateBad = true;
@@ -148,9 +148,9 @@ void PatchFinder::MakeTemplateCoarseNoWarp(KeyFrame& k, int nLevel, ImageRef irL
 }
 
 // Convenient wrapper for the above
-void PatchFinder::MakeTemplateCoarseNoWarp(MapPoint& p)
+void PatchFinder::MakeTemplateCoarseNoWarp(MapPoint::Ptr p)
 {
-  MakeTemplateCoarseNoWarp(*p.pPatchSourceKF, p.nSourceLevel,  p.irCenter);
+  MakeTemplateCoarseNoWarp(p->pPatchSourceKF, p->nSourceLevel,  p->irCenter);
 };
 
 // Finds the sum, and sum-squared, of template pixels. These sums are used
@@ -175,7 +175,7 @@ inline void PatchFinder::MakeTemplateSums()
 // the target keyframe to try and find the template. Looks only at FAST corner points
 // which are within radius nRange of the center. (Params are supplied in Level0
 // coords.) Returns true on patch found.
-bool PatchFinder::FindPatchCoarse(ImageRef irPos, KeyFrame& kf, unsigned int nRange)
+bool PatchFinder::FindPatchCoarse(ImageRef irPos, KeyFrame::Ptr kf, unsigned int nRange)
 {
   mbFound = false;
 
@@ -192,7 +192,7 @@ bool PatchFinder::FindPatchCoarse(ImageRef irPos, KeyFrame& kf, unsigned int nRa
   int nRight = irPos.x + nRange;
 
   // Ref variable for the search level
-  Level &L = kf.aLevels[mnSearchLevel];
+  Level &L = kf->aLevels[mnSearchLevel];
 
   // Some bounds checks on the bounding box..
   if(nTop < 0)

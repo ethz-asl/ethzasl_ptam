@@ -700,7 +700,7 @@ void Tracker::TrackMap()
       TData.GetDerivsUnsafe(mCamera);// Calculate camera projection derivatives of this point.
 
       // And check what the PatchFinder (included in TrackerData) makes of the mappoint in this view..
-      TData.nSearchLevel = TData.Finder.CalcSearchLevelAndWarpMatrix(*TData.Point, mse3CamFromWorld, TData.m2CamDerivs);
+      TData.nSearchLevel = TData.Finder.CalcSearchLevelAndWarpMatrix(TData.Point, mse3CamFromWorld, TData.m2CamDerivs);
       if(TData.nSearchLevel == -1)
         continue;   // a negative search pyramid level indicates an inappropriate warp for this view, so skip.
 
@@ -1050,7 +1050,7 @@ int Tracker::SearchForPoints(vector<TrackerData*> &vTD, int nRange, int nSubPixI
     manMeasAttempted[Finder.GetLevel()]++;  // Stats for tracking quality assessmenta
 
     bool bFound =
-        Finder.FindPatchCoarse(ir(TD.v2Image), *mCurrentKF, nRange);
+        Finder.FindPatchCoarse(ir(TD.v2Image), mCurrentKF, nRange);
     TD.bSearched = true;
     if(!bFound)
     {
