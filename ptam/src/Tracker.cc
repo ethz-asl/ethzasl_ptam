@@ -535,7 +535,10 @@ void Tracker::TrackForInitialMap()
 void Tracker::TrailTracking_Start()
 {
   mCurrentKF->MakeKeyFrame_Rest();  // This populates the Candidates list, which is Shi-Tomasi thresholded.
+<<<<<<< HEAD
 
+=======
+>>>>>>> using reset for the shared_ptrs instead of assignment
   mFirstKF.reset(new KeyFrame); //TODO check if we need to copy the data, or
   *mFirstKF = *mCurrentKF; //copy data
 
