@@ -114,7 +114,7 @@ void Tracker::TrackFrame(Image<CVD::byte> &imFrame, bool bDraw)
 
   // Take the input video image, and convert it into the tracker's keyframe struct
   // This does things like generate the image pyramid and find FAST corners
-  mCurrentKF = KeyFrame::Ptr(new KeyFrame);
+  mCurrentKF.reset(new KeyFrame);
   mCurrentKF->mMeasurements.clear();
   mCurrentKF->MakeKeyFrame_Lite(imFrame);
 
@@ -532,7 +532,7 @@ void Tracker::TrackForInitialMap()
 void Tracker::TrailTracking_Start()
 {
   mCurrentKF->MakeKeyFrame_Rest();  // This populates the Candidates list, which is Shi-Tomasi thresholded.
-  mFirstKF = KeyFrame::Ptr(new KeyFrame); //TODO check if we need to copy the data, or
+  mFirstKF.reset(new KeyFrame); //TODO check if we need to copy the data, or
   *mFirstKF = *mCurrentKF; //copy data
 
   vector<pair<double,ImageRef> > vCornersAndSTScores;
@@ -560,7 +560,7 @@ void Tracker::TrailTracking_Start()
     mlTrails.push_back(t);
     nToAdd--;
   }
-  mPreviousFrameKF = KeyFrame::Ptr(new KeyFrame);
+  mPreviousFrameKF.reset(new KeyFrame);
   *mPreviousFrameKF = *mFirstKF;  // Always store the previous frame so married-matching can work.
 }
 
