@@ -55,7 +55,7 @@ void System::init(const CVD::ImageRef & size)
   mpCamera = new ATANCamera("Camera");
 
   mpMap = new Map;
-  mpMapMaker = new MapMaker(*mpMap, *mpCamera);
+  mpMapMaker = new MapMaker(*mpMap, *mpCamera, nh_);
   mpTracker = new Tracker(size, *mpCamera, *mpMap, *mpMapMaker);
 
   GUI.RegisterCommand("exit", GUICommandCallBack, this);
