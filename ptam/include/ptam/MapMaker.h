@@ -24,6 +24,7 @@
 #include <queue>
 #include <sstream>
 #include <boost/shared_ptr.hpp>
+#include <ptam/OctomapInterface.h>
 
 
 // Each MapPoint has an associated MapMakerData class
@@ -41,7 +42,7 @@ struct MapMakerData
 class MapMaker : protected CVD::Thread
 {
 public:
-  MapMaker(Map &m, const ATANCamera &cam);
+  MapMaker(Map &m, const ATANCamera &cam, ros::NodeHandle& nh);
   ~MapMaker();
 
   // Make a map from scratch. Called by the tracker.
@@ -76,6 +77,10 @@ protected:
   Map &mMap;               // The map
   ATANCamera mCamera;      // Same as the tracker's camera: N.B. not a reference variable!
   virtual void run();      // The MapMaker thread code lives here
+
+  //slynen octomap_interface{
+  OctoMapInterface octomap_interface;
+  //}
 
   // Functions for starting the map from scratch:
   SE3<> CalcPlaneAligner();

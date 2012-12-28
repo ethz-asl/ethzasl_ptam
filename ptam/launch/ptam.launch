@@ -1,5 +1,5 @@
 <launch>
-    <node name="ptam" pkg="ptam" type="ptam" clear_params="true" output="screen">
+    <node launch-prefix="gdb -ex run --args" name="ptam" pkg="ptam" type="ptam" clear_params="true" output="screen">
 	    <remap from="image" to="$(optenv IMAGE /camera/image_raw)" />
         <remap from="pose" to="pose"/>
 	    <rosparam file="$(find ptam)/PtamFixParams.yaml"/>

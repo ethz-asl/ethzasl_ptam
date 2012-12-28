@@ -43,6 +43,7 @@ set(PTAM_SOURCE_FILES
   src/Relocaliser.cc  
   src/System.cc     
   src/Params.cpp
+  src/OctomapInterface.cc
 )
 
 set(PTAM_HEADER_FILES        
