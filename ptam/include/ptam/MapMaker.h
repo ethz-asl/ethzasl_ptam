@@ -79,7 +79,7 @@ protected:
   virtual void run();      // The MapMaker thread code lives here
 
   //slynen octomap_interface{
-  OctoMapInterface octomap_interface;
+  OctoMapInterface mOctoMapInterface;
   //}
 
   // Functions for starting the map from scratch:

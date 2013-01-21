@@ -11,6 +11,11 @@ include($ENV{ROS_ROOT}/core/rosbuild/rosbuild.cmake)
 
 rosbuild_init()
 
+set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake/modules" )
+find_package(Matlab)
+
+include_directories(${MATLAB_INCLUDE_DIR})
+
 set(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/bin)
 set(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/lib)
 
@@ -127,3 +132,9 @@ rosbuild_add_executable(remote_ptam src/RemotePtam.cpp)
 target_link_libraries(remote_ptam ${GTK_LIBRARIES})
 
 rosbuild_add_executable(ptam_visualizer src/PTAMVisualizer.cpp)
+
+rosbuild_add_library(matlabTrackerIF src/matlabTrackerIF.cc src/ATANCamera_noROS.cc src/MapPoint.cc)
+target_link_libraries(matlabTrackerIF ${MATLAB_LIBRARIES} ${PTAM_LIBRARIES})
+
+rosbuild_add_executable(matlabTrackerIF_test src/matlabTrackerIF.cc src/ATANCamera_noROS.cc src/MapPoint.cc)
+target_link_libraries(matlabTrackerIF_test ${MATLAB_LIBRARIES} ${PTAM_LIBRARIES})

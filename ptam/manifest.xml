@@ -18,6 +18,7 @@
   <depend package="tf"/>
   <depend package="visualization_msgs"/>
   <depend package="dynamic_reconfigure"/>
+  <depend package="pcl"/>
   <rosdep name="lapack"/>
   <rosdep name="blas"/>	
   <rosdep name="glut"/>	

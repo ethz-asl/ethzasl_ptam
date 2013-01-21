@@ -68,7 +68,7 @@ class CalibImage;
 class ATANCamera {
 public:
   ATANCamera(std::string sName);
-
+  ATANCamera(std::string sName, double Cam_fx, double Cam_fy, double Cam_cx, double Cam_cy, double Cam_s, double ImageSizeX, double ImageSizeY);
   // Image size get/set: updates the internal projection params to that target image size.
   void SetImageSize(Vector<2> v2ImageSize);
   inline void SetImageSize(CVD::ImageRef irImageSize) {SetImageSize(vec(irImageSize));};

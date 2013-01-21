@@ -37,7 +37,7 @@ using namespace GVars3;
 // Constructor sets up internal reference variable to Map.
 // Most of the intialisation is done by Reset()..
 MapMaker::MapMaker(Map& m, const ATANCamera &cam, ros::NodeHandle& nh)
-: mMap(m), mCamera(cam), octomap_interface(nh)
+: mMap(m), mCamera(cam), mOctoMapInterface(nh, m)
 {
   mbResetRequested = false;
   Reset();
@@ -167,7 +167,7 @@ void MapMaker::HandleBadPoints()
     if(mMap.vpPoints[i]->bBad)
     {
       //slynen octomap_interface{
-      octomap_interface.deletePoint(mMap.vpPoints[i]);
+      mOctoMapInterface.deletePoint(mMap.vpPoints[i]);
       //}
       MapPoint::Ptr p = mMap.vpPoints[i];
       for(unsigned int j=0; j<mMap.vpKeyFrames.size(); j++)
@@ -469,8 +469,8 @@ bool MapMaker::InitFromStereo(KeyFrame::Ptr kF,
   mMessageForUser << "  MapMaker: made initial map with " << mMap.vpPoints.size() << " points." << endl;
 
   //slynen octomap_interface{
-    octomap_interface.addKeyFrame(pkFirst);
-    octomap_interface.addKeyFrame(pkSecond);
+    mOctoMapInterface.addKeyFrame(pkFirst);
+    mOctoMapInterface.addKeyFrame(pkSecond);
   //}
 
   return true;
@@ -654,7 +654,7 @@ void MapMaker::AddKeyFrameFromTopOfQueue()
   mbBundleConverged_Recent = false;
 
   //slynen octomap_interface{
-  octomap_interface.addKeyFrame(pK);
+  mOctoMapInterface.addKeyFrame(pK);
   //}
 }
 
@@ -1099,7 +1099,7 @@ void MapMaker::BundleAdjust(set<KeyFrame::Ptr> sAdjustSet, set<KeyFrame::Ptr> sF
       itr->first->v3WorldPos = b.GetPoint(itr->second);
       mapPointsToUpdate.insert(itr->first);
     }
-    octomap_interface.updatePoints(mapPointsToUpdate);
+    mOctoMapInterface.updatePoints(mapPointsToUpdate);
     //}
 
     for(map<KeyFrame::Ptr,int>::iterator itr = mView_BundleID.begin();
@@ -1238,7 +1238,7 @@ bool MapMaker::ReFind_Common(KeyFrame::Ptr k, MapPoint::Ptr p)
 #endif
   //}
   //slynen octomap_interface{
-  octomap_interface.updatePoint(p);
+  mOctoMapInterface.updatePoint(p);
   //}
   return true;
 }

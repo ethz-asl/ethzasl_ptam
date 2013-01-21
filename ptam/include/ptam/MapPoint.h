@@ -43,7 +43,7 @@ struct MapPoint
     nSourceLevel = 0;
     //slynen pcl interface{
     static size_t ID = 0;
-    bID = ID++;
+    iID = ID++;
     //}
   };
 
@@ -56,7 +56,7 @@ struct MapPoint
   bool bAlreadyProjected;
   //}
   //slynen pcl interface{
-  int bID;
+  int iID;
   //}
   // What pixels should be used to search for this point?
   boost::shared_ptr<KeyFrame> pPatchSourceKF; // The KeyFrame the point was originally made in

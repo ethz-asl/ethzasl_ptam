@@ -1,3 +1,4 @@
 OctoMapPointArray mapPoints
+uint32 id
 geometry_msgs/PoseWithCovarianceStamped keyFramePose
 
