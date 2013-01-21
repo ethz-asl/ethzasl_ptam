@@ -37,9 +37,10 @@ using namespace std;
 class IF{
 public:
   Matrix<6> mmCovariances;          // covariance of current converged pose estimate
+  Matrix<6> mmCInv;
 
   Vector<6> CalcPoseUpdate(vector<TrackerData*> vTD, double dOverrideSigma, bool bMarkOutliers)
-                                                {
+                                                                                        {
     // Which M-estimator are we using?
     int nEstimator = 0;
     //Weiss{
@@ -123,15 +124,19 @@ public:
       Matrix<2,6> &m26Jac = TD.m26Jacobian;
       wls.add_mJ(v2[0], TD.dSqrtInvNoise * m26Jac[0], dWeight); // These two lines are currently
       wls.add_mJ(v2[1], TD.dSqrtInvNoise * m26Jac[1], dWeight); // the slowest bit of poseits
+
     }
 
     wls.compute();
+
     //Weiss{
-    if (bMarkOutliers)    //only true for last iteration, see code above... (iter==9)
+    if (bMarkOutliers){    //only true for last iteration, see code above... (iter==9)
       mmCovariances=TooN::SVD<6>(wls.get_C_inv()).get_pinv();
+      mmCInv = wls.get_C_inv();
+    }
     //}
     return wls.get_mu();
-                                                }
+                                                                                        }
 
   void calculateCovariance(std::vector<boost::shared_ptr<MapPoint> >& vpPoints, SE3<>& mse3CamFromWorld, ATANCamera& mCamera, double pixelnoise){
 
@@ -146,22 +151,26 @@ public:
 
       // Project according to current view, and if it's not in the image, skip.
       TData.Project(mse3CamFromWorld, mCamera);
-      if(!TData.bInImage)
+      if(!TData.bInImage){
+        std::cout<<"point "<<i<<" is invalid. not in the image"<<std::endl;
         continue;
+      }
 
       // Calculate camera projection derivatives of this point.
       TData.GetDerivsUnsafe(mCamera);
 
-      // And check what the PatchFinder (included in TrackerData) makes of the mappoint in this view..
-      TData.nSearchLevel = TData.Finder.CalcSearchLevelAndWarpMatrix(TData.Point, mse3CamFromWorld, TData.m2CamDerivs);
-      if(TData.nSearchLevel == -1)
-        continue;   // a negative search pyramid level indicates an inappropriate warp for this view, so skip.
-
+      //      // And check what the PatchFinder (included in TrackerData) makes of the mappoint in this view..
+      //      TData.nSearchLevel = TData.Finder.CalcSearchLevelAndWarpMatrix(TData.Point, mse3CamFromWorld, TData.m2CamDerivs);
+      //      if(TData.nSearchLevel == -1){
+      //        std::cout<<"point "<<i<<" is invalid. Warpmatrix calc failed"<<std::endl;
+      //        continue;   // a negative search pyramid level indicates an inappropriate warp for this view, so skip.
+      //      }
       // Otherwise, this point is suitable to be searched in the current image! Add to the PVS.
       TData.bSearched = false;
       TData.bFound = false;
       avPVS[TData.nSearchLevel].push_back(&TData);
     };
+    std::cout<<"ok, calculated derivs and proj matrices."<<std::endl;
 
     // Next: A large degree of faffing about and deciding which points are going to be measured!
     // First, randomly shuffle the individual levels of the PVS.
@@ -305,6 +314,7 @@ public:
       for(unsigned int i=0; i<avPVS[l].size(); i++)
         vNextToSearch.push_back(avPVS[l][i]);
 
+    std::cout<<"ok, added to opt set. having "<<vNextToSearch.size()<<" points"<<std::endl;
     //    // But we haven't got CPU to track _all_ patches in the map - arbitrarily limit
     //    // ourselves to 1000, and choose these randomly.
     //    //Weiss{
@@ -333,12 +343,20 @@ public:
       vNextToSearch[i]->dSqrtInvNoise = (1.0 / 3); //TODO put some some level instead of 3
 
       Vector<2> perturbation;
+      srand(i);
       perturbation[0] = rand()/(double)RAND_MAX * pixelnoise;
       perturbation[1] = rand()/(double)RAND_MAX * pixelnoise;
 
+
       vNextToSearch[i]->v2Found = vNextToSearch[i]->v2Image + perturbation;
+
+      std::cout<<"point "<<i<<" perturbation "<<perturbation[0]<<" "<<perturbation[1]<<std::endl;
+      std::cout<<"point "<<i<<" v2Image "<<vNextToSearch[i]->v2Image[0]<<" "<<vNextToSearch[i]->v2Image[1]<<std::endl;
+      std::cout<<"point "<<i<<" v2Found "<<vNextToSearch[i]->v2Found[0]<<" "<<vNextToSearch[i]->v2Found[1]<<std::endl;
+
     }
 
+    std::cout<<"ok, added perturbation and simulated observations"<<std::endl;
 
     // And attach them all to the end of the optimisation-set.
     for(unsigned int i=0; i<vNextToSearch.size(); i++)
@@ -349,6 +367,8 @@ public:
     v6LastUpdate = Zeros;
     for(int iter = 0; iter<10; iter++)
     {
+      std::cout<<"ok, starting iteration "<<iter; std::cout.flush();
+
       bool bNonLinearIteration; // For a bit of time-saving: don't do full nonlinear
       // reprojection at every iteration - it really isn't necessary!
       if(iter == 0 || iter == 4 || iter == 9)
@@ -387,11 +407,95 @@ public:
           CalcPoseUpdate(vIterationSet, dOverrideSigma, iter==9);
       mse3CamFromWorld = SE3<>::exp(v6Update) * mse3CamFromWorld;
       v6LastUpdate = v6Update;
+      std::cout<<" done."<<std::endl;
     };
   }
 };
 
+void doTest(){
 
+  std::cout<<"Running doTest"<<std::endl;
+
+  double Cam_fx = 0.795574;
+  double Cam_fy = 1.25149;
+  double Cam_cx = 0.50417;
+  double Cam_cy = 0.51687;
+  double Cam_s = 0.482014;
+  double ImageSizeX = 640;
+  double ImageSizeY = 480;
+  std::vector<boost::shared_ptr<MapPoint> > vpPoints;
+  SE3<> mse3CamFromWorld;
+
+  ATANCamera mCamera("CAMERA", Cam_fx, Cam_fy, Cam_cx, Cam_cy, Cam_s, ImageSizeX, ImageSizeY);
+
+  TooN::Matrix<3> rotation;
+  rotation(0,0) =  0.991464;
+  rotation(0,1) =  0.124893;
+  rotation(0,2) =  0.124893;
+
+  rotation(1,0) =  0.117282;
+  rotation(1,1) =  -0.97972;
+  rotation(1,2) =  -0.162461;
+
+  rotation(2,0) =  -0.0569516;
+  rotation(2,1) =  0.156685;
+  rotation(2,2) =  -0.986005;
+
+  TooN::Vector<3> translation = TooN::makeVector(0.789354, 0.0709251, 1.64471);
+
+  TooN::SO3<> so3(rotation);
+  mse3CamFromWorld = TooN::SE3<>(so3,translation);
+
+  boost::shared_ptr<MapPoint> pt;
+
+  pt.reset(new MapPoint);
+  pt->v3WorldPos = TooN::makeVector(-0.520898, 0.059774, -0.00237556);
+  vpPoints.push_back(pt);
+  pt.reset(new MapPoint);
+  pt->v3WorldPos = TooN::makeVector( -0.536628, 0.0557534, 0.0170862);
+  vpPoints.push_back(pt);
+  pt.reset(new MapPoint);
+  pt->v3WorldPos = TooN::makeVector( -0.926411, -0.103911, -0.0103726);
+  vpPoints.push_back(pt);
+  pt.reset(new MapPoint);
+  pt->v3WorldPos = TooN::makeVector( -0.913931, -0.127581, 0.0193194);
+  vpPoints.push_back(pt);
+  pt.reset(new MapPoint);
+  pt->v3WorldPos = TooN::makeVector( -0.90015, -0.122935, -0.0160205);
+  vpPoints.push_back(pt);
+  pt.reset(new MapPoint);
+  pt->v3WorldPos = TooN::makeVector( -0.71537, -0.107164, -0.00494531);
+  vpPoints.push_back(pt);
+  pt.reset(new MapPoint);
+  pt->v3WorldPos = TooN::makeVector( -0.801244, 0.176297, -0.00502234);
+  vpPoints.push_back(pt);
+  pt.reset(new MapPoint);
+  pt->v3WorldPos = TooN::makeVector( -0.814134, 0.169979, 0.0189816);
+  vpPoints.push_back(pt);
+  pt.reset(new MapPoint);
+  pt->v3WorldPos = TooN::makeVector( -0.429025, 0.0571335, -0.000828381);
+  vpPoints.push_back(pt);
+  pt.reset(new MapPoint);
+  pt->v3WorldPos = TooN::makeVector( -0.62596, 0.137993, 0.0405261);
+  vpPoints.push_back(pt);
+
+  IF theInterface;
+
+  TrackerData::irImageSize = CVD::ImageRef(ImageSizeX, ImageSizeY);
+
+  theInterface.calculateCovariance(vpPoints, mse3CamFromWorld, mCamera, 2);
+
+  Matrix<6>& cov = theInterface.mmCInv;
+
+  std::cout<<"inverse covariance"<<std::endl;
+  for(int i = 0;i<6;++i){
+    for(int j = 0;j<6;++j){
+      std::cout<<cov(j,i)<<" ";
+    }
+    std::cout<<std::endl;
+
+  }
+}
 
 /* The gateway function */
 void mexFunction( int nlhs, mxArray *plhs[],
@@ -456,62 +560,77 @@ void mexFunction( int nlhs, mxArray *plhs[],
 
   ATANCamera mCamera("CAMERA", Cam_fx, Cam_fy, Cam_cx, Cam_cy, Cam_s, ImageSizeX, ImageSizeY);
 
-  std::cout<<"got "<<ncols<<" points"<<std::endl;
-
-  for(size_t i = 0;i<ncols;++i){
-    boost::shared_ptr<MapPoint> pt(new MapPoint);
-    for(int j = 0;j<3;++j){
-      pt->v3WorldPos[j] = inPoints[i*3+j];
-      vpPoints.push_back(pt);
-    }
-  }
-  return;
-  //  TooN::Matrix<3> rotation;
-  //  for(int i = 0;i<3;++i){
-  //    for(int j = 0;j<3;++j){
-  //      rotation(j,i) = inCamera[i*3+j];
-  //    }
-  //  }
-  //  TooN::Vector<3>& translation = mse3CamFromWorld.get_translation();
-  //  for(int i = 0;i<3;++i){
-  //    translation[i] = inCamera[9+i];
-  //  }
-  //  TooN::SO3<> so3(rotation);
-  //  mse3CamFromWorld = TooN::SE3<>(so3,translation);
-  //
-  //  std::stringstream ss;
-  //  ss<<"Camera matrix"<<std::endl;
-  //  for(int i = 0;i<3;++i){
-  //    for(int j = 0;j<3;++j){
-  //      ss<<rotation(i,j)<<" ";
-  //    }
-  //    ss<<std::endl;
-  //  }
-  //
-  //  ss<<"translation "<<std::endl;
-  //
-  //  for(int i = 0;i<3;++i){
-  //    ss<<translation[i]<<" ";
-  //  }
-  //  std::cout<<ss.str()<<std::endl;
-
-
-  //  calculateCovariance(vpPoints, mse3CamFromWorld, mCamera, pixelnoise)
-}
-
-
-int main(int argc, char** argv){
-  //blubb
-  double Cam_fx = 0.795574;
-  double Cam_fy = 1.25149;
-  double Cam_cx = 0.50417;
-  double Cam_cy = 0.51687;
-  double Cam_s = 0.482014;
-  double ImageSizeX = 640;
-  double ImageSizeY = 480;
-  ATANCamera mCamera("CAMERA", Cam_fx, Cam_fy, Cam_cx, Cam_cy, Cam_s, ImageSizeX, ImageSizeY);
-
+  std::cout<<"got "<<ncols<<" points in input Matrix"<<std::endl;
 
   boost::shared_ptr<MapPoint> pt(new MapPoint);
-  std::cout<<pt->bBad<<std::endl;
+  for(size_t i = 0;i<ncols;++i){
+    pt.reset(new MapPoint);
+    for(int j = 0;j<3;++j){
+      pt->v3WorldPos[j] = inPoints[i*3+j];
+    }
+    std::cout<<"point "<<i<<" "<<pt->v3WorldPos[0]<<" "<<pt->v3WorldPos[1]<<" "<<pt->v3WorldPos[2]<<std::endl;
+    vpPoints.push_back(pt);
+  }
+  std::cout<<"now have "<<vpPoints.size()<<" points in map"<<std::endl;
+
+  TooN::Matrix<3> rotation;
+  for(int i = 0;i<3;++i){
+    for(int j = 0;j<3;++j){
+      rotation(j,i) = inCamera[i*3+j];
+    }
+  }
+  TooN::Vector<3> translation;
+  for(int i = 0;i<3;++i){
+    translation[i] = inCamera[9+i];
+  }
+  TooN::SO3<> so3(rotation);
+  mse3CamFromWorld = TooN::SE3<>(so3,translation);
+
+  std::stringstream ss;
+  ss<<"Camera matrix"<<std::endl;
+  for(int i = 0;i<3;++i){
+    for(int j = 0;j<3;++j){
+      ss<<rotation(i,j)<<" ";
+    }
+    ss<<std::endl;
+  }
+
+  ss<<"translation "<<std::endl;
+
+  for(int i = 0;i<3;++i){
+    ss<<translation[i]<<" ";
+  }
+  std::cout<<ss.str()<<std::endl;
+
+  IF theInterface;
+  TrackerData::irImageSize = CVD::ImageRef(ImageSizeX, ImageSizeY);
+
+  theInterface.calculateCovariance(vpPoints, mse3CamFromWorld, mCamera, pixelnoise);
+
+  Matrix<6>& cov = theInterface.mmCInv;
+
+  for(int i = 0;i<6;++i){
+    for(int j = 0;j<6;++j){
+      outCovarianceMatrix[i*6+j] = cov(i,j);
+    }
+  }
+
+//  std::stringstream ss2;
+//  ss2<<"inv covariance"<<std::endl;
+//  for(int i = 0;i<6;++i){
+//    for(int j = 0;j<6;++j){
+//      ss2<<cov(j,i)<<" ";
+//    }
+//    ss2<<std::endl;
+//  }
+//  std::cout<<ss2.str()<<std::endl;
+}
+
+//has to live here, because we haven't compiled the Tracker sources
+CVD::ImageRef TrackerData::irImageSize;
+
+int main(int argc, char** argv){
+
+  doTest();
+
 }

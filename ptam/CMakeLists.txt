@@ -133,8 +133,10 @@ target_link_libraries(remote_ptam ${GTK_LIBRARIES})
 
 rosbuild_add_executable(ptam_visualizer src/PTAMVisualizer.cpp)
 
-rosbuild_add_library(matlabTrackerIF src/matlabTrackerIF.cc src/ATANCamera_noROS.cc src/MapPoint.cc)
+rosbuild_add_library(matlabTrackerIF src/matlabTrackerIF.cc src/ATANCamera_noROS.cc src/MapPoint.cc  include/ptam/TrackerData.h src/PatchFinder.cc)
+rosbuild_add_compile_flags(matlabTrackerIF -D_LINUX -D_REENTRANT -Wall  -O3 -march=nocona -msse3)
 target_link_libraries(matlabTrackerIF ${MATLAB_LIBRARIES} ${PTAM_LIBRARIES})
 
-rosbuild_add_executable(matlabTrackerIF_test src/matlabTrackerIF.cc src/ATANCamera_noROS.cc src/MapPoint.cc)
+rosbuild_add_executable(matlabTrackerIF_test src/matlabTrackerIF.cc src/ATANCamera_noROS.cc src/MapPoint.cc  include/ptam/TrackerData.h src/PatchFinder.cc)
+rosbuild_add_compile_flags(matlabTrackerIF_test -D_LINUX -D_REENTRANT -Wall  -O3 -march=nocona -msse3)
 target_link_libraries(matlabTrackerIF_test ${MATLAB_LIBRARIES} ${PTAM_LIBRARIES})

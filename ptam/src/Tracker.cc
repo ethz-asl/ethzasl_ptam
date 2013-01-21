@@ -677,6 +677,22 @@ void Tracker::TrackMap()
       if(foundKFPoints>1) vpPVKeyFrames.push_back(mMap.vpKeyFrames.at(k));
     };
   };
+
+  const Matrix<3> rot = mse3CamFromWorld.get_rotation().get_matrix();
+  const Vector<3> trans = mse3CamFromWorld.get_translation();
+
+  std::stringstream ss;
+  ss<<"camFromWorld ";
+  for(int i = 0;i<3;++i){
+    for(int j = 0;j<3;++j){
+      ss<<rot(i,j)<<" ";
+    }
+    ss<<trans[i]<<" ";
+    ss<<std::endl;
+  }
+
+  std::cout<<ss.str();
+
   //if we didn't find any Keyframes or tracking quality is bad
   //we fall back to reprojecting all keyframes, thus all points
   if (vpPVKeyFrames.size() < 1) {
@@ -697,6 +713,8 @@ void Tracker::TrackMap()
       if(!TData.bInImage)
         continue;
 
+      std::cout<<"point "<<p->v3WorldPos[0]<<" "<<p->v3WorldPos[1]<<" "<<p->v3WorldPos[2]<<std::endl;
+
       TData.GetDerivsUnsafe(mCamera);// Calculate camera projection derivatives of this point.
 
       // And check what the PatchFinder (included in TrackerData) makes of the mappoint in this view..
@@ -708,6 +726,9 @@ void Tracker::TrackMap()
       TData.bSearched = false;
       TData.bFound = false;
       avPVS[TData.nSearchLevel].push_back(&TData);
+
+
+
     };
   };
 

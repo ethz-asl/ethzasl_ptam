@@ -49,17 +49,21 @@ struct TrackerData
   {
     bInImage = bPotentiallyVisible = false;
     v3Cam = se3CFromW * Point->v3WorldPos;
-    if(v3Cam[2] < 0.001)
+    if(v3Cam[2] < 0.001){
       return;
+    }
     v2ImPlane = project(v3Cam);
-    if(v2ImPlane*v2ImPlane > Cam.LargestRadiusInImage() * Cam.LargestRadiusInImage())
+    if(v2ImPlane*v2ImPlane > Cam.LargestRadiusInImage() * Cam.LargestRadiusInImage()){
       return;
+    }
     v2Image = Cam.Project(v2ImPlane);
-    if(Cam.Invalid())
+    if(Cam.Invalid()){
       return;
+    }
 
-    if(v2Image[0] < 0 || v2Image[1] < 0 || v2Image[0] > irImageSize[0] || v2Image[1] > irImageSize[1])
+    if(v2Image[0] < 0 || v2Image[1] < 0 || v2Image[0] > irImageSize[0] || v2Image[1] > irImageSize[1]){
       return;
+    }
     bInImage = true;
   }
 
