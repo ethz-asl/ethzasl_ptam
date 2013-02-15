@@ -22,6 +22,7 @@
   <rosdep name="lapack"/>
   <rosdep name="blas"/>	
   <rosdep name="glut"/>	
+  <rosdep name="sm_timing"/>	
 </package>
 
 

@@ -16,6 +16,7 @@
 #include <TooN/SVD.h>
 #include <gvars3/instances.h>
 #include <gvars3/GStringUtil.h>
+#include <TooN/determinant.h>
 
 #include <cv.h>
 
@@ -1207,8 +1208,10 @@ Vector<6> Tracker::CalcPoseUpdate(vector<TrackerData*> vTD, double dOverrideSigm
 
   wls.compute();
   //Weiss{
-  if (bMarkOutliers)	//only true for last iteration, see code above... (iter==9)
+  if (bMarkOutliers){	//only true for last iteration, see code above... (iter==9)
     mmCovariances=TooN::SVD<6>(wls.get_C_inv()).get_pinv();
+    std::cout<<"cov det "<<TooN::determinant(mmCovariances)<<std::endl;
+  }
   //}
   return wls.get_mu();
 }

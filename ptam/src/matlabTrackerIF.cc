@@ -22,6 +22,7 @@
 #include <TooN/SVD.h>
 #include <gvars3/instances.h>
 #include <gvars3/GStringUtil.h>
+#include <TooN/determinant.h>
 
 #include <cv.h>
 
@@ -40,7 +41,7 @@ public:
   Matrix<6> mmCInv;
 
   Vector<6> CalcPoseUpdate(vector<TrackerData*> vTD, double dOverrideSigma, bool bMarkOutliers)
-                                                                                        {
+                                                                                                    {
     // Which M-estimator are we using?
     int nEstimator = 0;
     //Weiss{
@@ -133,14 +134,16 @@ public:
     if (bMarkOutliers){    //only true for last iteration, see code above... (iter==9)
       mmCovariances=TooN::SVD<6>(wls.get_C_inv()).get_pinv();
       mmCInv = wls.get_C_inv();
+//      std::cout<<"cov "<<std::endl<<mmCInv<<std::endl;
+//      std::cout<<"det cov "<<TooN::determinant(mmCovariances)<<std::endl;
     }
     //}
     return wls.get_mu();
-                                                                                        }
+                                                                                                    }
 
   void calculateCovariance(std::vector<boost::shared_ptr<MapPoint> >& vpPoints, SE3<>& mse3CamFromWorld, ATANCamera& mCamera, double pixelnoise){
 
-    vector<TrackerData*> avPVS[LEVELS];
+    vector<TrackerData*> avPVS;
     // For all points in the map..
     for(unsigned int i=0; i<vpPoints.size(); i++)
     {
@@ -152,7 +155,7 @@ public:
       // Project according to current view, and if it's not in the image, skip.
       TData.Project(mse3CamFromWorld, mCamera);
       if(!TData.bInImage){
-        std::cout<<"point "<<i<<" is invalid. not in the image"<<std::endl;
+        //std::cout<<"point "<<i<<" is invalid. not in the image"<<std::endl;
         continue;
       }
 
@@ -168,9 +171,10 @@ public:
       // Otherwise, this point is suitable to be searched in the current image! Add to the PVS.
       TData.bSearched = false;
       TData.bFound = false;
-      avPVS[TData.nSearchLevel].push_back(&TData);
+      avPVS.push_back(&TData);
+
     };
-    std::cout<<"ok, calculated derivs and proj matrices."<<std::endl;
+    //std::cout<<"ok, calculated derivs and proj matrices."<<std::endl;
 
     // Next: A large degree of faffing about and deciding which points are going to be measured!
     // First, randomly shuffle the individual levels of the PVS.
@@ -310,9 +314,8 @@ public:
 
     // All the others levels: Initially, put all remaining potentially visible patches onto vNextToSearch.
     vNextToSearch.clear();
-    for(int l=LEVELS - 1; l>=0; l--)
-      for(unsigned int i=0; i<avPVS[l].size(); i++)
-        vNextToSearch.push_back(avPVS[l][i]);
+    for(unsigned int i=0; i<avPVS.size(); i++)
+      vNextToSearch.push_back(avPVS[i]);
 
     std::cout<<"ok, added to opt set. having "<<vNextToSearch.size()<<" points"<<std::endl;
     //    // But we haven't got CPU to track _all_ patches in the map - arbitrarily limit
@@ -350,13 +353,13 @@ public:
 
       vNextToSearch[i]->v2Found = vNextToSearch[i]->v2Image + perturbation;
 
-      std::cout<<"point "<<i<<" perturbation "<<perturbation[0]<<" "<<perturbation[1]<<std::endl;
-      std::cout<<"point "<<i<<" v2Image "<<vNextToSearch[i]->v2Image[0]<<" "<<vNextToSearch[i]->v2Image[1]<<std::endl;
-      std::cout<<"point "<<i<<" v2Found "<<vNextToSearch[i]->v2Found[0]<<" "<<vNextToSearch[i]->v2Found[1]<<std::endl;
+//      std::cout<<"point "<<i<<" perturbation "<<perturbation[0]<<" "<<perturbation[1]<<std::endl;
+//      std::cout<<"point "<<i<<" v2Image "<<vNextToSearch[i]->v2Image[0]<<" "<<vNextToSearch[i]->v2Image[1]<<std::endl;
+//      std::cout<<"point "<<i<<" v2Found "<<vNextToSearch[i]->v2Found[0]<<" "<<vNextToSearch[i]->v2Found[1]<<std::endl;
 
     }
 
-    std::cout<<"ok, added perturbation and simulated observations"<<std::endl;
+//    std::cout<<"ok, added perturbation and simulated observations"<<std::endl;
 
     // And attach them all to the end of the optimisation-set.
     for(unsigned int i=0; i<vNextToSearch.size(); i++)
@@ -367,7 +370,7 @@ public:
     v6LastUpdate = Zeros;
     for(int iter = 0; iter<10; iter++)
     {
-      std::cout<<"ok, starting iteration "<<iter; std::cout.flush();
+//      std::cout<<"ok, starting iteration "<<iter; std::cout.flush();
 
       bool bNonLinearIteration; // For a bit of time-saving: don't do full nonlinear
       // reprojection at every iteration - it really isn't necessary!
@@ -407,14 +410,14 @@ public:
           CalcPoseUpdate(vIterationSet, dOverrideSigma, iter==9);
       mse3CamFromWorld = SE3<>::exp(v6Update) * mse3CamFromWorld;
       v6LastUpdate = v6Update;
-      std::cout<<" done."<<std::endl;
+      //std::cout<<" done."<<std::endl;
     };
   }
 };
 
-void doTest(){
+Matrix<6> doTest(){
 
-  std::cout<<"Running doTest"<<std::endl;
+  //std::cout<<"Running doTest"<<std::endl;
 
   double Cam_fx = 0.795574;
   double Cam_fy = 1.25149;
@@ -487,14 +490,9 @@ void doTest(){
 
   Matrix<6>& cov = theInterface.mmCInv;
 
-  std::cout<<"inverse covariance"<<std::endl;
-  for(int i = 0;i<6;++i){
-    for(int j = 0;j<6;++j){
-      std::cout<<cov(j,i)<<" ";
-    }
-    std::cout<<std::endl;
+  //std::cout<<"inverse covariance"<<std::endl<<cov<<std::endl;
 
-  }
+  return cov;
 }
 
 /* The gateway function */
@@ -547,6 +545,16 @@ void mexFunction( int nlhs, mxArray *plhs[],
   /* get a pointer to the real data in the output matrix */
   outCovarianceMatrix = mxGetPr(plhs[0]);
 
+//  {
+//    Matrix<6> cov = doTest();
+//
+//    for(int i = 0;i<6;++i){
+//      for(int j = 0;j<6;++j){
+//        outCovarianceMatrix[i*6+j] = cov(i,j);
+//      }
+//    }
+//  }
+//  return;
 
   double Cam_fx = 0.795574;
   double Cam_fy = 1.25149;
@@ -560,7 +568,7 @@ void mexFunction( int nlhs, mxArray *plhs[],
 
   ATANCamera mCamera("CAMERA", Cam_fx, Cam_fy, Cam_cx, Cam_cy, Cam_s, ImageSizeX, ImageSizeY);
 
-  std::cout<<"got "<<ncols<<" points in input Matrix"<<std::endl;
+  //std::cout<<"got "<<ncols<<" points in input Matrix"<<std::endl;
 
   boost::shared_ptr<MapPoint> pt(new MapPoint);
   for(size_t i = 0;i<ncols;++i){
@@ -568,10 +576,10 @@ void mexFunction( int nlhs, mxArray *plhs[],
     for(int j = 0;j<3;++j){
       pt->v3WorldPos[j] = inPoints[i*3+j];
     }
-    std::cout<<"point "<<i<<" "<<pt->v3WorldPos[0]<<" "<<pt->v3WorldPos[1]<<" "<<pt->v3WorldPos[2]<<std::endl;
+    //std::cout<<"point "<<i<<" "<<pt->v3WorldPos[0]<<" "<<pt->v3WorldPos[1]<<" "<<pt->v3WorldPos[2]<<std::endl;
     vpPoints.push_back(pt);
   }
-  std::cout<<"now have "<<vpPoints.size()<<" points in map"<<std::endl;
+ // std::cout<<"now have "<<vpPoints.size()<<" points in map"<<std::endl;
 
   TooN::Matrix<3> rotation;
   for(int i = 0;i<3;++i){
@@ -586,21 +594,21 @@ void mexFunction( int nlhs, mxArray *plhs[],
   TooN::SO3<> so3(rotation);
   mse3CamFromWorld = TooN::SE3<>(so3,translation);
 
-  std::stringstream ss;
-  ss<<"Camera matrix"<<std::endl;
-  for(int i = 0;i<3;++i){
-    for(int j = 0;j<3;++j){
-      ss<<rotation(i,j)<<" ";
-    }
-    ss<<std::endl;
-  }
-
-  ss<<"translation "<<std::endl;
-
-  for(int i = 0;i<3;++i){
-    ss<<translation[i]<<" ";
-  }
-  std::cout<<ss.str()<<std::endl;
+//  std::stringstream ss;
+//  ss<<"Camera matrix"<<std::endl;
+//  for(int i = 0;i<3;++i){
+//    for(int j = 0;j<3;++j){
+//      ss<<rotation(i,j)<<" ";
+//    }
+//    ss<<std::endl;
+//  }
+//
+//  ss<<"translation "<<std::endl;
+//
+//  for(int i = 0;i<3;++i){
+//    ss<<translation[i]<<" ";
+//  }
+//  std::cout<<ss.str()<<std::endl;
 
   IF theInterface;
   TrackerData::irImageSize = CVD::ImageRef(ImageSizeX, ImageSizeY);
@@ -609,21 +617,23 @@ void mexFunction( int nlhs, mxArray *plhs[],
 
   Matrix<6>& cov = theInterface.mmCInv;
 
+  //std::cout<<"Cov"<<std::endl<<cov<<std::endl;
+
   for(int i = 0;i<6;++i){
     for(int j = 0;j<6;++j){
       outCovarianceMatrix[i*6+j] = cov(i,j);
     }
   }
 
-//  std::stringstream ss2;
-//  ss2<<"inv covariance"<<std::endl;
-//  for(int i = 0;i<6;++i){
-//    for(int j = 0;j<6;++j){
-//      ss2<<cov(j,i)<<" ";
-//    }
-//    ss2<<std::endl;
-//  }
-//  std::cout<<ss2.str()<<std::endl;
+  //  std::stringstream ss2;
+  //  ss2<<"inv covariance"<<std::endl;
+  //  for(int i = 0;i<6;++i){
+  //    for(int j = 0;j<6;++j){
+  //      ss2<<cov(j,i)<<" ";
+  //    }
+  //    ss2<<std::endl;
+  //  }
+  //  std::cout<<ss2.str()<<std::endl;
 }
 
 //has to live here, because we haven't compiled the Tracker sources

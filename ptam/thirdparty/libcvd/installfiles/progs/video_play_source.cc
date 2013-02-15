@@ -36,6 +36,7 @@
 #include <cvd/glwindow.h>
 #include <cvd/gl_helpers.h>
 #include <cvd/videosource.h>
+#include <unistd.h>
 
 #ifdef CVD_HAVE_V4LBUFFER
 	#include <cvd/Linux/v4lbuffer.h>

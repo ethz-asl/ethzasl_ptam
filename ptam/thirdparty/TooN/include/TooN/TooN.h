@@ -247,12 +247,12 @@ namespace TooN {
 }
 
 #include <TooN/internal/dchecktest.hh>
+#include <TooN/internal/debug.hh>
 #include <TooN/internal/allocator.hh>
 
 #include <TooN/internal/size_mismatch.hh>
 #include <TooN/internal/overfill_error.hh>
 #include <TooN/internal/slice_error.hh>
-#include <TooN/internal/debug.hh>
 
 #include <TooN/internal/comma.hh>
 
