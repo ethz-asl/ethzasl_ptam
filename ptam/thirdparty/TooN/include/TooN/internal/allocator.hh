@@ -43,6 +43,8 @@
 #define TOON_ALIGN8
 #endif
 
+#include "debug.hh"
+
 namespace TooN {
 
 namespace Internal

@@ -35,6 +35,7 @@
 #include <cmath>
 #include <complex>
 #include <TooN/lapack.h>
+#include <algorithm> 
 
 #include <TooN/TooN.h>
 

@@ -85,7 +85,7 @@ struct SizeMismatch_<Dynamic,Dynamic>{
 
 namespace Internal
 {
-	struct BadSize;
+	struct BadSize{};
 }
 
 template<int Size1, int Size2>
