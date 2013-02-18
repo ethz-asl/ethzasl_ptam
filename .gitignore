@@ -23,3 +23,6 @@ ptam_com/msg_gen/
 ptam_com/src/
 ptam_com/srv_gen/
 
+/build
+/Debug
+*~
