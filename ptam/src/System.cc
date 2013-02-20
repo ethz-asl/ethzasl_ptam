@@ -119,7 +119,7 @@ void System::imageCallback(const sensor_msgs::ImageConstPtr & img)
 
 
 //  -------------------
-  // TODO: avoid copy
+  // TODO: avoid copy, but calling TrackFrame, with the ros image, because there is another copy inside TrackFrame
   CVD::BasicImage<CVD::byte> img_tmp((CVD::byte *)&img->data[0], CVD::ImageRef(img->width, img->height));
   CVD::copy(img_tmp, img_bw_);
 
