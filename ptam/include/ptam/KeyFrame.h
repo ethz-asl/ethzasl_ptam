@@ -84,9 +84,18 @@ struct KeyFrame
 		//slynen{ reprojection
 		for (unsigned int i = 0;i < iBestPointsCount; i++) apCurrentBestPoints[i] = NULL;
 		//}
+		//slynen{
+		m6BundleCov = Zeros;
+		for(int i = 0;i<6;++i){
+		  m6BundleCov(i,i) = 0.05; //large initial covariance
+		}
+		//}
 	}
 	SE3<> se3CfromW;    // The coordinate frame of this key-frame as a Camera-From-World transformation
 	bool bFixed;      // Is the coordinate frame of this keyframe fixed? (only true for first KF!)
+	//slynen{
+	Matrix<6> m6BundleCov; //covariance of this KF w.r.t local map
+	//}
 	Level aLevels[LEVELS];  // Images, corners, etc lives in this array of pyramid levels
 	std::map<MapPoint*, Measurement> mMeasurements;           // All the measurements associated with the keyframe
 

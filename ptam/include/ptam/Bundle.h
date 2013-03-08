@@ -44,6 +44,10 @@ struct Camera
   Matrix<6> m6U;          // Accumulator
   Vector<6> v6EpsilonA;   // Accumulator
   int nStartRow;
+  //slynen
+  Matrix<6> m6Cov; //cov wrt local map
+  Matrix<6> m6CovNew; //cov wrt local map
+  //}
 };
 
 // Camera-camera pair index
@@ -113,6 +117,9 @@ public:
   inline bool Converged() { return mbConverged;}  // Has bundle adjustment converged?
   Vector<3> GetPoint(int n);       // Point coords after adjustment
   SE3<> GetCamera(int n);            // Camera pose after adjustment
+  //slynen{
+  Matrix<6> GetCameraCov(int n);// Camera cov after adjustment
+  //}
   std::vector<std::pair<int,int> > GetOutlierMeasurements();  // Measurements flagged as outliers
   std::set<int> GetOutliers();                                // Points flagged as outliers
   

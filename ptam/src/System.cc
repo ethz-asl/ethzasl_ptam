@@ -14,6 +14,8 @@
 #include <ptam_com/ptam_info.h>
 #include <opencv/cv.h>
 #include <cvd/vision.h>
+#include <ptam/eigen_visualization.h>
+#include <ptam/TooNEigenConversion.h>
 
 using namespace CVD;
 using namespace std;
@@ -26,6 +28,10 @@ System::System() :
 
   pub_pose_ = nh_.advertise<geometry_msgs::PoseWithCovarianceStamped> ("pose", 1);
   pub_info_ = nh_.advertise<ptam_com::ptam_info> ("info", 1);
+  //slynen{
+  pub_kf_w_cov_ = nh_.advertise<visualization_msgs::MarkerArray> ("kfsCov", 1);
+  //}
+
   srvPC_ = nh_.advertiseService("pointcloud", &System::pointcloudservice,this);
   srvKF_ = nh_.advertiseService("keyframes", &System::keyframesservice,this);
 
@@ -119,7 +125,7 @@ void System::imageCallback(const sensor_msgs::ImageConstPtr & img)
 
 
 //  -------------------
-  // TODO: avoid copy, but calling TrackFrame, with the ros image, because there is another copy inside TrackFrame
+  // TODO: avoid copy, by calling TrackFrame with the ros image, because there is another copy inside TrackFrame
   CVD::BasicImage<CVD::byte> img_tmp((CVD::byte *)&img->data[0], CVD::ImageRef(img->width, img->height));
   CVD::copy(img_tmp, img_bw_);
 
@@ -140,6 +146,12 @@ void System::imageCallback(const sensor_msgs::ImageConstPtr & img)
   mpTracker->TrackFrame(img_bw_, tracker_draw, imu_orientation);
 
   publishPoseAndInfo(img->header);
+
+  //slynen{
+  PublishAllKFsAndCov(img->header);
+  publishRelPoseAndInfo(img->header);
+  //}
+
 
   publishPreviewImage(img_bw_, img->header);
   std::cout << mpMapMaker->getMessageForUser();
@@ -262,6 +274,143 @@ bool System::transformPoint(const std::string & target_frame, const std_msgs::He
   }
   return true;
 }
+
+//slynen{
+void System::publishRelPoseAndInfo(const std_msgs::Header & header){
+  if(mpMap->vpKeyFrames.empty()){
+    return;
+  }
+
+  //get the fixed KF
+  int fixedKFidx = -1;
+  for(size_t kfidx = 0 ; kfidx < mpMap->vpKeyFrames.size(); ++kfidx){
+    if(mpMap->vpKeyFrames.at(kfidx)->bFixed){
+      fixedKFidx = kfidx;
+      break;
+    }
+  }
+  assert(fixedKFidx != -1);
+
+  //get the pose of the fixed KF
+  KeyFrame* fixKF = mpMap->vpKeyFrames.at(fixedKFidx);
+  const TooN::SE3<double>& fixKF_pose = fixKF->se3CfromW;
+  Eigen::Vector3d fixKF_position;
+  Eigen::Quaterniond fixKF_orientation;
+  TooNToEigen::SE3PTAMToEigenWorld(fixKF_pose, fixKF_position, fixKF_orientation);
+
+  //get the currentTrackerPose
+  const TooN::SE3<double> tracker_pose = mpTracker->GetCurrentPose();
+  Eigen::Vector3d tracker_position;
+  Eigen::Quaterniond tracker_orientation;
+  TooNToEigen::SE3PTAMToEigenWorld(tracker_pose, tracker_position, tracker_orientation);
+
+  visualization_msgs::MarkerArrayPtr msg(new visualization_msgs::MarkerArray);
+  visualization_msgs::Marker marker;
+  marker.action = visualization_msgs::Marker::ADD;
+  marker.header = header;
+  marker.id = 999998;
+  marker.header.frame_id = "/world";
+  marker.lifetime = ros::Duration(1.0);
+  std_msgs::ColorRGBA color;
+  color.a = 0.6f;
+  color.r = 0.5f;
+  color.g = 1.0f;
+  color.b = 0.7f;
+  marker.color = color;
+
+  marker.type = visualization_msgs::Marker::ARROW;
+
+  mav_planning_utils::eigen_visualization::drawArrow(marker, fixKF_position, tracker_position , color, 0.1);
+
+  msg->markers.push_back(marker);
+
+  pub_kf_w_cov_.publish(msg);
+}
+
+void System::PublishAllKFsAndCov(const std_msgs::Header & header){
+  //PUBLISH all COVS for debugging
+  visualization_msgs::MarkerArrayPtr msg(new visualization_msgs::MarkerArray);
+
+  visualization_msgs::Marker marker;
+  marker.action = visualization_msgs::Marker::ADD;
+
+  marker.header = header;
+  marker.header.frame_id = "/world";
+  marker.lifetime = ros::Duration(1.0);
+
+  for(size_t kfidx = 0 ; kfidx < mpMap->vpKeyFrames.size(); ++kfidx){
+
+    KeyFrame* kf = mpMap->vpKeyFrames.at(kfidx);
+    marker.id = kf->ID;
+
+    //calculate the pose in the world frame
+    const TooN::SE3<double>& pose = kf->se3CfromW;
+
+    Eigen::Vector3d position;
+    Eigen::Quaterniond orientation;
+
+    TooNToEigen::SE3PTAMToEigenWorld(pose, position, orientation);
+
+    //get the covariance we stored with the KF after BA convergence
+    Eigen::Matrix<double, 6, 6> cov;
+    const TooN::Matrix<6>& covar = kf->m6BundleCov;
+    for (unsigned int i = 0; i < 36; i++)
+      cov(i % 6, i / 6) = sqrt(fabs(covar[i % 6][i / 6])); //TODO: why take the sqrf of abs
+
+    //std::cout<<"------- Covariance of KF: "<<kf->ID<<"------- "<<std::endl<<cov<<std::endl<<std::endl;
+    std_msgs::ColorRGBA color;
+
+    color.a = 0.6f;
+    color.r = 0.5f;
+    color.g = 0.7f;
+    color.b = 1.0f;
+
+    if(kf->bFixed){ //fixed, so zero (very small) cov
+      Eigen::Matrix<double, 6, 1> tmp = Eigen::Matrix<double, 6, 1>::Constant(0.01);
+      cov = tmp.asDiagonal();
+      color.a = 0.6f;
+      color.r = 1.0f;
+      color.g = 0.7f;
+      color.b = 0.5f;
+    }
+
+    mav_planning_utils::eigen_visualization::drawCovariance3D(marker, position, cov.block<3,3>(0,0), color);
+
+    msg->markers.push_back(marker);
+
+  }
+
+
+  //ADD TRACKER POSE
+  marker.id = 999999;
+  TooN::SE3<double> pose = mpTracker->GetCurrentPose();
+  Eigen::Vector3d position;
+  Eigen::Quaterniond orientation;
+
+  TooNToEigen::SE3PTAMToEigenWorld(pose, position, orientation);
+
+  Eigen::Matrix<double, 6, 6> cov;
+  TooN::Matrix<6> covar = mpTracker->GetCurrentCov();
+  for (unsigned int i = 0; i < 36; i++)
+    cov(i % 6, i / 6) = sqrt(fabs(covar[i % 6][i / 6]));
+
+  std_msgs::ColorRGBA color;
+
+  color.a = 0.7f;
+  color.r = 1.0f;
+  color.g = 1.0f;
+  color.b = 0.0f;
+
+  mav_planning_utils::eigen_visualization::drawCovariance3D(marker, position, cov.block<3,3>(0,0), color);
+
+  msg->markers.push_back(marker);
+  //END TRACKER POSE
+
+
+  pub_kf_w_cov_.publish(msg);
+  //}
+}
+
 
 void System::publishPoseAndInfo(const std_msgs::Header & header)
 {

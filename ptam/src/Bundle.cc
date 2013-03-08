@@ -3,6 +3,7 @@
 #include "ptam/MEstimator.h"
 #include <TooN/helpers.h>
 #include <TooN/Cholesky.h>
+#include <TooN/SVD.h>
 #include <fstream>
 #include <iomanip>
 #//include <gvars3/instances.h>
@@ -67,7 +68,7 @@ int Bundle::AddCamera(SE3<> se3CamFromWorld, bool bFixed)
   else
     c.nStartRow = -999999999; 
   mvCameras.push_back(c);
-   
+
   return n;
 }
 
@@ -136,7 +137,7 @@ int Bundle::Compute(bool *pbAbortSignal)
   mbHitMaxIterations = false;
   mnCounter = 0;
   mnAccepted = 0;
-  
+
   // What MEstimator are we using today?
 //Weiss{
 	  //static std::string gvsMEstimator = "Tukey";
@@ -145,12 +146,12 @@ int Bundle::Compute(bool *pbAbortSignal)
 	  static std::string gvsMEstimator = pPars->BundleMEstimator;
     //static gvar3<string> gvsMEstimator("BundleMEstimator", "Tukey", SILENT);
 //}
-  
+
   while(!mbConverged  && !mbHitMaxIterations && !*pbAbortSignal)
     {
       bool bNoError;
       if(gvsMEstimator == "Cauchy")
-	bNoError = Do_LM_Step<Cauchy>(pbAbortSignal);  
+	bNoError = Do_LM_Step<Cauchy>(pbAbortSignal);
       else if(gvsMEstimator == "Tukey")
 	bNoError = Do_LM_Step<Tukey>(pbAbortSignal);
       else if(gvsMEstimator == "Huber")
@@ -162,7 +163,7 @@ int Bundle::Compute(bool *pbAbortSignal)
 	  gvsMEstimator = "Tukey";
 	  bNoError = Do_LM_Step<Tukey>(pbAbortSignal);
 	};
-      
+
       if(!bNoError)
 	return -1;
     }
@@ -178,7 +179,7 @@ inline void Bundle::ProjectAndFindSquaredError(Meas &meas)
 {
   Camera &cam = mvCameras[meas.c];
   Point &point = mvPoints[meas.p];
-  
+
   // Project the point.
   meas.v3Cam = cam.se3CfW * point.v3Pos;
   if(meas.v3Cam[2] <= 0)
@@ -241,14 +242,14 @@ bool Bundle::Do_LM_Step(bool *pbAbortSignal)
   // 
   //  While we're here, might as well update the accumulators U, ea, B, eb
   //  from part (ii) as well, and let's calculate Wij while we're here as well.
-  
+
   double dCurrentError = 0.0;
   for(list<Meas>::iterator itr = mMeasList.begin(); itr!=mMeasList.end(); itr++)
     {
       Meas &meas = *itr;
       Camera &cam = mvCameras[meas.c];
       Point &point = mvPoints[meas.p];
-      
+
       // Project the point.
       // We've done this before - results are still cached in meas.
       if(meas.bBad)
@@ -256,7 +257,7 @@ bool Bundle::Do_LM_Step(bool *pbAbortSignal)
 	  dCurrentError += 1.0;
 	  continue;
 	};
-      
+
       // What to do with the weights? The easiest option is to independently weight
       // The two jacobians, A and B, with sqrt of the tukey weight w;
       // And also weight the error vector v2Epsilon.
@@ -265,27 +266,27 @@ bool Bundle::Do_LM_Step(bool *pbAbortSignal)
       double dWeight= MEstimator::SquareRootWeight(meas.dErrorSquared, mdSigmaSquared);
       // Re-weight error:
       meas.v2Epsilon = dWeight * meas.v2Epsilon;
-      
+
       if(dWeight == 0)
 	{
-	  meas.bBad = true;  
+	  meas.bBad = true;
 	  dCurrentError += 1.0;
 	  continue;
 	}
-      
+
       dCurrentError += MEstimator::ObjectiveScore(meas.dErrorSquared, mdSigmaSquared);
-      
+
       // To re-weight the jacobians, I'll just re-weight the camera param matrix
       // This is only used for the jacs and will save a few fmuls
       Matrix<2> m2CamDerivs = dWeight * meas.m2CamDerivs;
-      
+
       const double dOneOverCameraZ = 1.0 / meas.v3Cam[2];
       const Vector<4> v4Cam = unproject(meas.v3Cam);
-      
+
       // Calculate A: (the proj derivs WRT the camera)
       if(cam.bFixed)
 	meas.m26A = Zeros;
-      else 
+      else
 	{
 	  for(int m=0;m<6;m++)
 	    {
@@ -296,7 +297,7 @@ bool Bundle::Do_LM_Step(bool *pbAbortSignal)
  	      meas.m26A.T()[m] = meas.dSqrtInvNoise * m2CamDerivs * v2CamFrameMotion;
 	    };
 	}
-      
+
       // Calculate B: (the proj derivs WRT the point)
       for(int m=0;m<3;m++)
 	{
@@ -306,7 +307,7 @@ bool Bundle::Do_LM_Step(bool *pbAbortSignal)
 	  v2CamFrameMotion[1] = (v3Motion[1] - v4Cam[1] * v3Motion[2] * dOneOverCameraZ) * dOneOverCameraZ;
 	  meas.m23B.T()[m] = meas.dSqrtInvNoise * m2CamDerivs * v2CamFrameMotion;
 	};
-      
+
       // Update the accumulators
       if(!cam.bFixed)
 	{
@@ -315,17 +316,17 @@ bool Bundle::Do_LM_Step(bool *pbAbortSignal)
 	  cam.v6EpsilonA += meas.m26A.T() * meas.v2Epsilon;
 	  // NOISE COVAR OMITTED because it's the 2-Identity
 	}
-      
+
       //            point.m3V += meas.m23B.T() * meas.m23B;             // SLOW-ish this is symmetric too
       BundleTriangle_UpdateM3V_LL(point.m3V, meas.m23B);
       point.v3EpsilonB += meas.m23B.T() * meas.v2Epsilon;
-      
+
       if(cam.bFixed)
 	meas.m63W = Zeros;
       else
 	meas.m63W = meas.m26A.T() * meas.m23B;
     }
-  
+
   // OK, done (i) and most of (ii) except calcing Yij; this depends on Vi, which should 
   // be finished now. So we can find V*i (by adding lambda) and then invert.
   // The next bits depend on mdLambda! So loop this next bit until error goes down.
@@ -345,7 +346,7 @@ bool Bundle::Do_LM_Step(bool *pbAbortSignal)
 	      m3VStar[0][1] = m3VStar[1][0];
 	      m3VStar[0][2] = m3VStar[2][0];
 	      m3VStar[1][2] = m3VStar[2][1];
-	       
+
 	      for(int i=0; i<3; i++)
 		m3VStar[i][i] *= (1.0 + mdLambda);
 	      Cholesky<3> chol(m3VStar);
@@ -355,37 +356,47 @@ bool Bundle::Do_LM_Step(bool *pbAbortSignal)
 
       // Done part (ii), except calculating Yij;
       // But we can do this inline when we calculate S in part (iii).
-      
+
       // Part (iii): Construct the the big block-matrix S which will be inverted.
       Matrix<> mS(mnCamsToUpdate * 6, mnCamsToUpdate * 6);
       mS = Zeros;
+      //slynen{ //store the data also without augmentation to compute the cam covariances wrt local map
+      Matrix<> mSCamCov(mnCamsToUpdate * 6, mnCamsToUpdate * 6);
+      mSCamCov = Zeros;
+      //}
+
+
       Vector<> vE(mnCamsToUpdate * 6);
       vE = Zeros;
 
       Matrix<6> m6; // Temp working space
+      //slynen{
+      Matrix<6> m6CamCov;//without augmentation
+      m6CamCov = Zeros;
+      //}
       Vector<6> v6; // Temp working space
-      
+
       // Calculate on-diagonal blocks of S (i.e. only one camera at a time:)
       for(unsigned int j=0; j<mvCameras.size(); j++)
 	{
 	  Camera &cam_j = mvCameras[j];
 	  if(cam_j.bFixed) continue;
 	  int nCamJStartRow = cam_j.nStartRow;
-	  
+
 	  // First, do the diagonal elements.
 	  //m6= cam_j.m6U;     // can't do this anymore because cam_j.m6U is LL!!
-	  for(int r=0; r<6; r++)
+	  for(int r=0; r<6; r++) //slynen: augment with jacs of pts wrt cam
 	    {
 	      for(int c=0; c<r; c++)
 		m6[r][c] = m6[c][r] = cam_j.m6U[r][c];
 	      m6[r][r] = cam_j.m6U[r][r];
 	    };
-	  
+
 	  for(int nn = 0; nn< 6; nn++)
 	    m6[nn][nn] *= (1.0 + mdLambda);
-	  
+
 	  v6 = cam_j.v6EpsilonA;
-	  
+
 	  vector<Meas*> &vMeasLUTj = mvMeasLUTs[j];
 	  // Sum over measurements (points):
 	  for(unsigned int i=0; i<mvPoints.size(); i++)
@@ -393,13 +404,21 @@ bool Bundle::Do_LM_Step(bool *pbAbortSignal)
 	      Meas* pMeas = vMeasLUTj[i];
 	      if(pMeas == NULL || pMeas->bBad)
 		continue;
-	      m6 -= pMeas->m63W * mvPoints[i].m3VStarInv * pMeas->m63W.T();  // SLOW SLOW should by 6x6sy
+	      //slynen{
+	      // m6 -= pMeas->m63W * mvPoints[i].m3VStarInv * pMeas->m63W.T();  // SLOW SLOW should by 6x6sy
+	      Matrix<6> tmp = pMeas->m63W * mvPoints[i].m3VStarInv * pMeas->m63W.T();  // SLOW SLOW should by 6x6sy
+	      m6 -= tmp;
+	      m6CamCov -= tmp; //store to vec w/o augmentation
+	      //}
 	      v6 -= pMeas->m63W * (mvPoints[i].m3VStarInv * mvPoints[i].v3EpsilonB);
 	    }
 	  mS.slice(nCamJStartRow, nCamJStartRow, 6, 6) = m6;
+	  //slynen{
+	  mSCamCov.slice(nCamJStartRow, nCamJStartRow, 6, 6) = m6CamCov;
+	  //}
 	  vE.slice(nCamJStartRow,6) = v6;
 	}
-      
+
       // Now find off-diag elements of S. These are camera-point-camera combinations, of which there are lots.
       // New code which doesn't waste as much time finding i-jk pairs; these are pre-stored in a per-i list.
       for(unsigned int i=0; i<mvPoints.size(); i++)
@@ -410,8 +429,8 @@ bool Bundle::Do_LM_Step(bool *pbAbortSignal)
 	  Meas* pMeas_ij;
 	  Meas* pMeas_ik;
 	  Matrix<6,3> m63_MIJW_times_m3VStarInv;
-	  
-	  for(vector<OffDiagScriptEntry>::iterator it=p.vOffDiagonalScript.begin();
+
+	  for(vector<OffDiagScriptEntry>::iterator it=p.vOffDiagonalScript.begin(); //slynen - only off diags from LUT
 	      it!=p.vOffDiagonalScript.end();
 	      it++)
 	    {
@@ -426,11 +445,16 @@ bool Bundle::Do_LM_Step(bool *pbAbortSignal)
 		    continue;
 		  nCurrentJ = e.j;
 		  nJRow = mvCameras[e.j].nStartRow;
-		  m63_MIJW_times_m3VStarInv = pMeas_ij->m63W * p.m3VStarInv;
+		  m63_MIJW_times_m3VStarInv = pMeas_ij->m63W * p.m3VStarInv; //slynen: update var if j has changed
 		}
 	      int nKRow = mvCameras[pMeas_ik->c].nStartRow;
 #ifndef WIN32
-		  mS.slice(nJRow, nKRow, 6, 6) -= m63_MIJW_times_m3VStarInv * pMeas_ik->m63W.T();
+	      //slynen{
+//	      mS.slice(nJRow, nKRow, 6, 6) -= m63_MIJW_times_m3VStarInv * pMeas_ik->m63W.T(); //slynen: Yij Wij' = Wij V*^-1 Wij'
+	      Matrix<6> tmp = m63_MIJW_times_m3VStarInv * pMeas_ik->m63W.T();
+	      mS.slice(nJRow, nKRow, 6, 6) -= tmp;
+	      mSCamCov.slice(nJRow, nKRow, 6, 6) -= tmp;
+
 #else
 		  Matrix<6> m = mS.slice(nJRow, nKRow, 6, 6);
 		  m -= m63_MIJW_times_m3VStarInv * pMeas_ik->m63W.T();
@@ -439,19 +463,24 @@ bool Bundle::Do_LM_Step(bool *pbAbortSignal)
 	      assert(nKRow < nJRow);
 	    }
 	}
-      
+
       // Did this purely LL triangle - now update the TR bit as well!
       // (This is actually unneccessary since the lapack cholesky solver
       // uses only one triangle, but I'm leaving it in here anyway.)
       for(int i=0; i<mS.num_rows(); i++)
-	for(int j=0; j<i; j++)
-	  mS[j][i] = mS[i][j];
-      
+	for(int j=0; j<i; j++){
+	 //slynen{
+//          mS[j][i] = mS[i][j];
+          mS[j][i] = mS[i][j];
+	  mSCamCov[j][i] = mSCamCov[i][j];
+	  //}
+	}
+
       // Got fat matrix S and vector E from part(iii). Now Cholesky-decompose
       // the matrix, and find the camera update vector.
       Vector<> vCamerasUpdate(mS.num_rows());
       vCamerasUpdate = Cholesky<>(mS).backsub(vE);
-      
+
       // Part (iv): Compute the map updates
       Vector<> vMapUpdates(mvPoints.size() * 3);
       for(unsigned int i=0; i<mvPoints.size(); i++)
@@ -476,7 +505,7 @@ bool Bundle::Do_LM_Step(bool *pbAbortSignal)
 	      cerr << mvPoints[i].m3VStarInv << endl;
 	    };
 	}
-      
+
       // OK, got the two update vectors.
       // First check for convergence..
       // (this is a very poor convergence test)
@@ -489,22 +518,34 @@ bool Bundle::Do_LM_Step(bool *pbAbortSignal)
 //}
       // Now re-project everything and measure the error;
       // NB we don't keep these projections, SLOW, bit of a waste.
-      
+
+      //slynen{
+      Matrix<> mSCamCovPInv = TooN::SVD<>(mSCamCov).get_pinv(); //invert for covariances, TODO: get cost
+      //}
       // Temp versions of updated pose and pos:
       for(unsigned int j=0; j<mvCameras.size(); j++)
 	{
-	  if(mvCameras[j].bFixed)
-	    mvCameras[j].se3CfWNew = mvCameras[j].se3CfW;
-	  else
-	    mvCameras[j].se3CfWNew = SE3<>::exp(vCamerasUpdate.slice(mvCameras[j].nStartRow, 6)) * mvCameras[j].se3CfW;
+        if(mvCameras[j].bFixed){
+          mvCameras[j].se3CfWNew = mvCameras[j].se3CfW;
+          //slynen{
+//TODO: is this marked enough, or should we add something that crashes a little worse if used?
+          mvCameras[j].m6CovNew = Zeros;
+          //}
+        }else{
+          mvCameras[j].se3CfWNew = SE3<>::exp(vCamerasUpdate.slice(mvCameras[j].nStartRow, 6)) * mvCameras[j].se3CfW;
+          //slynen{
+          int nCamJStartRow = mvCameras[j].nStartRow;
+          mvCameras[j].m6CovNew = mSCamCovPInv.slice(nCamJStartRow, nCamJStartRow, 6, 6);
+          //}
+        }
 	}
       for(unsigned int i=0; i<mvPoints.size(); i++)
 	mvPoints[i].v3PosNew = mvPoints[i].v3Pos + vMapUpdates.slice(i*3, 3);
       // Calculate new error by re-projecting, doing tukey, etc etc:
       dNewError = FindNewError<MEstimator>();
-      
+
       cout <<setprecision(1) << "L" << mdLambda << setprecision(3) <<  "\tOld " << dCurrentError << "  New " << dNewError << "  Diff " << dCurrentError - dNewError << "\t";
-      
+
       // Was the step good? If not, modify lambda and try again!!
       // (if it was good, will break from this loop.)
       if(dNewError > dCurrentError)
@@ -512,26 +553,30 @@ bool Bundle::Do_LM_Step(bool *pbAbortSignal)
 	  cout << " TRY AGAIN " << endl;
 	  ModifyLambda_BadStep();
 	};
-      
+
 //Weiss{
       mnCounter++;
       if(mnCounter >= pPars->MaxIterations)
     	  mbHitMaxIterations = true;
 //}
     }   // End of while error too big loop
-  
+
   if(dNewError < dCurrentError) // Was the last step a good one?
     {
       cout << " WINNER            ------------ " << endl;
       // Woo! got somewhere. Update lambda and make changes permanent.
       ModifyLambda_GoodStep();
-      for(unsigned int j=0; j<mvCameras.size(); j++)
+      for(unsigned int j=0; j<mvCameras.size(); j++){
 	mvCameras[j].se3CfW = mvCameras[j].se3CfWNew;
+	//slynen{
+	mvCameras[j].m6Cov = mvCameras[j].m6CovNew; //update covariance
+	//}
+      }
       for(unsigned int i=0; i<mvPoints.size(); i++)
-	mvPoints[i].v3Pos = mvPoints[i].v3PosNew; 
+	mvPoints[i].v3Pos = mvPoints[i].v3PosNew;
       mnAccepted++;
     }
-  
+
   // Finally, ditch all the outliers.
   vector<list<Meas>::iterator> vit;
   for(list<Meas>::iterator itr = mMeasList.begin(); itr!=mMeasList.end(); itr++)
@@ -542,10 +587,10 @@ bool Bundle::Do_LM_Step(bool *pbAbortSignal)
 	mvPoints[itr->p].nOutliers++;
 	mvMeasLUTs[itr->c][itr->p] = NULL;
       };
-  
+
   for(unsigned int i=0; i<vit.size(); i++)
     mMeasList.erase(vit[i]);
-  
+
   cout << "Nuked " << vit.size() << " measurements." << endl;
   return true;
 }
@@ -609,16 +654,16 @@ void Bundle::GenerateOffDiagScripts()
 	    continue;
 	  Meas *pMeas_j = mvMeasLUTs[j][i];
 	  assert(pMeas_j != NULL);
-	  
+
 	  for(set<int>::iterator it_k = p.sCameras.begin(); it_k!=it_j; it_k++)
 	    {
 	      int k = *it_k;
 	      if(mvCameras[k].bFixed)
 		continue;
-	      
+
 	      Meas *pMeas_k = mvMeasLUTs[k][i];
 	      assert(pMeas_k != NULL);
-	      
+
 	      OffDiagScriptEntry e;
 	      e.j = j;
 	      e.k = k;
@@ -650,6 +695,13 @@ SE3<> Bundle::GetCamera(int n)
 {
   return mvCameras.at(n).se3CfW;
 }
+
+//slynen{
+Matrix<6> Bundle::GetCameraCov(int n)
+{
+  return mvCameras.at(n).m6Cov;
+}
+//}
 
 set<int> Bundle::GetOutliers()
 {

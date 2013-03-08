@@ -578,7 +578,7 @@ void MapMaker::AddKeyFrameFromTopOfQueue()
 		return;
 
 	KeyFrame *pK = mvpKeyFrameQueue[0];
-	mvpKeyFrameQueue.erase(mvpKeyFrameQueue.begin());
+	mvpKeyFrameQueue.erase(mvpKeyFrameQueue.begin()); //TODO: slynen: bad causes complete realloc
 
 //Weiss{
 
@@ -1091,8 +1091,12 @@ void MapMaker::BundleAdjust(set<KeyFrame*> sAdjustSet, set<KeyFrame*> sFixedSet,
 
 		for(map<KeyFrame*,int>::iterator itr = mView_BundleID.begin();
 				itr!=mView_BundleID.end();
-				itr++)
+				itr++){
 			itr->first->se3CfromW = b.GetCamera(itr->second);
+		//slynen{
+			itr->first->m6BundleCov = b.GetCameraCov(itr->second);
+			//}
+		}
 		if(bRecent)
 			mbBundleConverged_Recent = false;
 		mbBundleConverged_Full = false;

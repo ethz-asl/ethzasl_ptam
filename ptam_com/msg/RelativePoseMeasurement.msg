@@ -1,0 +1,3 @@
+uint32 parentKFID
+geometry_msgs/PoseWithCovarianceStamped parentPose
+geometry_msgs/PoseWithCovarianceStamped relativePoseToParent

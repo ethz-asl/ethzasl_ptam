@@ -32,9 +32,10 @@ MaxStereoInitLoops: 4
 AutoInitPixel: 20
 
 # --- sample camera calibration  --- 
-Cam_fx: 0.570905
-Cam_fy: 0.893487
-Cam_cx: 0.538077
-Cam_cy: 0.523616
-Cam_s: 0.928057
+Cam_fx: 0.578334
+Cam_fy: 0.904359
+Cam_cx: 0.478292
+Cam_cy: 0.518196
+Cam_s: 0.915154
 # -----------------------------------
+

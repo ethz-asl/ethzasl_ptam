@@ -16,10 +16,13 @@
   <depend package="tf"/>
   <depend package="visualization_msgs"/>
   <depend package="dynamic_reconfigure"/>
+  <depend package="visualization_msgs"/>
+  
   <depend package="cv_bridge"/>
   <rosdep name="atlas"/>	
   <rosdep name="glut"/>	
   <rosdep name="opencv2"/>
+  <rosdep name="eigen"/>
 </package>
 
 

@@ -7,9 +7,13 @@ include($ENV{ROS_ROOT}/core/rosbuild/rosbuild.cmake)
 #  Release        : w/o debug symbols, w/ optimization
 #  RelWithDebInfo : w/ debug symbols, w/ optimization
 #  MinSizeRel     : w/o debug symbols, w/ optimization, stripped binaries
-#set(ROS_BUILD_TYPE RelWithDebInfo)
+set(ROS_BUILD_TYPE RelWithDebInfo)
 
 rosbuild_init()
+
+# get eigen
+find_package(Eigen REQUIRED)
+include_directories(${Eigen_INCLUDE_DIRS})
 
 add_definitions(-DCVD_HAVE_TOON)
 
@@ -103,7 +107,7 @@ add_definitions(-DKF_REPROJ)
 
 # PTAM executable
 rosbuild_add_executable(ptam ${PTAM_SOURCE_FILES} ${PTAM_HEADER_FILES})
-rosbuild_add_compile_flags(ptam -D_LINUX -D_REENTRANT -Wall  -O3 -march=nocona -msse3)
+rosbuild_add_compile_flags(ptam -D_LINUX -D_REENTRANT -Wall -march=native -msse3)
 target_link_libraries(ptam ${PTAM_LIBRARIES} ${OpenCV_LIBS})
 
 
@@ -130,3 +134,5 @@ rosbuild_add_executable(remote_ptam src/RemotePtam.cpp)
 target_link_libraries(remote_ptam ${GTK_LIBRARIES} ${OpenCV_LIBS})
 
 rosbuild_add_executable(ptam_visualizer src/PTAMVisualizer.cpp)
+
+rosbuild_add_executable(test_rel src/test_rel.cc)

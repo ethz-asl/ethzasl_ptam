@@ -24,6 +24,9 @@
 #include <ptam_com/KeyFrame_srv.h>
 #include <std_msgs/String.h>
 #include <queue>
+//slynen{
+#include <ptam_com/RelativePoseMeasurement.h>
+//}
 
 #include "GLWindow2.h"
 //#include "ptam/RosNode.h"
@@ -62,6 +65,7 @@ private:
   image_transport::Subscriber sub_image_;
   image_transport::Publisher pub_preview_image_;
   ros::Publisher pub_pose_;
+  ros::Publisher pub_kf_w_cov_;
   ros::Publisher pub_info_;
   ros::ServiceServer srvPC_;
   ros::ServiceServer srvKF_;
@@ -104,6 +108,11 @@ private:
   template<class T> bool findClosest(const ros::Time & timestamp, std::queue<T> & queue, T * obj, const double & max_delay = 0.01);
 
   static void GUICommandCallBack(void* ptr, std::string sCommand, std::string sParams);
+
+  //slynen{
+  void publishRelPoseAndInfo(const std_msgs::Header & header);
+  void PublishAllKFsAndCov(const std_msgs::Header & header);
+  //}
 
 };
 

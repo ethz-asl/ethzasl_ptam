@@ -78,7 +78,7 @@ int main(int argc, char **argv)
 	path.type = visualization_msgs::Marker::LINE_STRIP;
 	path.color.r=1.0;
 	path.color.g=1.0;
-	path.color.a=1.0;
+	path.color.a=0.6;
 	path.scale.x=0.01;
 	path.pose.orientation.w=1.0;
 
