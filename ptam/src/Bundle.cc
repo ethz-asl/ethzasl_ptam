@@ -520,7 +520,19 @@ bool Bundle::Do_LM_Step(bool *pbAbortSignal)
       // NB we don't keep these projections, SLOW, bit of a waste.
 
       //slynen{
-      Matrix<> mSCamCovPInv = TooN::SVD<>(mSCamCov).get_pinv(); //invert for covariances, TODO: get cost
+      Matrix<> mSCamCovPInv = TooN::SVD<>(mSCamCov).get_pinv(); //invert for covariances
+
+//      std::stringstream ss;
+//      ss<<"S = ["<<std::endl;
+//      for(int i = 0, nrows = mSCamCov.num_rows() ; i < nrows ; ++i){
+//        for(int j = 0, ncols = mSCamCov.num_cols() ; j < ncols ; ++j){
+//         ss<<mSCamCov(i,j)<<" ";
+//        }
+//        ss<<std::endl;
+//      }
+//      ss<<"];"<<std::endl;
+//      ROS_INFO_STREAM(ss.str());
+
       //}
       // Temp versions of updated pose and pos:
       for(unsigned int j=0; j<mvCameras.size(); j++)
