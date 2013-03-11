@@ -190,6 +190,7 @@ void Tracker::TrackFrame(Image<CVD::byte> &imFrame, bool bDraw, const ros::Time&
 		else  // what if there is a map, but tracking has been lost?
 		{
 			mMessageForUser << "** Attempting recovery **.";
+			ROS_ERROR_STREAM("RECOVERY TRIGGERED");
 			if(AttemptRecovery())
 			{
 				TrackMap();

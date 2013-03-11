@@ -126,6 +126,7 @@ int Bundle::Compute(bool *pbAbortSignal)
 {
   mpbAbortSignal = pbAbortSignal;
 
+
   // Some speedup data structures
   GenerateMeasLUTs();
   GenerateOffDiagScripts();
@@ -171,6 +172,7 @@ int Bundle::Compute(bool *pbAbortSignal)
   if(mbHitMaxIterations)
     cout << "  Hit max iterations." << endl;
   cout << "Final Sigma Squared: " << mdSigmaSquared << " (= " << sqrt(mdSigmaSquared) / 4.685 << " pixels.)" << endl;
+
   return mnAccepted;
 };
 

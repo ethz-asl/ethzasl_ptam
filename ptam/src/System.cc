@@ -334,11 +334,12 @@ void System::publishRelPoseAndInfo(const std_msgs::Header & header){
 
       msg_pose->parentKFID = fixKF->ID;
 
-      Eigen::Matrix<double, 3, 1> relative_p = tracker_position - fixKF_position;
+      Eigen::Matrix<double, 3, 1> relative_p = fixKF_orientation.conjugate() * (tracker_position - fixKF_position);
       Eigen::Quaterniond relative_q = fixKF_orientation.conjugate() * tracker_orientation;
 
       //set stamp, relative pose and covariance of the tracker w.r.t the fixed KF
       msg_pose->relativePoseToParent.header.stamp = header.stamp;
+      msg_pose->relativePoseToParent.header.frame_id = "fixedkf";
       msg_pose->relativePoseToParent.pose.pose.orientation.w = relative_q.w();
       msg_pose->relativePoseToParent.pose.pose.orientation.x = relative_q.x();
       msg_pose->relativePoseToParent.pose.pose.orientation.y = relative_q.y();
@@ -353,6 +354,7 @@ void System::publishRelPoseAndInfo(const std_msgs::Header & header){
 
       //now fill the fixed KF
       msg_pose->parentPose.header.stamp = fixKF->mstamp; //the time the image of this KF was taken
+      msg_pose->parentPose.header.frame_id = "world";
       msg_pose->parentPose.pose.pose.orientation.w = fixKF_orientation.w();
       msg_pose->parentPose.pose.pose.orientation.x = fixKF_orientation.x();
       msg_pose->parentPose.pose.pose.orientation.y = fixKF_orientation.y();
@@ -364,23 +366,22 @@ void System::publishRelPoseAndInfo(const std_msgs::Header & header){
       for (unsigned int i = 0; i < msg_pose->parentPose.pose.covariance.size(); i++)
         msg_pose->parentPose.pose.covariance[i] = sqrt(fabs(covarfix[i % 6][i / 6]));
 
+      msg_pose->parentCovBundleIteration = fixKF->mbaID; //set the id of the BA iteration this covariance was computed in
+
       pub_rel_pose_.publish(msg_pose);
 
       //DEBUG make a TF for visualization
-//      tf::Vector3 tf_fixkf_pos(fixKF_position[0], fixKF_position[1], fixKF_position[2]);
-//      tf::Quaternion tf_fixkf_ori(fixKF_orientation.x(), fixKF_orientation.y(), fixKF_orientation.z(), fixKF_orientation.w());
-//      tf::StampedTransform tf_fixkf(tf::Transform(tf_fixkf_ori, tf_fixkf_pos), ros::Time::now(), "fixedkf", "world");
-//      tf_pub_fixkf_.sendTransform(tf_fixkf);
+      tf::Vector3 tf_fixkf_pos(fixKF_position[0], fixKF_position[1], fixKF_position[2]);
+      tf::Quaternion tf_fixkf_ori(fixKF_orientation.x(), fixKF_orientation.y(), fixKF_orientation.z(), fixKF_orientation.w());
+      tf::StampedTransform tf_fixkf(tf::Transform(tf_fixkf_ori, tf_fixkf_pos), ros::Time::now(), "world", "fixedkf");
+      tf_pub_.sendTransform(tf_fixkf);
 
-//      tf::Vector3 tf_rel_pos(relative_p[0], relative_p[1], relative_p[2]);
-//      tf::Quaternion tf_rel_ori(relative_q.x(), relative_q.y(), relative_q.z(), relative_q.w());
-//      tf::StampedTransform tf_rel(tf::Transform(tf_rel_ori, tf_rel_pos), ros::Time::now(), "tracker", "fixedkf");
-//      tf_pub_rel_.sendTransform(tf_rel);
+      tf::Vector3 tf_rel_pos(relative_p[0], relative_p[1], relative_p[2]);
+      tf::Quaternion tf_rel_ori(relative_q.x(), relative_q.y(), relative_q.z(), relative_q.w());
+      tf::StampedTransform tf_rel(tf::Transform(tf_rel_ori, tf_rel_pos), ros::Time::now(), "fixedkf", "tracker");
+      tf_pub_.sendTransform(tf_rel);
 
-      tf::Vector3 tf_tracker_pos(tracker_position[0], tracker_position[1], tracker_position[2]);
-      tf::Quaternion tf_tracker_ori(tracker_orientation.x(), tracker_orientation.y(), tracker_orientation.z(), tracker_orientation.w());
-      tf::StampedTransform tf_tracker(tf::Transform(tf_tracker_ori, tf_tracker_pos), ros::Time::now(), "tracker", "world");
-      tf_pub_rel_.sendTransform(tf_tracker);
+
     }
 
 }

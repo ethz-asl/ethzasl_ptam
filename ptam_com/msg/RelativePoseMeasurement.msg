@@ -1,3 +1,4 @@
 uint32 parentKFID
+int32 parentCovBundleIteration
 geometry_msgs/PoseWithCovarianceStamped parentPose
 geometry_msgs/PoseWithCovarianceStamped relativePoseToParent

@@ -44,6 +44,9 @@ MapMaker::MapMaker(Map& m, const ATANCamera &cam)
 	start(); // This CVD::thread func starts the map-maker thread with function run()
 	GUI.RegisterCommand("SaveMap", GUICommandCallBack, this);
 	//GV3::Register(mgvdWiggleScale, "MapMaker.WiggleScale", 0.1, SILENT); // Default to 10cm between keyframes
+	//slynen{
+	mbaID = 0;
+	//}
 };
 
 
@@ -1084,6 +1087,9 @@ void MapMaker::BundleAdjust(set<KeyFrame*> sAdjustSet, set<KeyFrame*> sFixedSet,
 	if(nAccepted > 0)
 	{
 
+	  //slynen{
+	  mbaID++; //increase the BA id
+	  //}
 		for(map<MapPoint*,int>::iterator itr = mPoint_BundleID.begin();
 				itr!=mPoint_BundleID.end();
 				itr++)
@@ -1094,7 +1100,10 @@ void MapMaker::BundleAdjust(set<KeyFrame*> sAdjustSet, set<KeyFrame*> sFixedSet,
 				itr++){
 			itr->first->se3CfromW = b.GetCamera(itr->second);
 		//slynen{
-			itr->first->m6BundleCov = b.GetCameraCov(itr->second);
+			if(!itr->first->bFixed){ //only update the cov if KF not fixed, fixed one publishes the last
+			  itr->first->m6BundleCov = b.GetCameraCov(itr->second);
+			}
+			itr->first->mbaID = mbaID; //update the BA iteration number this covariance was computed in
 			//}
 		}
 		if(bRecent)

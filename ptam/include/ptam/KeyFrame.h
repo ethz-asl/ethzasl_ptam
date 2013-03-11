@@ -89,6 +89,7 @@ struct KeyFrame
 		for(int i = 0;i<6;++i){
 		  m6BundleCov(i,i) = 0.000001;
 		}
+		mbaID = -1;
 		mstamp = ros::Time::now();
 		//}
 	}
@@ -97,6 +98,7 @@ struct KeyFrame
 	ros::Time mstamp; //time the image of this KF was taken
 	//slynen{
 	Matrix<6> m6BundleCov; //covariance of this KF w.r.t local map
+	int mbaID; //in which bundleadjustment iteration was this covariance last updated.
 	//}
 	Level aLevels[LEVELS];  // Images, corners, etc lives in this array of pyramid levels
 	std::map<MapPoint*, Measurement> mMeasurements;           // All the measurements associated with the keyframe

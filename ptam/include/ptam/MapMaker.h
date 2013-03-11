@@ -120,6 +120,10 @@ protected:
   std::vector<std::pair<KeyFrame*, MapPoint*> > mvFailureQueue; // Queue of failed observations to re-find
   std::queue<MapPoint*> mqNewQueue;   // Queue of newly-made map points to re-find in other KeyFrames
   
+  //slynen{
+   int mbaID; //bundle adjustment iteration number
+   //}
+
   double mdWiggleScale;  // Metric distance between the first two KeyFrames (copied from GVar)
                          // This sets the scale of the map
   //GVars3::gvar3<double> mgvdWiggleScale;   // GVar for above

@@ -150,6 +150,7 @@ protected:
   bool mbHitMaxIterations;
   int mnCounter;
   int mnAccepted;
+
   
 //Weiss{
   //GVars3::gvar3<int> mgvnMaxIterations;
