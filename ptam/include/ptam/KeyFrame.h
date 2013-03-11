@@ -28,7 +28,7 @@ using namespace TooN;
 
 #include "ptam/Params.h"
 
-class MapPoint;
+struct MapPoint;
 class SmallBlurryImage;
 //slynen{ reprojection
 class TrackerData;
@@ -87,12 +87,14 @@ struct KeyFrame
 		//slynen{
 		m6BundleCov = Zeros;
 		for(int i = 0;i<6;++i){
-		  m6BundleCov(i,i) = 0.05; //large initial covariance
+		  m6BundleCov(i,i) = 0.000001;
 		}
+		mstamp = ros::Time::now();
 		//}
 	}
 	SE3<> se3CfromW;    // The coordinate frame of this key-frame as a Camera-From-World transformation
 	bool bFixed;      // Is the coordinate frame of this keyframe fixed? (only true for first KF!)
+	ros::Time mstamp; //time the image of this KF was taken
 	//slynen{
 	Matrix<6> m6BundleCov; //covariance of this KF w.r.t local map
 	//}

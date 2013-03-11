@@ -45,8 +45,8 @@ public:
   Tracker(CVD::ImageRef irVideoSize, const ATANCamera &c, Map &m, MapMaker &mm);
   
   // TrackFrame is the main working part of the tracker: call this every frame.
-  void TrackFrame(CVD::Image<CVD::byte> &imFrame, bool bDraw); 
-  void TrackFrame(CVD::Image<CVD::byte> &imFrame, bool bDraw, const TooN::SO3<double> & imuOrientation);
+  void TrackFrame(CVD::Image<CVD::byte> &imFrame, bool bDraw, const ros::Time& stamp);
+  void TrackFrame(CVD::Image<CVD::byte> &imFrame, bool bDraw, const TooN::SO3<double> & imuOrientation, const ros::Time& stamp);
 
   inline SE3<> GetCurrentPose() { return mse3CamFromWorld;}
 //Weiss{

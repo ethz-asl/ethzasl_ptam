@@ -533,7 +533,7 @@ void MapMaker::ApplyGlobalTransformationToMap(SE3<> se3NewFromOld)
 	for(unsigned int i=0; i<mMap.vpKeyFrames.size(); i++)
 		mMap.vpKeyFrames[i]->se3CfromW = mMap.vpKeyFrames[i]->se3CfromW * se3NewFromOld.inverse();
 
-	SO3<> so3Rot = se3NewFromOld.get_rotation();
+//	SO3<> so3Rot = se3NewFromOld.get_rotation();
 	for(unsigned int i=0; i<mMap.vpPoints.size(); i++)
 	{
 		mMap.vpPoints[i]->v3WorldPos =

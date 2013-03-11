@@ -61,10 +61,13 @@ private:
   ros::Subscriber sub_calibration_;
   ros::Subscriber sub_kb_input_;
   tf::TransformBroadcaster tf_pub_;
+  tf::TransformBroadcaster tf_pub_fixkf_;
+  tf::TransformBroadcaster tf_pub_rel_;
   tf::TransformListener tf_sub_;
   image_transport::Subscriber sub_image_;
   image_transport::Publisher pub_preview_image_;
   ros::Publisher pub_pose_;
+  ros::Publisher pub_rel_pose_;
   ros::Publisher pub_kf_w_cov_;
   ros::Publisher pub_info_;
   ros::ServiceServer srvPC_;

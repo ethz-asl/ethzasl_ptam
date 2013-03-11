@@ -30,6 +30,7 @@ System::System() :
   pub_info_ = nh_.advertise<ptam_com::ptam_info> ("info", 1);
   //slynen{
   pub_kf_w_cov_ = nh_.advertise<visualization_msgs::MarkerArray> ("kfsCov", 1);
+  pub_rel_pose_ = nh_.advertise<ptam_com::RelativePoseMeasurement>("relativepose", 1);
   //}
 
   srvPC_ = nh_.advertiseService("pointcloud", &System::pointcloudservice,this);
@@ -143,7 +144,7 @@ void System::imageCallback(const sensor_msgs::ImageConstPtr & img)
     tracker_draw = !bDrawMap;
   }
 
-  mpTracker->TrackFrame(img_bw_, tracker_draw, imu_orientation);
+  mpTracker->TrackFrame(img_bw_, tracker_draw, imu_orientation, img->header.stamp);
 
   publishPoseAndInfo(img->header);
 
@@ -310,7 +311,7 @@ void System::publishRelPoseAndInfo(const std_msgs::Header & header){
   marker.header = header;
   marker.id = 999998;
   marker.header.frame_id = "/world";
-  marker.lifetime = ros::Duration(1.0);
+  marker.lifetime = ros::Duration(0.2);
   std_msgs::ColorRGBA color;
   color.a = 0.6f;
   color.r = 0.5f;
@@ -325,6 +326,63 @@ void System::publishRelPoseAndInfo(const std_msgs::Header & header){
   msg->markers.push_back(marker);
 
   pub_kf_w_cov_.publish(msg);
+
+  //the publishing of the pose for the ekf
+//  if (pub_rel_pose_.getNumSubscribers() > 0)
+    {
+      ptam_com::RelativePoseMeasurementPtr msg_pose(new ptam_com::RelativePoseMeasurement);
+
+      msg_pose->parentKFID = fixKF->ID;
+
+      Eigen::Matrix<double, 3, 1> relative_p = tracker_position - fixKF_position;
+      Eigen::Quaterniond relative_q = fixKF_orientation.conjugate() * tracker_orientation;
+
+      //set stamp, relative pose and covariance of the tracker w.r.t the fixed KF
+      msg_pose->relativePoseToParent.header.stamp = header.stamp;
+      msg_pose->relativePoseToParent.pose.pose.orientation.w = relative_q.w();
+      msg_pose->relativePoseToParent.pose.pose.orientation.x = relative_q.x();
+      msg_pose->relativePoseToParent.pose.pose.orientation.y = relative_q.y();
+      msg_pose->relativePoseToParent.pose.pose.orientation.z = relative_q.z();
+      msg_pose->relativePoseToParent.pose.pose.position.x = relative_p[0];
+      msg_pose->relativePoseToParent.pose.pose.position.y = relative_p[1];
+      msg_pose->relativePoseToParent.pose.pose.position.z = relative_p[2];
+
+      TooN::Matrix<6> covartracker = mpTracker->GetCurrentCov();
+      for (unsigned int i = 0; i < msg_pose->relativePoseToParent.pose.covariance.size(); i++)
+        msg_pose->relativePoseToParent.pose.covariance[i] = sqrt(fabs(covartracker[i % 6][i / 6]));
+
+      //now fill the fixed KF
+      msg_pose->parentPose.header.stamp = fixKF->mstamp; //the time the image of this KF was taken
+      msg_pose->parentPose.pose.pose.orientation.w = fixKF_orientation.w();
+      msg_pose->parentPose.pose.pose.orientation.x = fixKF_orientation.x();
+      msg_pose->parentPose.pose.pose.orientation.y = fixKF_orientation.y();
+      msg_pose->parentPose.pose.pose.orientation.z = fixKF_orientation.z();
+      msg_pose->parentPose.pose.pose.position.x = fixKF_position[0];
+      msg_pose->parentPose.pose.pose.position.y = fixKF_position[1];
+      msg_pose->parentPose.pose.pose.position.z = fixKF_position[2];
+      TooN::Matrix<6> covarfix = fixKF->m6BundleCov;
+      for (unsigned int i = 0; i < msg_pose->parentPose.pose.covariance.size(); i++)
+        msg_pose->parentPose.pose.covariance[i] = sqrt(fabs(covarfix[i % 6][i / 6]));
+
+      pub_rel_pose_.publish(msg_pose);
+
+      //DEBUG make a TF for visualization
+//      tf::Vector3 tf_fixkf_pos(fixKF_position[0], fixKF_position[1], fixKF_position[2]);
+//      tf::Quaternion tf_fixkf_ori(fixKF_orientation.x(), fixKF_orientation.y(), fixKF_orientation.z(), fixKF_orientation.w());
+//      tf::StampedTransform tf_fixkf(tf::Transform(tf_fixkf_ori, tf_fixkf_pos), ros::Time::now(), "fixedkf", "world");
+//      tf_pub_fixkf_.sendTransform(tf_fixkf);
+
+//      tf::Vector3 tf_rel_pos(relative_p[0], relative_p[1], relative_p[2]);
+//      tf::Quaternion tf_rel_ori(relative_q.x(), relative_q.y(), relative_q.z(), relative_q.w());
+//      tf::StampedTransform tf_rel(tf::Transform(tf_rel_ori, tf_rel_pos), ros::Time::now(), "tracker", "fixedkf");
+//      tf_pub_rel_.sendTransform(tf_rel);
+
+      tf::Vector3 tf_tracker_pos(tracker_position[0], tracker_position[1], tracker_position[2]);
+      tf::Quaternion tf_tracker_ori(tracker_orientation.x(), tracker_orientation.y(), tracker_orientation.z(), tracker_orientation.w());
+      tf::StampedTransform tf_tracker(tf::Transform(tf_tracker_ori, tf_tracker_pos), ros::Time::now(), "tracker", "world");
+      tf_pub_rel_.sendTransform(tf_tracker);
+    }
+
 }
 
 void System::PublishAllKFsAndCov(const std_msgs::Header & header){
@@ -336,7 +394,7 @@ void System::PublishAllKFsAndCov(const std_msgs::Header & header){
 
   marker.header = header;
   marker.header.frame_id = "/world";
-  marker.lifetime = ros::Duration(1.0);
+  marker.lifetime = ros::Duration(0.2);
 
   for(size_t kfidx = 0 ; kfidx < mpMap->vpKeyFrames.size(); ++kfidx){
 
@@ -366,7 +424,7 @@ void System::PublishAllKFsAndCov(const std_msgs::Header & header){
     color.b = 1.0f;
 
     if(kf->bFixed){ //fixed, so zero (very small) cov
-      Eigen::Matrix<double, 6, 1> tmp = Eigen::Matrix<double, 6, 1>::Constant(0.01);
+      Eigen::Matrix<double, 6, 1> tmp = Eigen::Matrix<double, 6, 1>::Constant(0.0001);
       cov = tmp.asDiagonal();
       color.a = 0.6f;
       color.r = 1.0f;
@@ -437,12 +495,12 @@ void System::publishPoseAndInfo(const std_msgs::Header & header)
   if (mpTracker->getTrackingQuality() && mpMap->IsGood())
   {
     TooN::SE3<double> pose = mpTracker->GetCurrentPose();
-    TooN::Matrix<3, 3, double> r = pose.get_rotation().get_matrix();
-    TooN::Vector<3, double> & t = pose.get_translation();
+    TooN::Matrix<3, 3, double> r = pose.get_rotation().get_matrix().T();
+    TooN::Vector<3, double> t = -r * pose.get_translation();
 
     tf::StampedTransform transform(tf::Transform(tf::Matrix3x3(r(0, 0), r(0, 1), r(0, 2), r(1, 0), r(1, 1), r(1, 2),
 							       r(2, 0), r(2, 1), r(2, 2)), tf::Vector3(t[0] / scale, t[1]
-        / scale, t[2] / scale)), header.stamp, header.frame_id, Params.fixParams->parent_frame);
+        / scale, t[2] / scale)), ros::Time::now()/*header.stamp*/, Params.fixParams->parent_frame, header.frame_id);
 
     tf_pub_.sendTransform(transform);
 

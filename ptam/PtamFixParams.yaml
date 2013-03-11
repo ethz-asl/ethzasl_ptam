@@ -7,7 +7,7 @@ WiggleScale: 0.1
 BundleMEstimator: Tukey
 TrackerMEstimator: Tukey
 MinTukeySigma: 0.4
-CandidateMinSTScore: 70  
+CandidateMinSTScore: 30  
 Calibrator_BlurSigma: 1.0
 Calibrator_MeanGate: 10
 Calibrator_MinCornersForGrabbedImage: 20
@@ -38,4 +38,8 @@ Cam_cx: 0.478292
 Cam_cy: 0.518196
 Cam_s: 0.915154
 # -----------------------------------
-
+Cam_fx: 0.577446
+Cam_fy: 0.902735
+Cam_cx: 0.502669
+Cam_cy: 0.525108
+Cam_s: 0.91816

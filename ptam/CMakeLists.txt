@@ -103,7 +103,7 @@ link_directories(
 
 set(PTAM_LIBRARIES GL glut cvd GVars3 agast blas lapack)
 
-add_definitions(-DKF_REPROJ)
+add_definitions(-DKF_REPROJ -Qunused-arguments)
 
 # PTAM executable
 rosbuild_add_executable(ptam ${PTAM_SOURCE_FILES} ${PTAM_HEADER_FILES})

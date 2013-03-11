@@ -93,9 +93,9 @@ void Tracker::Reset()
 	mbJustRecoveredSoUseCoarse = false;
 }
 
-void Tracker::TrackFrame(CVD::Image<CVD::byte> &imFrame, bool bDraw, const TooN::SO3<> & imu){
+void Tracker::TrackFrame(CVD::Image<CVD::byte> &imFrame, bool bDraw, const TooN::SO3<> & imu, const ros::Time& stamp){
         mso3CurrentImu = imu;
-        TrackFrame(imFrame, bDraw);
+        TrackFrame(imFrame, bDraw, stamp);
         mso3LastImu = mso3CurrentImu;
 }
 
@@ -104,7 +104,7 @@ void Tracker::TrackFrame(CVD::Image<CVD::byte> &imFrame, bool bDraw, const TooN:
 // It figures out what state the tracker is in, and calls appropriate internal tracking
 // functions. bDraw tells the tracker wether it should output any GL graphics
 // or not (it should not draw, for example, when AR stuff is being shown.)
-void Tracker::TrackFrame(Image<CVD::byte> &imFrame, bool bDraw)
+void Tracker::TrackFrame(Image<CVD::byte> &imFrame, bool bDraw, const ros::Time& stamp)
 {
 	mbDraw = bDraw;
 	mMessageForUser.str("");   // Wipe the user message clean
@@ -114,6 +114,7 @@ void Tracker::TrackFrame(Image<CVD::byte> &imFrame, bool bDraw)
 	// This does things like generate the image pyramid and find FAST corners
 	mCurrentKF.mMeasurements.clear();
 	mCurrentKF.MakeKeyFrame_Lite(imFrame);
+	mCurrentKF.mstamp = stamp;
 
 	// Update the small images for the rotation estimator
 	//Weiss{
@@ -1345,6 +1346,7 @@ ImageRef TrackerData::irImageSize;  // Static member of TrackerData lives here
 //Achtelik{
 void Tracker::command(const std::string & cmd){
 
+  std::cout<<"got command "<<cmd<<std::endl;
   if(ParamsAccess::fixParams->gui)
     this->GUICommandCallBack(this, "KeyPress", cmd);
   else
