@@ -4,7 +4,7 @@
 	    <!--remap from="image" to="mav1/camera/image_raw" /-->
 	    <!--remap from="image" to="bluebird/down/camera/image_raw" /-->
 	    <remap from="image" to="cam0/image_raw" />
-        <remap from="pose" to="pose"/>
+            <remap from="pose" to="pose"/>
 	    <rosparam file="$(find ptam)/PtamFixParams.yaml"/>
     </node>
 </launch>

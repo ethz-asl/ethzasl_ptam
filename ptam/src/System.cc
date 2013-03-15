@@ -495,40 +495,52 @@ void System::publishPoseAndInfo(const std_msgs::Header & header)
 
   if (mpTracker->getTrackingQuality() && mpMap->IsGood())
   {
-    TooN::SE3<double> pose = mpTracker->GetCurrentPose();
-    TooN::Matrix<3, 3, double> r = pose.get_rotation().get_matrix().T();
-    TooN::Vector<3, double> t = -r * pose.get_translation();
+    { //pose
+      TooN::SE3<double> pose = mpTracker->GetCurrentPose();
+      TooN::Matrix<3, 3, double> r = pose.get_rotation().get_matrix();
+      TooN::Vector<3, double>& t = pose.get_translation();
 
-    tf::StampedTransform transform(tf::Transform(tf::Matrix3x3(r(0, 0), r(0, 1), r(0, 2), r(1, 0), r(1, 1), r(1, 2),
-							       r(2, 0), r(2, 1), r(2, 2)), tf::Vector3(t[0] / scale, t[1]
-        / scale, t[2] / scale)), ros::Time::now()/*header.stamp*/, Params.fixParams->parent_frame, header.frame_id);
+      tf::StampedTransform transform(tf::Transform(tf::Matrix3x3(r(0, 0), r(0, 1), r(0, 2), r(1, 0), r(1, 1), r(1, 2),
+                                                                 r(2, 0), r(2, 1), r(2, 2)), tf::Vector3(t[0] / scale, t[1]
+                                                                  / scale, t[2] / scale)), header.stamp, Params.fixParams->parent_frame, header.frame_id);
 
-    tf_pub_.sendTransform(transform);
+      if (pub_pose_.getNumSubscribers() > 0)
+      {
+        geometry_msgs::PoseWithCovarianceStampedPtr msg_pose(new geometry_msgs::PoseWithCovarianceStamped);
+        const tf::Quaternion & q = transform.getRotation();
+        const tf::Vector3 & t = transform.getOrigin();
+        msg_pose->pose.pose.orientation.w = q.w();
+        msg_pose->pose.pose.orientation.x = q.x();
+        msg_pose->pose.pose.orientation.y = q.y();
+        msg_pose->pose.pose.orientation.z = q.z();
+        msg_pose->pose.pose.position.x = t.x();
+        msg_pose->pose.pose.position.y = t.y();
+        msg_pose->pose.pose.position.z = t.z();
 
-    if (pub_pose_.getNumSubscribers() > 0)
-    {
-      geometry_msgs::PoseWithCovarianceStampedPtr msg_pose(new geometry_msgs::PoseWithCovarianceStamped);
-      const tf::Quaternion & q = transform.getRotation();
-      const tf::Vector3 & t = transform.getOrigin();
-      msg_pose->pose.pose.orientation.w = q.w();
-      msg_pose->pose.pose.orientation.x = q.x();
-      msg_pose->pose.pose.orientation.y = q.y();
-      msg_pose->pose.pose.orientation.z = q.z();
-      msg_pose->pose.pose.position.x = t.x();
-      msg_pose->pose.pose.position.y = t.y();
-      msg_pose->pose.pose.position.z = t.z();
+        TooN::Matrix<6> covar = mpTracker->GetCurrentCov();
+        for (unsigned int i = 0; i < msg_pose->pose.covariance.size(); i++)
+          msg_pose->pose.covariance[i] = sqrt(fabs(covar[i % 6][i / 6]));
 
-      TooN::Matrix<6> covar = mpTracker->GetCurrentCov();
-      for (unsigned int i = 0; i < msg_pose->pose.covariance.size(); i++)
-        msg_pose->pose.covariance[i] = sqrt(fabs(covar[i % 6][i / 6]));
+        msg_pose->header = header;
+        pub_pose_.publish(msg_pose);
+      }
+    }
 
-      msg_pose->header = header;
-      pub_pose_.publish(msg_pose);
+    { //TF in the world frame
+      TooN::SE3<double> pose = mpTracker->GetCurrentPose();
+      TooN::Matrix<3, 3, double> r = pose.get_rotation().get_matrix().T();
+      TooN::Vector<3, double> t = -r * pose.get_translation();
+
+      tf::StampedTransform transform(tf::Transform(tf::Matrix3x3(r(0, 0), r(0, 1), r(0, 2), r(1, 0), r(1, 1), r(1, 2),
+                                                                 r(2, 0), r(2, 1), r(2, 2)), tf::Vector3(t[0] / scale, t[1]
+                                                                  / scale, t[2] / scale)), ros::Time::now()/*header.stamp*/, Params.fixParams->parent_frame, header.frame_id);
+
+      tf_pub_.sendTransform(transform);
     }
 
     if (pub_info_.getNumSubscribers() > 0)
     {
-    	ptam_com::ptam_infoPtr msg_info(new ptam_com::ptam_info);
+      ptam_com::ptam_infoPtr msg_info(new ptam_com::ptam_info);
       double diff = header.stamp.toSec() - last_time;
       if (diff < 1.0 && diff > 0.005)
         fps = fps * 0.8 + 0.2 / diff;
@@ -541,7 +553,7 @@ void System::publishPoseAndInfo(const std_msgs::Header & header)
       msg_info->mapQuality = mpMap->bGood;
       msg_info->trackingQuality = mpTracker->getTrackingQuality();
       msg_info->trackerMessage = mpTracker->GetMessageForUser();
-//      msg_info->mapViewerMessage = mpMapViewer->GetMessageForUser();
+      //      msg_info->mapViewerMessage = mpMapViewer->GetMessageForUser();
       msg_info->keyframes = mpMap->vpKeyFrames.size();
       pub_info_.publish(msg_info);
     }
