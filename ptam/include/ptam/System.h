@@ -61,7 +61,8 @@ private:
   tf::TransformListener tf_sub_;
   image_transport::Subscriber sub_image_;
   image_transport::Publisher pub_preview_image_;
-  ros::Publisher pub_pose_;
+  ros::Publisher pub_pose_;             // world in the camera frame
+  ros::Publisher pub_pose_world_;       // camera in the world frame
   ros::Publisher pub_info_;
   ros::ServiceServer srvPC_;
   ros::ServiceServer srvKF_;

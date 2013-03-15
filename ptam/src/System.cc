@@ -25,6 +25,7 @@ System::System() :
 {
 
   pub_pose_ = nh_.advertise<geometry_msgs::PoseWithCovarianceStamped> ("pose", 1);
+  pub_pose_world_ = nh_.advertise<geometry_msgs::PoseWithCovarianceStamped> ("pose_world", 1);
   pub_info_ = nh_.advertise<ptam_com::ptam_info> ("info", 1);
   srvPC_ = nh_.advertiseService("pointcloud", &System::pointcloudservice,this);
   srvKF_ = nh_.advertiseService("keyframes", &System::keyframesservice,this);
@@ -288,17 +289,20 @@ void System::publishPoseAndInfo(const std_msgs::Header & header)
   if (mpTracker->getTrackingQuality() && mpMap->IsGood())
   {
     TooN::SE3<double> pose = mpTracker->GetCurrentPose();
-    TooN::Matrix<3, 3, double> r = pose.get_rotation().get_matrix();
-    TooN::Vector<3, double> & t = pose.get_translation();
+    //express in the vision frame
+    TooN::Matrix<3, 3, double> r = pose.get_rotation().get_matrix().T();
+    TooN::Vector<3, double> t =  - r * pose.get_translation();
 
-    tf::StampedTransform transform(tf::Transform(tf::Matrix3x3(r(0, 0), r(0, 1), r(0, 2), r(1, 0), r(1, 1), r(1, 2),
-							       r(2, 0), r(2, 1), r(2, 2)), tf::Vector3(t[0] / scale, t[1]
-        / scale, t[2] / scale)), header.stamp, header.frame_id, Params.fixParams->parent_frame);
+    tf::Matrix3x3 tf_rot(r(0, 0), r(0, 1), r(0, 2), r(1, 0), r(1, 1), r(1, 2), r(2, 0), r(2, 1), r(2, 2));
+    tf::Vector3 tf_trans(t[0] / scale, t[1] / scale, t[2] / scale);
+    tf::StampedTransform transform(tf::Transform(tf_rot, tf_trans), header.stamp, Params.fixParams->parent_frame, header.frame_id);
+    tf::Quaternion tf_quat = transform.getRotation();
 
     tf_pub_.sendTransform(transform);
 
-    if (pub_pose_.getNumSubscribers() > 0)
+    if (pub_pose_.getNumSubscribers() > 0 || pub_pose_world_.getNumSubscribers() > 0)
     {
+      //world in the camera frame
       geometry_msgs::PoseWithCovarianceStampedPtr msg_pose(new geometry_msgs::PoseWithCovarianceStamped);
       const tf::Quaternion & q = transform.getRotation();
       const tf::Vector3 & t = transform.getOrigin();
@@ -316,6 +320,17 @@ void System::publishPoseAndInfo(const std_msgs::Header & header)
 
       msg_pose->header = header;
       pub_pose_.publish(msg_pose);
+
+      //camera in the world frame
+      msg_pose->pose.pose.orientation.w = tf_quat.w();
+      msg_pose->pose.pose.orientation.x = tf_quat.x();
+      msg_pose->pose.pose.orientation.y = tf_quat.y();
+      msg_pose->pose.pose.orientation.z = tf_quat.z();
+      msg_pose->pose.pose.position.x = tf_trans.x();
+      msg_pose->pose.pose.position.y = tf_trans.y();
+      msg_pose->pose.pose.position.z = tf_trans.z();
+      pub_pose_.publish(msg_pose);
+
     }
 
     if (pub_info_.getNumSubscribers() > 0)
