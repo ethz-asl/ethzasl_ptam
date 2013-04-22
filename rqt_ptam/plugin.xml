@@ -1,0 +1,12 @@
+<library path="lib/librqt_ptam">
+  <class name="rqt_ptam/RemotePTAM" type="rqt_ptam::RemotePTAM" base_class_type="rqt_gui_cpp::Plugin">
+    <description>
+      A GUI plugin to remote control PTAM.
+    </description>
+    <qtgui>
+      <label>Remote PTAM</label>
+      <icon type="theme">image-x-generic</icon>
+      <statustip>A GUI plugin to remote control ptam.</statustip>
+    </qtgui>
+  </class>
+</library>

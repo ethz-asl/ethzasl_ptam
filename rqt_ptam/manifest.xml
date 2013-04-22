@@ -1,0 +1,24 @@
+<package>
+  <description brief="rqt_ptam">
+
+     Modified version of the monocular SLAM framework PTAM
+
+  </description>
+  <author>Stephan Weiss, Markus Achtelik, Simon Lynen</author>
+  <license> </license>
+  <review status="unreviewed" notes="under active development"/>
+  <url>http://ros.org/wiki/ethzasl_ptam/ptam</url>
+  <depend package="roscpp"/>
+  <depend package="std_msgs"/>
+  <depend package="ptam_com"/>
+  <depend package="sensor_msgs"/>
+  <depend package="image_transport"/>
+  <depend package="dynamic_reconfigure"/>
+  <depend package="cv_bridge"/>
+  <depend package="rqt_gui"/>
+  <depend package="rqt_gui_cpp"/>
+  
+  <export>
+    <rqt_gui plugin="${prefix}/plugin.xml"/>
+  </export>
+</package>

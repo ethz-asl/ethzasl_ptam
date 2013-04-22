@@ -1,0 +1,6 @@
+/**
+\mainpage
+\htmlinclude manifest.html
+
+\b rqt_image_view provides a GUI plugin for displaying images using image_transport.
+*/
