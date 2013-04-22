@@ -395,7 +395,7 @@ void System::PublishAllKFsAndCov(const std_msgs::Header & header){
 
   marker.header = header;
   marker.header.frame_id = "/world";
-  marker.lifetime = ros::Duration(0.2);
+  marker.lifetime = ros::Duration(10);
 
   for(size_t kfidx = 0 ; kfidx < mpMap->vpKeyFrames.size(); ++kfidx){
 
