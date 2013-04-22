@@ -40,7 +40,7 @@ set(rqt_ptam_INCLUDE_DIRECTORIES
   ${CMAKE_CURRENT_BINARY_DIR}
 )
 
-qt4_wrap_cpp(rqt_ptam_MOCS ${rqt_ptam_HDRS})
+qt4_wrap_cpp(rqt_ptam_MOCS ${rqt_ptam_HDRS} OPTIONS -DBOOST_TT_HAS_OPERATOR_HPP_INCLUDED -DBOOST_NO_TEMPLATE_PARTIAL_SPECIALIZATION)
 qt4_wrap_ui(rqt_ptam_UIS_H ${rqt_ptam_UIS})
 
 include_directories(${rqt_ptam_INCLUDE_DIRECTORIES} )
