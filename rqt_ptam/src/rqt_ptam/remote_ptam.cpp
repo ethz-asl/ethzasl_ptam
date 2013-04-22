@@ -65,7 +65,8 @@ void RemotePTAM::initPlugin(qt_gui_cpp::PluginContext& context)
   context.addWidget(widget_);
 
   ui_.image_frame->installEventFilter(this);
-  widget_->installEventFilter(this);
+//  ui_.horizontalLayout->installEventFilter(this);
+//  ui_.horizontalLayout_2->installEventFilter(this);
 
   updateNamespaceList();
   ui_.topics_combo_box->setCurrentIndex(ui_.topics_combo_box->findText(""));
@@ -83,7 +84,7 @@ void RemotePTAM::initPlugin(qt_gui_cpp::PluginContext& context)
 
   connect(ui_.reset_push_button, SIGNAL(pressed()), this, SLOT(onReset()));
 
-  std::cout<<"me\n";
+  std::cout<<"test\n";
 }
 
 bool RemotePTAM::eventFilter(QObject* watched, QEvent* event)
@@ -125,6 +126,7 @@ bool RemotePTAM::eventFilter(QObject* watched, QEvent* event)
 void RemotePTAM::shutdownPlugin()
 {
   subscriber_.shutdown();
+  cmd_pub_.shutdown();
 }
 
 void RemotePTAM::saveSettings(qt_gui_cpp::Settings& plugin_settings, qt_gui_cpp::Settings& instance_settings) const
@@ -237,6 +239,7 @@ void RemotePTAM::onNamespaceChanged(int index)
 
   if (!topic.isEmpty())
   {
+//    cmd_pub_.shutdown();
     cmd_pub_ = nh.advertise<std_msgs::String>(topic.toStdString() + "/key_pressed", 10);
     image_transport::ImageTransport it(nh);
     try {
