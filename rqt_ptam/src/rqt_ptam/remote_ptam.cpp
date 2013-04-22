@@ -113,7 +113,6 @@ bool RemotePTAM::eventFilter(QObject* watched, QEvent* event)
   }
   else if(event->type() == QEvent::KeyPress){
     QKeyEvent *key = static_cast<QKeyEvent *>(event);
-    std::cout<<"key_press\n";
     if(key->key() == Qt::Key_Space)
       onSpace();
     else if(key->key() == Qt::Key_R)
