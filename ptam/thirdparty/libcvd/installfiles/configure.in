@@ -214,7 +214,7 @@ then
 	AC_MSG_CHECKING([for best optimize flags])
 	AC_MSG_RESULT([])
 	
-	TEST_AND_SET_CXXFLAG(-O3)
+	TEST_AND_SET_CXXFLAG(-O3 -march=native)
 	if test $ts_success == no
 	then
 		AC_MSG_WARN([I do not know how to switch on optimizing for this compiler])
