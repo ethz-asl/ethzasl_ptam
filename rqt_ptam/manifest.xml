@@ -1,13 +1,13 @@
 <package>
   <description brief="rqt_ptam">
 
-     Modified version of the monocular SLAM framework PTAM
+     Remote PTAM plugin for rqt, based on rqt_image_view from Dirk Thomas, TU Darmstadt
 
   </description>
-  <author>Stephan Weiss, Markus Achtelik, Simon Lynen</author>
-  <license> </license>
+  <author>Markus Achtelik</author>
+  <license>BSD </license>
   <review status="unreviewed" notes="under active development"/>
-  <url>http://ros.org/wiki/ethzasl_ptam/ptam</url>
+  <url>http://ros.org/wiki/ethzasl_ptam/rqt_ptam</url>
   <depend package="roscpp"/>
   <depend package="std_msgs"/>
   <depend package="ptam_com"/>
