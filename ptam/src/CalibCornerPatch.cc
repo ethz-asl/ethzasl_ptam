@@ -170,6 +170,12 @@ double CalibCornerPatch::Iterate(Image<byte> &im)
   
   Cholesky<6> chol(m6JTJ);
   Vector<6> v6Update = 0.7 * chol.backsub(v6JTD);
+  
+    //reject bogus updates
+  if(isnan(v6Update[4]) || isnan(v6Update[5])){
+    return -1.0;
+  } 
+  
   mParams.v2Pos += v6Update.slice<0,2>();
   mParams.v2Angles += v6Update.slice<2,2>();
   mParams.dMean += v6Update[4];
