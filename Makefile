@@ -9,3 +9,10 @@ clean:
 	cd ..
 	cd ptam_com && make clean
 	cd ..
+	
+	
+distclean: 
+	cd ptam && make distclean 
+	cd ..
+	cd ptam_com && make distclean
+	cd ..
