@@ -172,7 +172,7 @@ double CalibCornerPatch::Iterate(Image<byte> &im)
   Vector<6> v6Update = 0.7 * chol.backsub(v6JTD);
   
     //reject bogus updates
-  if(isnan(v6Update[4]) || isnan(v6Update[5])){
+  if(std::isnan(v6Update[4]) || std::isnan(v6Update[5])){
     return -1.0;
   } 
   
