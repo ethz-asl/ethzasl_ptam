@@ -152,13 +152,13 @@ public:
 
 		// arguments are scrambled because we use rowmajor and lapack uses colmajor
 		// thus u and vt play each other's roles.
-		dgesvd_( &JOBVT, &JOBU, &m, &n, a, &lda, s, uorvt,
+		gesvd_( &JOBVT, &JOBU, &m, &n, a, &lda, s, uorvt,
 				 &ldvt, uorvt, &ldu, &size, &LWORK, &INFO);
 	
 		LWORK = (long int)(size);
 		wk = new Precision[LWORK];
 
-		dgesvd_( &JOBVT, &JOBU, &m, &n, a, &lda, s, uorvt,
+		gesvd_( &JOBVT, &JOBU, &m, &n, a, &lda, s, uorvt,
 				 &ldvt, uorvt, &ldu, wk, &LWORK, &INFO);
 	
 		delete[] wk;

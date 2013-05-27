@@ -97,6 +97,7 @@ template<int N=-1, typename Precision=double> class DownhillSimplex
 			gamma = 0.5;
 			sigma = 0.5;
 
+			using std::sqrt;
 			epsilon = sqrt(numeric_limits<Precision>::epsilon());
 			zero_epsilon = 1e-20;
 

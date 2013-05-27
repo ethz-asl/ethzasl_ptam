@@ -34,6 +34,16 @@ namespace TooN {
 //             Type  and size computation for scalar operations used in this file
 //////////////////////////////////////////////////////////////////////////////////////////////
 
+///Determine if two classes are in the same field. For the purposes of
+///%TooN \c float and \c int are in the same field, since operator
+///+,-,*,/ are defined for any combination of \c float and \c int. 
+///Combinations of builtin types are dea;t with by IsField.
+template<class L, class R> struct Field
+{	
+	///<Set to 1 if the two classes are in the same field.
+	static const int is = IsField<L>::value & IsField<R>::value;
+};
+
 namespace Internal {
 
 	//Automatic type deduction of return types
@@ -42,30 +52,46 @@ namespace Internal {
 	///is not implemented anywhere, the result is used for type deduction.
 	template<class C> C gettype();
 	
-	///@internal
-	///Determine if two classes are in the same field. For the purposes of
-	///%TooN \c float and \c int are in the same field, since operator
-	///+,-,*,/ are defined for any combination of \c float and \c int.
-	template<class L, class R> struct Field
-	{	
-		///<Set to 1 if the two classes are in the same field.
-		static const int is = IsField<L>::value && IsField<R>::value;
+	
+	template<class C> struct Clean
+	{
+		typedef C type;
 	};
 	
+	template<class C> struct Clean<const C>
+	{
+		typedef C type;
+	};
+
+	template<class C> struct Clean<const C&>
+	{
+		typedef C type;
+	};
+
+	template<class C> struct Clean<C&>
+	{
+		typedef C type;
+	};
+
+	template<class L, class R> struct CField
+	{
+		static const int is = TooN::Field<typename Clean<L>::type, typename Clean<R>::type>::is;
+	};
+
 
 	//We have to use the traits here because it is not possible to 
 	//check for the existence of a valid operator *, especially
 	//in the presence of builtin operators. Therefore, the type is
 	//only deduced if both of the input types are fields.
-	template<class L, class R, int F = Field<L,R>::is> struct AddType      { typedef TOON_TYPEOF(gettype<L>()+gettype<R>()) type;};
-	template<class L, class R, int F = Field<L,R>::is> struct SubtractType { typedef TOON_TYPEOF(gettype<L>()-gettype<R>()) type;};
-	template<class L, class R, int F = Field<L,R>::is> struct MultiplyType { typedef TOON_TYPEOF(gettype<L>()*gettype<R>()) type;};
-	template<class L, class R, int F = Field<L,R>::is> struct DivideType   { typedef TOON_TYPEOF(gettype<L>()/gettype<R>()) type;};
+	template<class L, class R, int F = CField<L,R>::is> struct AddType      { typedef TOON_TYPEOF(gettype<L>()+gettype<R>()) type;};
+	template<class L, class R, int F = CField<L,R>::is> struct SubtractType { typedef TOON_TYPEOF(gettype<L>()-gettype<R>()) type;};
+	template<class L, class R, int F = CField<L,R>::is> struct MultiplyType { typedef TOON_TYPEOF(gettype<L>()*gettype<R>()) type;};
+	template<class L, class R, int F = CField<L,R>::is> struct DivideType   { typedef TOON_TYPEOF(gettype<L>()/gettype<R>()) type;};
 
-	template<class L, class R> struct AddType<L, R, 0>         { typedef void type;};
-	template<class L, class R> struct SubtractType<L, R, 0>    { typedef void type;};
-	template<class L, class R> struct MultiplyType<L, R, 0>    { typedef void type;};
-	template<class L, class R> struct DivideType<L, R, 0>      { typedef void type;};
+	template<class L, class R> struct AddType<L, R, 0>         { typedef These_Types_Do_Not_Form_A_Field<L, R> type;};
+	template<class L, class R> struct SubtractType<L, R, 0>    { typedef These_Types_Do_Not_Form_A_Field<L, R> type;};
+	template<class L, class R> struct MultiplyType<L, R, 0>    { typedef These_Types_Do_Not_Form_A_Field<L, R> type;};
+	template<class L, class R> struct DivideType<L, R, 0>      { typedef These_Types_Do_Not_Form_A_Field<L, R> type;};
 
 
 	//Mini operators for passing to Pairwise, etc
@@ -86,12 +112,6 @@ namespace Internal {
 		template<class P1, class P2> struct Return { typedef typename DivideType<P1,P2>::type Type;};
 	};
 
-
-	//Output size, given input size. Be static if possible.
-	template<int i, int j> struct Sizer{static const int size=i;};
-	template<int i> struct Sizer<-1, i>{static const int size=i;};
-	template<int i> struct Sizer<i, -1>{static const int size=i;};
-	template<> struct Sizer<-1, -1>    {static const int size=-1;};
 };
 
 //////////////////////////////////////////////////////////////////////////////////////////////
@@ -124,8 +144,8 @@ struct Operator<Internal::VPairwise<Op, S1, P1, B1, S2, P2, B2> > {
 
 	Operator(const Vector<S1, P1, B1> & lhs_in, const Vector<S2, P2, B2> & rhs_in) : lhs(lhs_in), rhs(rhs_in) {}
 
-	template<int S0, typename P0, typename B0>
-	void eval(Vector<S0, P0, B0>& res) const
+	template<int S0, typename P0, typename Ba0>
+	void eval(Vector<S0, P0, Ba0>& res) const
 	{
 		for(int i=0; i < res.size(); ++i)
 			res[i] = Op::template op<P0,P1, P2>(lhs[i],rhs[i]);
@@ -233,8 +253,8 @@ struct Operator<Internal::MPairwise<Op, R1, C1, P1, B1, R2, C2, P2, B2> > {
 
 	Operator(const Matrix<R1, C1, P1, B1> & lhs_in, const Matrix<R2, C2, P2, B2> & rhs_in) : lhs(lhs_in), rhs(rhs_in) {}
 
-	template<int R0, int C0, typename P0, typename B0>
-	void eval(Matrix<R0, C0, P0, B0>& res) const
+	template<int R0, int C0, typename P0, typename Ba0>
+	void eval(Matrix<R0, C0, P0, Ba0>& res) const
 	{
 		for(int r=0; r < res.num_rows(); ++r){
 			for(int c=0; c < res.num_cols(); ++c){
@@ -294,8 +314,8 @@ struct Operator<Internal::MatrixMultiply<R1, C1, P1, B1, R2, C2, P2, B2> > {
 
 	Operator(const Matrix<R1, C1, P1, B1> & lhs_in, const Matrix<R2, C2, P2, B2> & rhs_in) : lhs(lhs_in), rhs(rhs_in) {}
 
-	template<int R0, int C0, typename P0, typename B0>
-	void eval(Matrix<R0, C0, P0, B0>& res) const
+	template<int R0, int C0, typename P0, typename Ba0>
+	void eval(Matrix<R0, C0, P0, Ba0>& res) const
 	{
 
 		for(int r=0; r < res.num_rows(); ++r) {
@@ -388,10 +408,10 @@ struct Operator<Internal::VectorMatrixMultiply<Size,P1,B1,R,C,P2,B2> > {
 };
 
 template<int R, int C, typename P1, typename B1, int Size, typename P2, typename B2> 
-Vector<R, typename Internal::MultiplyType<P1,P2>::type> operator*(const Vector<Size,P1,B1>& v,
+Vector<C, typename Internal::MultiplyType<P1,P2>::type> operator*(const Vector<Size,P1,B1>& v,
 																  const Matrix<R,C,P2,B2>& m)
 {
-	SizeMismatch<C,Size>::test(m.num_rows(), v.size());
+	SizeMismatch<R,Size>::test(m.num_rows(), v.size());
 	return Operator<Internal::VectorMatrixMultiply<Size,P1,B1,R,C,P2,B2> >(v,m);
 }
 
@@ -486,8 +506,8 @@ struct Operator<Internal::ApplyScalarV<Size,P1,B1,P2,Op> > {
 
 	Operator(const Vector<Size,P1,B1>& v, const P2& s) : lhs(v), rhs(s) {}
 		
-	template<int S0, typename P0, typename B0>
-	void eval(Vector<S0,P0,B0>& v) const {
+	template<int S0, typename P0, typename Ba0>
+	void eval(Vector<S0,P0,Ba0>& v) const {
 		for(int i=0; i<v.size(); i++){
 			v[i]= Op::template op<P0,P1,P2> (lhs[i],rhs);
 		}
@@ -514,8 +534,8 @@ struct Operator<Internal::ApplyScalarVL<Size,P1,B1,P2,Op> > {
 
 	Operator(const P2& s, const Vector<Size,P1,B1>& v) : lhs(s), rhs(v) {}
 		
-	template<int S0, typename P0, typename B0>
-	void eval(Vector<S0,P0,B0>& v) const {
+	template<int S0, typename P0, typename Ba0>
+	void eval(Vector<S0,P0,Ba0>& v) const {
 		for(int i=0; i<v.size(); i++){
 			v[i]= Op::template op<P0,P2,P1> (lhs,rhs[i]);
 		}
@@ -541,8 +561,8 @@ struct Operator<Internal::ApplyScalarM<R,C,P1,B1,P2,Op> > {
 
 	Operator(const Matrix<R,C,P1,B1>& m, const P2& s) : lhs(m), rhs(s) {}
 		
-	template<int R0, int C0, typename P0, typename B0>
-	void eval(Matrix<R0,C0,P0,B0>& m) const {
+	template<int R0, int C0, typename P0, typename Ba0>
+	void eval(Matrix<R0,C0,P0,Ba0>& m) const {
 		for(int r=0; r<m.num_rows(); r++){
 			for(int c=0; c<m.num_cols(); c++){
 				m(r,c)= Op::template op<P0,P1,P2> (lhs(r,c),rhs);
@@ -574,8 +594,8 @@ struct Operator<Internal::ApplyScalarML<R,C,P1,B1,P2,Op> > {
 
 	Operator( const P2& s,const Matrix<R,C,P1,B1>& m) : lhs(s), rhs(m) {}
 		
-	template<int R0, int C0, typename P0, typename B0>
-	void eval(Matrix<R0,C0,P0,B0>& m) const {
+	template<int R0, int C0, typename P0, typename Ba0>
+	void eval(Matrix<R0,C0,P0,Ba0>& m) const {
 		for(int r=0; r<m.num_rows(); r++){
 			for(int c=0; c<m.num_cols(); c++){
 				m(r,c)= Op::template op<P0,P1,P2> (lhs,rhs(r,c));
@@ -650,7 +670,9 @@ Matrix<Rows, Cols, typename Internal::Subtract::Return<typename Operator<Op>::Pr
 // output operator <<
 template <int Size, typename Precision, typename Base>
 inline std::ostream& operator<< (std::ostream& os, const Vector<Size,Precision,Base>& v){
+  std::streamsize fw = os.width();
   for(int i=0; i<v.size(); i++){
+    os.width(fw);
     os << v[i] << " ";
   }
   return os;
@@ -667,12 +689,14 @@ std::istream& operator >> (std::istream& is, Vector<Size, Precision, Base>& v){
 
 template<int Rows, int Cols, typename Precision, class Base>
 inline std::ostream& operator<< (std::ostream& os, const Matrix<Rows, Cols, Precision, Base>& m){
+	std::streamsize fw = os.width();
 	for(int i=0; i < m.num_rows(); i++)
 	{
 		for(int j=0; j < m.num_cols(); j++)
 		{
 			if(j != 0)
 				os << " ";
+			os.width(fw);
 			os << m(i,j);
 		}
 		os << std::endl;
@@ -689,6 +713,48 @@ std::istream& operator >> (std::istream& is, Matrix<Rows, Cols, Precision, Base>
 		}
 	}
 	return is;
+}
+
+
+//Overloads of swap
+namespace Internal
+{
+	TOON_CREATE_METHOD_DETECTOR(swap);
+	template<class V1, class V2, bool has_swap = Has_swap_Method<V1>::Has>
+	struct Swap
+	{
+		static void swap(V1& v1, V2& v2)
+		{
+			using std::swap;
+			SizeMismatch<V1::SizeParameter,V2::SizeParameter>::test(v1.size(), v2.size());
+			for(int i=0; i < v1.size(); i++)
+				swap(v1[i], v2[i]);
+		}
+	};
+	
+	template<class V>
+	struct Swap<V, V, true>
+	{
+		static void swap(V& v1, V& v2)
+		{
+			v1.swap(v2);
+		}
+	};
+
+};
+
+
+template<int S1, class P1, class B1, int S2, class P2, class B2>
+void swap(Vector<S1, P1, B1>& v1, Vector<S2, P2, B2>& v2)
+{
+	Internal::Swap<Vector<S1, P1, B1>, Vector<S2, P2, B2> >::swap(v1, v2);
+}
+
+
+template<int S1, class P1, class B1>
+void swap(Vector<S1, P1, B1>& v1, Vector<S1, P1, B1>& v2)
+{
+	Internal::Swap<Vector<S1, P1, B1>, Vector<S1, P1, B1> >::swap(v1, v2);
 }
 
 }

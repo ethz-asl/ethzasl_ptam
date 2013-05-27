@@ -108,6 +108,10 @@ public:
 				if(row==col){
 					// this is the diagonal element so don't divide
 					my_cholesky(row,col)=val;
+					if(val == 0){
+						my_rank = row;
+						return;
+					}
 					inv_diag=1/val;
 				} else {
 					// cache the value without division in the upper half
@@ -117,7 +121,9 @@ public:
 				}
 			}
 		}
+		my_rank = size;
 	}
+
 	public:
 
 	/// Compute x = A^-1*v
@@ -235,6 +241,7 @@ public:
 	}
 	
 	Matrix<Size,Size,Precision> get_L() const {
+		using std::sqrt;
 		Matrix<Size,Size,Precision> m(my_cholesky.num_rows(),
 					      my_cholesky.num_rows());
 		m=Zeros;
@@ -248,8 +255,11 @@ public:
 		return m;
 	}
 
+	int rank() const { return my_rank; }
+
 private:
 	Matrix<Size,Size,Precision> my_cholesky;
+	int my_rank;
 };
 
 

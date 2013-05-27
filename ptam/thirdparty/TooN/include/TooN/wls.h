@@ -43,8 +43,8 @@ namespace TooN {
 /// @param Precision The numerical precision used (double, float etc)
 /// @param Decomposition The class used to invert the inverse Covariance matrix (must have one integer size and one typename precision template arguments) this is Cholesky by default, but could also be SQSVD
 /// @ingroup gEquations
-template <int Size=Dynamic, class Precision=double,
-		  template<int, class> class Decomposition = Cholesky>
+template <int Size=Dynamic, class Precision=DefaultPrecision,
+		  template<int DecompSize, class DecompPrecision> class Decomposition = Cholesky>
 class WLS {
 public:
 
@@ -117,11 +117,82 @@ public:
 	inline void add_mJ(const Vector<N,Precision,B1>& m,
 					   const Matrix<Size,N,Precision,B2>& J,
 					   const Matrix<N,N,Precision,B3>& invcov){
-		Matrix<Size,N,Precision> temp =  J * invcov;
+		const Matrix<Size,N,Precision> temp =  J * invcov;
 		my_C_inv += temp * J.T();
 		my_vector += temp * m;
 	}
 
+	/// Add multiple measurements at once (much more efficiently)
+	/// @param m The measurements to add
+	/// @param J The Jacobian matrix \f$\frac{\partial\text{m}_i}{\partial\text{param}_j}\f$
+	/// @param invcov The inverse covariance of the measurement values
+	template<int N, class B1, class B2, class B3>
+	inline void add_mJ_rows(const Vector<N,Precision,B1>& m,
+					   const Matrix<N,Size,Precision,B2>& J,
+					   const Matrix<N,N,Precision,B3>& invcov){
+		const Matrix<Size,N,Precision> temp =  J.T() * invcov;
+		my_C_inv += temp * J;
+		my_vector += temp * m;
+	}
+
+	/// Add a single measurement at once with a sparse Jacobian (much, much more efficiently)
+	/// @param m The measurements to add
+	/// @param J1 The first block of the Jacobian matrix \f$\frac{\partial\text{m}_i}{\partial\text{param}_j}\f$
+	/// @param index1 starting index for the first block
+	/// @param invcov The inverse covariance of the measurement values
+	template<int N, typename B1>
+	inline void add_sparse_mJ(const Precision m,
+					   const Vector<N,Precision,B1>& J1, const int index1,
+					   const Precision weight = 1){
+		//Upper right triangle only, for speed
+		for(int r=0; r < J1.size(); r++)
+		{
+			double Jw = weight * J1[r];
+			my_vector[r+index1] += m * Jw;
+			for(int c = r; c < J1.size(); c++)
+				my_C_inv[r+index1][c+index1] += Jw * J1[c];
+		}
+	}
+
+	/// Add multiple measurements at once with a sparse Jacobian (much, much more efficiently)
+	/// @param m The measurements to add
+	/// @param J1 The first block of the Jacobian matrix \f$\frac{\partial\text{m}_i}{\partial\text{param}_j}\f$
+	/// @param index1 starting index for the first block
+	/// @param invcov The inverse covariance of the measurement values
+	template<int N, int S1, class P1, class P2, class P3, class B1, class B2, class B3>
+	inline void add_sparse_mJ_rows(const Vector<N,P1,B1>& m,
+					   const Matrix<N,S1,P2,B2>& J1, const int index1,
+					   const Matrix<N,N,P3,B3>& invcov){
+		const Matrix<S1,N,Precision> temp1 = J1.T() * invcov;
+		const int size1 = J1.num_cols();
+		my_C_inv.slice(index1, index1, size1, size1) += temp1 * J1;
+		my_vector.slice(index1, size1) += temp1 * m;
+	}
+
+	/// Add multiple measurements at once with a sparse Jacobian (much, much more efficiently)
+	/// @param m The measurements to add
+	/// @param J1 The first block of the Jacobian matrix \f$\frac{\partial\text{m}_i}{\partial\text{param}_j}\f$
+	/// @param index1 starting index for the first block
+	/// @param J2 The second block of the Jacobian matrix \f$\frac{\partial\text{m}_i}{\partial\text{param}_j}\f$
+	/// @param index2 starting index for the second block
+	/// @param invcov The inverse covariance of the measurement values
+	template<int N, int S1, int S2, class B1, class B2, class B3, class B4>
+	inline void add_sparse_mJ_rows(const Vector<N,Precision,B1>& m,
+					   const Matrix<N,S1,Precision,B2>& J1, const int index1,
+					   const Matrix<N,S2,Precision,B3>& J2, const int index2,
+					   const Matrix<N,N,Precision,B4>& invcov){
+		const Matrix<S1,N,Precision> temp1 = J1.T() * invcov;
+		const Matrix<S2,N,Precision> temp2 = J2.T() * invcov;
+		const Matrix<S1,S2,Precision> mixed = temp1 * J2;
+		const int size1 = J1.num_cols();
+		const int size2 = J2.num_cols();
+		my_C_inv.slice(index1, index1, size1, size1) += temp1 * J1;
+		my_C_inv.slice(index2, index2, size2, size2) += temp2 * J2;
+		my_C_inv.slice(index1, index2, size1, size2) += mixed;
+		my_C_inv.slice(index2, index1, size2, size1) += mixed.T();
+		my_vector.slice(index1, size1) += temp1 * m;
+		my_vector.slice(index2, size2) += temp2 * m;
+	}
 
 	/// Process all the measurements and compute the weighted least squares set of parameter values
 	/// stores the result internally which can then be accessed by calling get_mu()
@@ -156,14 +227,14 @@ public:
 
 
 private:
-	Matrix<Size,Size,Precision> my_C_inv, my_C_inv2;
+	Matrix<Size,Size,Precision> my_C_inv;
 	Vector<Size,Precision> my_vector;
 	Decomposition<Size,Precision> my_decomposition;
 	Vector<Size,Precision> my_mu;
 
 	// comment out to allow bitwise copying
-	WLS( WLS& copyof );
-	int operator = ( WLS& copyof );
+	// WLS( WLS& copyof );
+	// int operator = ( WLS& copyof );
 };
 
 }

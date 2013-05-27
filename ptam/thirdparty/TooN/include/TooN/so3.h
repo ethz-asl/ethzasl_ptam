@@ -32,14 +32,17 @@
 
 #include <TooN/TooN.h>
 #include <TooN/helpers.h>
+#include <cassert>
 
 namespace TooN {
 
 template <typename Precision> class SO3;
 template <typename Precision> class SE3;
+template <typename Precision> class SIM3;
 
 template<class Precision> inline std::istream & operator>>(std::istream &, SO3<Precision> & );
 template<class Precision> inline std::istream & operator>>(std::istream &, SE3<Precision> & );
+template<class Precision> inline std::istream & operator>>(std::istream &, SIM3<Precision> & );
 
 /// Class to represent a three-dimensional rotation matrix. Three-dimensional rotation
 /// matrices are members of the Special Orthogonal Lie group SO3. This group can be parameterised
@@ -48,13 +51,15 @@ template<class Precision> inline std::istream & operator>>(std::istream &, SE3<P
 /// and whose length is the angle of rotation in radians. Exponentiating this vector gives the matrix,
 /// and the logarithm of the matrix gives this vector.
 /// @ingroup gTransforms
-template <typename Precision = double>
+template <typename Precision = DefaultPrecision>
 class SO3 {
 public:
 	friend std::istream& operator>> <Precision> (std::istream& is, SO3<Precision> & rhs);
 	friend std::istream& operator>> <Precision> (std::istream& is, SE3<Precision> & rhs);
+	friend std::istream& operator>> <Precision> (std::istream& is, SIM3<Precision> & rhs);
 	friend class SE3<Precision>;
-	
+	friend class SIM3<Precision>;
+
 	/// Default constructor. Initialises the matrix to the identity (no rotation)
 	SO3() : my_matrix(Identity) {}
 	
@@ -68,6 +73,7 @@ public:
 	
 	/// creates an SO3 as a rotation that takes Vector a into the direction of Vector b
 	/// with the rotation axis along a ^ b. If |a ^ b| == 0, it creates the identity rotation.
+	/// An assertion will fail if Vector a and Vector b are in exactly opposite directions. 
 	/// @param a source Vector
 	/// @param b target Vector
 	template <int S1, int S2, typename P1, typename P2, typename A1, typename A2>
@@ -76,6 +82,9 @@ public:
 		SizeMismatch<3,S2>::test(3, b.size());
 		Vector<3, Precision> n = a ^ b;
 		if(norm_sq(n) == 0) {
+			//check that the vectors are in the same direction if cross product is 0. If not,
+			//this means that the rotation is 180 degrees, which leads to an ambiguity in the rotation axis.
+			assert(a*b>=0);
 			my_matrix = Identity;
 			return;
 		}
@@ -90,7 +99,7 @@ public:
 		my_matrix = my_matrix * R1.T();
 	}
 	
-	/// Assigment operator from a general matrix. This also calls coerce()
+	/// Assignment operator from a general matrix. This also calls coerce()
 	/// to make sure that the matrix is a valid rotation matrix.
 	template <int R, int C, typename P, typename A>
 	SO3& operator=(const Matrix<R,C,P,A> & rhs) {
@@ -107,11 +116,13 @@ public:
 		my_matrix[2] -= my_matrix[0] * (my_matrix[0]*my_matrix[2]);
 		my_matrix[2] -= my_matrix[1] * (my_matrix[1]*my_matrix[2]);
 		my_matrix[2] = unit(my_matrix[2]);
+		// check for positive determinant <=> right handed coordinate system of row vectors
+		assert( (my_matrix[0] ^ my_matrix[1]) * my_matrix[2] > 0 ); 
 	}
 	
 	/// Exponentiate a vector in the Lie algebra to generate a new SO3.
 	/// See the Detailed Description for details of this vector.
-	template<int S, typename A> inline static SO3 exp(const Vector<S,Precision,A>& vect);
+	template<int S, typename VP, typename A> inline static SO3 exp(const Vector<S,VP,A>& vect);
 	
 	/// Take the logarithm of the matrix, generating the corresponding vector in the Lie Algebra.
 	/// See the Detailed Description for details of this vector.
@@ -121,13 +132,17 @@ public:
 	SO3 inverse() const { return SO3(*this, Invert()); }
 
 	/// Right-multiply by another rotation matrix
-	SO3& operator *=(const SO3& rhs) {
+	template <typename P>
+	SO3& operator *=(const SO3<P>& rhs) {
 		*this = *this * rhs;
 		return *this;
 	}
 
 	/// Right-multiply by another rotation matrix
-	SO3 operator *(const SO3& rhs) const { return SO3(*this,rhs); }
+	template<typename P>
+	SO3<typename Internal::MultiplyType<Precision, P>::type> operator *(const SO3<P>& rhs) const { 
+	    return SO3<typename Internal::MultiplyType<Precision, P>::type>(*this,rhs); 
+	}
 
 	/// Returns the SO3 as a Matrix<3>
 	const Matrix<3,3, Precision> & get_matrix() const {return my_matrix;}
@@ -164,11 +179,13 @@ public:
 		SizeMismatch<3, S>::test(3, vect.size());
 		return *this * vect; 
 	}
+
+	template <typename PA, typename PB>
+	inline SO3(const SO3<PA>& a, const SO3<PB>& b) : my_matrix(a.get_matrix()*b.get_matrix()) {}
 	
 private:
 	struct Invert {};
 	inline SO3(const SO3& so3, const Invert&) : my_matrix(so3.my_matrix.T()) {}
-	inline SO3(const SO3& a, const SO3& b) : my_matrix(a.my_matrix*b.my_matrix) {}
 	
 	Matrix<3,3, Precision> my_matrix;
 };
@@ -184,8 +201,9 @@ inline std::ostream& operator<< (std::ostream& os, const SO3<Precision>& rhs){
 /// @relates SO3
 template <typename Precision>
 inline std::istream& operator>>(std::istream& is, SO3<Precision>& rhs){
-	return is >> rhs.my_matrix;
+	is >> rhs.my_matrix;
 	rhs.coerce();
+	return is;
 }
 
 ///Compute a rotation exponential using the Rodrigues Formula.
@@ -199,12 +217,13 @@ inline std::istream& operator>>(std::istream& is, SO3<Precision>& rhs){
 ///@param B \f$\frac{1 - \cos \theta}{\theta^2}\f$
 ///@param R Matrix to hold the return value.
 ///@relates SO3
-template <typename Precision, typename VA, typename MA>
-inline void rodrigues_so3_exp(const Vector<3,Precision, VA>& w, const Precision A, const Precision B, Matrix<3,3,Precision,MA>& R){
+template <typename Precision, int S, typename VP, typename VA, typename MA>
+inline void rodrigues_so3_exp(const Vector<S,VP, VA>& w, const Precision A, const Precision B, Matrix<3,3,Precision,MA>& R){
+    SizeMismatch<3,S>::test(3, w.size());
 	{
-		const Precision wx2 = w[0]*w[0];
-		const Precision wy2 = w[1]*w[1];
-		const Precision wz2 = w[2]*w[2];
+		const Precision wx2 = (Precision)w[0]*w[0];
+		const Precision wy2 = (Precision)w[1]*w[1];
+		const Precision wz2 = (Precision)w[2]*w[2];
 	
 		R[0][0] = 1.0 - B*(wy2 + wz2);
 		R[1][1] = 1.0 - B*(wx2 + wz2);
@@ -233,8 +252,8 @@ inline void rodrigues_so3_exp(const Vector<3,Precision, VA>& w, const Precision 
 ///Perform the exponential of the matrix \f$ \sum_i w_iG_i\f$
 ///@param w Weightings of the generator matrices.
 template <typename Precision>
-template<int S, typename VA>
-inline SO3<Precision> SO3<Precision>::exp(const Vector<S,Precision,VA>& w){
+template<int S, typename VP, typename VA>
+inline SO3<Precision> SO3<Precision>::exp(const Vector<S,VP,VA>& w){
 	using std::sqrt;
 	using std::sin;
 	using std::cos;
@@ -269,6 +288,7 @@ inline SO3<Precision> SO3<Precision>::exp(const Vector<S,Precision,VA>& w){
 
 template <typename Precision>
 inline Vector<3, Precision> SO3<Precision>::ln() const{
+    using std::sqrt;
 	Vector<3, Precision> result;
 	
 	const Precision cos_angle = (my_matrix[0][0] + my_matrix[1][1] + my_matrix[2][2] - 1.0) * 0.5;
@@ -282,7 +302,7 @@ inline Vector<3, Precision> SO3<Precision>::ln() const{
 			result *= asin(sin_angle_abs) / sin_angle_abs;
 		}
 	} else if( cos_angle > -M_SQRT1_2) {    // [Pi/4 - 3Pi/4[ use acos, but antisymmetric part
-		double angle = acos(cos_angle);
+		const Precision angle = acos(cos_angle);
 		result *= angle / sin_angle_abs;        
 	} else {  // rest use symmetric part
 		// antisymmetric part vanishes, but still large rotation, need information from symmetric part
@@ -290,12 +310,12 @@ inline Vector<3, Precision> SO3<Precision>::ln() const{
 		const Precision d0 = my_matrix[0][0] - cos_angle,
 			d1 = my_matrix[1][1] - cos_angle,
 			d2 = my_matrix[2][2] - cos_angle;
-		TooN::Vector<3> r2;
-		if(fabs(d0) > fabs(d1) && fabs(d0) > fabs(d2)){ // first is largest, fill with first column
+		TooN::Vector<3, Precision> r2;
+		if(d0*d0 > d1*d1 && d0*d0 > d2*d2){ // first is largest, fill with first column
 			r2[0] = d0;
 			r2[1] = (my_matrix[1][0]+my_matrix[0][1])/2;
 			r2[2] = (my_matrix[0][2]+my_matrix[2][0])/2;
-		} else if(fabs(d1) > fabs(d2)) { 			    // second is largest, fill with second column
+		} else if(d1*d1 > d2*d2) { 			    // second is largest, fill with second column
 			r2[0] = (my_matrix[1][0]+my_matrix[0][1])/2;
 			r2[1] = d1;
 			r2[2] = (my_matrix[2][1]+my_matrix[1][2])/2;
@@ -308,7 +328,7 @@ inline Vector<3, Precision> SO3<Precision>::ln() const{
 		if(r2 * result < 0)
 			r2 *= -1;
 		r2 = unit(r2);
-		result = angle * r2;
+		result = TooN::operator*(angle,r2);
 	} 
 	return result;
 }

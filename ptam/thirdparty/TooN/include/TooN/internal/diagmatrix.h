@@ -32,6 +32,60 @@
 
 namespace TooN {
 
+	namespace Internal
+	{
+		//Dummy struct for Diagonal operator
+		template<int Size, typename Precision, typename Base>
+		struct DiagMatrixOp;
+	}
+
+	template<int Size, typename Precision, typename Base>
+	struct Operator<Internal::DiagMatrixOp<Size, Precision, Base> >
+	{
+		public:
+		///@name Constructors
+		///@{
+
+
+		inline Operator() {}
+		inline Operator(int size_in) : my_vector(size_in) {}
+		inline Operator(Precision* data) : my_vector(data) {}
+		inline Operator(Precision* data, int size_in) : my_vector(data,size_in) {}
+		inline Operator(Precision* data_in, int size_in, int stride_in, Internal::Slicing)
+			: my_vector(data_in, size_in, stride_in, Internal::Slicing() ) {}
+
+		// constructors to allow return value optimisations
+		// construction from 0-ary operator
+		///my_vector constructed from a TooN::Operator 
+		template <class Op>
+		inline Operator(const Operator<Op>& op)
+			: my_vector (op)
+		{
+			op.eval(my_vector);
+		}
+		
+		// constructor from arbitrary vector
+		template<int Size2, typename Precision2, typename Base2>
+		inline Operator(const Vector<Size2,Precision2,Base2>& from)
+			: my_vector(from.size())
+		{
+			my_vector=from;
+		}
+		///@}
+
+
+		///@name Operator members
+		///@{
+		template<int R, int C, class P, class B>
+		void eval(Matrix<R,C,P,B>& m) const {
+			SizeMismatch<Size, Size>::test(m.num_rows(), m.num_cols());
+			m = Zeros;
+			m.diagonal_slice() = my_vector;
+		}
+
+		///The vector used to hold the leading diagonal.
+		Vector<Size,Precision,Base> my_vector;
+	};
 
 /**
 @class DiagonalMatrix 
@@ -53,56 +107,58 @@ A vector can be obtained from the diagonal matrix by using the
 @ingroup gLinAlg
  **/
 template<int Size=Dynamic, typename Precision=DefaultPrecision, typename Base=Internal::VBase>
-struct DiagonalMatrix {
+struct DiagonalMatrix: public Operator<Internal::DiagMatrixOp<Size, Precision, Base> > {
 public:
 	///@name Constructors
 	///@{
 	
 	inline DiagonalMatrix() {}
-	inline DiagonalMatrix(int size_in) : my_vector(size_in) {}
-	inline DiagonalMatrix(Precision* data) : my_vector(data) {}
-	inline DiagonalMatrix(Precision* data, int size_in) : my_vector(data,size_in) {}
+	inline DiagonalMatrix(int size_in) : Operator<Internal::DiagMatrixOp<Size, Precision, Base> >(size_in) {}
+	inline DiagonalMatrix(Precision* data) : Operator<Internal::DiagMatrixOp<Size, Precision, Base> >(data) {}
+	inline DiagonalMatrix(Precision* data, int size_in) : Operator<Internal::DiagMatrixOp<Size, Precision, Base> >(data,size_in) {}
 	inline DiagonalMatrix(Precision* data_in, int size_in, int stride_in, Internal::Slicing)
-		: my_vector(data_in, size_in, stride_in, Internal::Slicing() ) {}
+		: Operator<Internal::DiagMatrixOp<Size, Precision, Base> >(data_in, size_in, stride_in, Internal::Slicing() ) {}
 
 	// constructors to allow return value optimisations
 	// construction from 0-ary operator
 	///my_vector constructed from a TooN::Operator 
 	template <class Op>
 	inline DiagonalMatrix(const Operator<Op>& op)
-		: my_vector (op)
+		: Operator<Internal::DiagMatrixOp<Size, Precision, Base> > (op)
 	{
-		op.eval(my_vector);
+		op.eval(this->my_vector);
 	}
 	
 	// constructor from arbitrary vector
 	template<int Size2, typename Precision2, typename Base2>
 	inline DiagonalMatrix(const Vector<Size2,Precision2,Base2>& from)
-		: my_vector(from.size())
+		: Operator<Internal::DiagMatrixOp<Size, Precision, Base> >(from.size())
 	{
-		my_vector=from;
+		this->my_vector=from;
 	}
 	///@}
 
 
 
 	///Index the leading elements on the diagonal 
-	Precision& operator[](int i){return my_vector[i];}
+	Precision& operator[](int i){return this->my_vector[i];}
 	///Index the leading elements on the diagonal 
-	const Precision& operator[](int i) const {return my_vector[i];}
+	const Precision& operator[](int i) const {return this->my_vector[i];}
 	
 	///Return the leading diagonal as a vector.
 	typename Vector<Size, Precision, Base>::as_slice_type diagonal_slice() {
-		return my_vector.as_slice();
+		return this->my_vector.as_slice();
 	}
 
 	///Return the leading diagonal as a vector.
 	const typename Vector<Size, Precision, Base>::as_slice_type diagonal_slice() const {
-		return my_vector.as_slice();
+		return this->my_vector.as_slice();
 	}
-	
-	///The vector used to hold the leading diagonal.
-	Vector<Size,Precision,Base> my_vector;
+
+	DiagonalMatrix<Size, Precision> operator-() const
+	{
+		return -this->my_vector;
+	}
 };
 
 

@@ -33,6 +33,7 @@
 #include <iostream>
 #include <cassert>
 #include <cmath>
+#include <utility>
 #include <complex>
 #include <TooN/lapack.h>
 
@@ -42,6 +43,9 @@ namespace TooN {
 static const double root3=1.73205080756887729352744634150587236694280525381038062805580;
 
 namespace Internal{
+
+        using std::swap;
+
 	///Default condition number for SymEigen::backsub, SymEigen::get_pinv and SymEigen::get_inv_diag
 	static const double symeigen_condition_no=1e9;
 
@@ -65,10 +69,10 @@ namespace Internal{
 			
 
 			evectors = m;
-			int N = evalues.size();
-			int lda = evalues.size();
-			int info;
-			int lwork=-1;
+			FortranInteger N = evalues.size();
+			FortranInteger lda = evalues.size();
+			FortranInteger info;
+			FortranInteger lwork=-1;
 			P size;
 
 			// find out how much space fortran needs
@@ -101,9 +105,15 @@ namespace Internal{
 		template<typename P, typename B>
 		static inline void compute(const Matrix<2,2,P,B>& m, Matrix<2,2,P>& eig, Vector<2, P>& ev) {
 			double trace = m[0][0] + m[1][1];
-			double det = m[0][0]*m[1][1] - m[0][1]*m[1][0];
+			//Only use the upper triangular elements.
+			double det = m[0][0]*m[1][1] - m[0][1]*m[0][1]; 
 			double disc = trace*trace - 4 * det;
-			assert(disc>=0);
+			
+			//Mathematically, disc >= 0 always.
+			//Numerically, it can drift very slightly below zero.
+			if(disc < 0)
+				disc = 0;
+
 			using std::sqrt;
 			double root_disc = sqrt(disc);
 			ev[0] = 0.5 * (trace - root_disc);
@@ -138,6 +148,17 @@ namespace Internal{
 		template<typename P, typename B>
 		static inline void compute(const Matrix<3,3,P,B>& m, Matrix<3,3,P>& eig, Vector<3, P>& ev) {
             //method uses closed form solution of cubic equation to obtain roots of characteristic equation.
+            using std::sqrt;
+            using std::min;
+            
+			double a_norm = norm_1(m);
+			double eps = 1e-7 * a_norm;
+
+			if(a_norm == 0)
+			{
+				eig = TooN::Identity;
+				return;
+			}
 
             //Polynomial terms of |a - l * Identity|
             //l^3 + a*l^2 + b*l + c
@@ -161,17 +182,19 @@ namespace Internal{
             double q = c + (2*a*a*a - 9*a*b)/27;
 
             double alpha = -q/2;
-            double beta_descriminant = q*q/4 + p*p*p/27;
 
             //beta_descriminant <= 0 for real roots!
+			//force to zero to avoid nasty rounding issues.
+            double beta_descriminant = std::min(0.0, q*q/4 + p*p*p/27);
+
             double beta = sqrt(-beta_descriminant);
             double r2 = alpha*alpha  - beta_descriminant;
 
             ///Need A,B = cubert(alpha +- beta)
             ///Turn in to r, theta
             /// r^(1/3) * e^(i * theta/3)
-
             double cuberoot_r = pow(r2, 1./6);
+
             double theta3 = atan2(beta, alpha)/3;
 
             double A_plus_B = 2*cuberoot_r*cos(theta3);
@@ -181,25 +204,148 @@ namespace Internal{
             ev =  makeVector(A_plus_B, -A_plus_B/2 + A_minus_B * sqrt(3)/2, -A_plus_B/2 - A_minus_B * sqrt(3)/2) - Ones * a/3;
 
             if(ev[0] > ev[1])
-                std::swap(ev[0], ev[1]);
+                swap(ev[0], ev[1]);
             if(ev[1] > ev[2])
-                std::swap(ev[1], ev[2]);
+                swap(ev[1], ev[2]);
             if(ev[0] > ev[1])
-                std::swap(ev[0], ev[1]);
+                swap(ev[0], ev[1]);
 
+			// for the vector [x y z]
+			// eliminate to compute the ratios x/z and y/z
+			// in both cases, the denominator is the same, so in the absence of
+			// any other scaling, choose the denominator to be z and 
+			// tne numerators to be x and y.
+			//
+			// x/z and y/z,  implies ax, ay, az which vanishes
+			// if a=0
             //calculate the eigenvectors
             eig[0][0]=a12 * a23 - a13 * (a22 - ev[0]);
             eig[0][1]=a12 * a13 - a23 * (a11 - ev[0]);
             eig[0][2]=(a11-ev[0])*(a22-ev[0]) - a12*a12;
-            normalize(eig[0]);
             eig[1][0]=a12 * a23 - a13 * (a22 - ev[1]);
             eig[1][1]=a12 * a13 - a23 * (a11 - ev[1]);
             eig[1][2]=(a11-ev[1])*(a22-ev[1]) - a12*a12;
-            normalize(eig[1]);
             eig[2][0]=a12 * a23 - a13 * (a22 - ev[2]);
             eig[2][1]=a12 * a13 - a23 * (a11 - ev[2]);
             eig[2][2]=(a11-ev[2])*(a22-ev[2]) - a12*a12;
-            normalize(eig[2]);
+			
+			//Check to see if we have any zero vectors
+			double e0norm = norm_1(eig[0]);
+			double e1norm = norm_1(eig[1]);
+			double e2norm = norm_1(eig[2]);
+
+			//Some of the vectors vanish: we're computing
+			// x/z and y/z, which implies ax, ay, az which vanishes
+			// if a=0;
+			//
+			// So compute the other two choices.
+			if(e0norm < eps)
+			{
+				eig[0][0] += a12 * (ev[0] - a33) + a23 * a13;
+				eig[0][1] += (ev[0]-a11)*(ev[0]-a33) - a13*a13;
+				eig[0][2] += a23 * (ev[0] - a11) + a12 * a13;
+				e0norm = norm_1(eig[0]);
+			}
+
+			if(e1norm < eps)
+			{
+				eig[1][0] += a12 * (ev[1] - a33) + a23 * a13;
+				eig[1][1] += (ev[1]-a11)*(ev[1]-a33) - a13*a13;
+				eig[1][2] += a23 * (ev[1] - a11) + a12 * a13;
+				e1norm = norm_1(eig[1]);
+			}
+
+			if(e2norm < eps)
+			{
+				eig[2][0] += a12 * (ev[2] - a33) + a23 * a13;
+				eig[2][1] += (ev[2]-a11)*(ev[2]-a33) - a13*a13;
+				eig[2][2] += a23 * (ev[2] - a11) + a12 * a13;
+				e2norm = norm_1(eig[2]);
+			}
+
+
+			//OK, a AND b might be 0
+			//Check for vanishing and add in y/x, z/x which implies cx, cy, cz
+			if(e0norm < eps)
+			{
+				eig[0][0] +=(ev[0]-a22)*(ev[0]-a33) - a23*a23;
+				eig[0][1] +=a12 * (ev[0] - a33) + a23 * a13;
+				eig[0][2] +=a13 * (ev[0] - a22) + a23 * a12;
+				e0norm = norm_1(eig[0]);
+			}
+
+			if(e1norm < eps)
+			{
+				eig[1][0] +=(ev[1]-a22)*(ev[1]-a33) - a23*a23;
+				eig[1][1] +=a12 * (ev[1] - a33) + a23 * a13;
+				eig[1][2] +=a13 * (ev[1] - a22) + a23 * a12;
+				e1norm = norm_1(eig[1]);
+			}
+
+			if(e2norm < eps)
+			{
+				eig[2][0] +=(ev[2]-a22)*(ev[2]-a33) - a23*a23;
+				eig[2][1] +=a12 * (ev[2] - a33) + a23 * a13;
+				eig[2][2] +=a13 * (ev[2] - a22) + a23 * a12;
+				e2norm = norm_1(eig[2]);
+			}
+
+			//Oh, COME ON!!!
+			if(e0norm < eps || e1norm < eps || e2norm < eps)
+			{
+				//This is blessedly rare
+		
+				double ns[] = {e0norm, e1norm, e2norm};
+				double is[] = {0, 1, 2};
+				
+				//Sort them
+				if(ns[0] > ns[1])
+				{
+					swap(ns[0], ns[1]);
+					swap(is[0], is[1]);
+				}
+				if(ns[1] > ns[2])
+				{
+					swap(ns[1], ns[2]);
+					swap(is[1], is[2]);
+				}
+				if(ns[0] > ns[1])
+				{
+					swap(ns[0], ns[1]);
+					swap(is[0], is[1]);
+				}
+
+
+				if(ns[1] >= eps)
+				{
+					//one small one. Use the cross product of the other two
+					normalize(eig[1]);
+					normalize(eig[2]);
+					eig[is[0]] = eig[is[1]]^eig[is[2]];
+				}
+				else if(ns[2] >= eps)
+				{
+					normalize(eig[is[2]]);
+					
+					//Permute vector to get a new vector with some orthogonal components.
+					Vector<3> p = makeVector(eig[is[2]][1], eig[is[2]][2], eig[is[2]][0]);
+
+					//Gram-Schmit
+					Vector<3> v1 = unit(p - eig[is[2]] * (p * eig[is[2]]));
+					Vector<3> v2 = v1^eig[is[2]];
+
+					eig[is[0]] = v1;
+					eig[is[1]] = v2;
+				}
+				else
+					eig = TooN::Identity;
+			}
+			else
+			{
+  				normalize(eig[0]);
+  				normalize(eig[1]);
+  				normalize(eig[2]);
+			}
 		}
 	};
 

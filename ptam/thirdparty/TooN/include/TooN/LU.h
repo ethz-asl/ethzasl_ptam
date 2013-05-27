@@ -86,9 +86,9 @@ class LU {
 	
 		//Make a local copy. This is guaranteed contiguous
 		my_lu=m;
-		int lda = m.num_rows();
-		int M = m.num_rows();
-		int N = m.num_rows();
+		FortranInteger lda = m.num_rows();
+		FortranInteger M = m.num_rows();
+		FortranInteger N = m.num_rows();
 
 		getrf_(&M,&N,&my_lu[0][0],&lda,&my_IPIV[0],&my_info);
 
@@ -106,11 +106,11 @@ class LU {
 	
 		Matrix<Size, NRHS, Precision> result(rhs);
 
-		int M=rhs.num_cols();
-		int N=my_lu.num_rows();
+		FortranInteger M=rhs.num_cols();
+		FortranInteger N=my_lu.num_rows();
 		double alpha=1;
-		int lda=my_lu.num_rows();
-		int ldb=rhs.num_cols();
+		FortranInteger lda=my_lu.num_rows();
+		FortranInteger ldb=rhs.num_cols();
 		trsm_("R","U","N","N",&M,&N,&alpha,&my_lu[0][0],&lda,&result[0][0],&ldb);
 		trsm_("R","L","N","U",&M,&N,&alpha,&my_lu[0][0],&lda,&result[0][0],&ldb);
 
@@ -135,11 +135,11 @@ class LU {
 	
 		Vector<Size, Precision> result(rhs);
 
-		int M=1;
-		int N=my_lu.num_rows();
+		FortranInteger M=1;
+		FortranInteger N=my_lu.num_rows();
 		double alpha=1;
-		int lda=my_lu.num_rows();
-		int ldb=1;
+		FortranInteger lda=my_lu.num_rows();
+		FortranInteger ldb=1;
 		trsm_("R","U","N","N",&M,&N,&alpha,&my_lu[0][0],&lda,&result[0],&ldb);
 		trsm_("R","L","N","U",&M,&N,&alpha,&my_lu[0][0],&lda,&result[0],&ldb);
 
@@ -157,12 +157,12 @@ class LU {
 	/// multiply it by a matrix or a vector, use one of the backsub() functions, which will be faster.
 	Matrix<Size,Size,Precision> get_inverse(){
 		Matrix<Size,Size,Precision> Inverse(my_lu);
-		int N = my_lu.num_rows();
-		int lda=my_lu.num_rows();
-		int lwork=-1;
+		FortranInteger N = my_lu.num_rows();
+		FortranInteger lda=my_lu.num_rows();
+		FortranInteger lwork=-1;
 		Precision size;
 		getri_(&N, &Inverse[0][0], &lda, &my_IPIV[0], &size, &lwork, &my_info);
-		lwork=int(size);
+		lwork=FortranInteger(size);
 		Precision* WORK = new Precision[lwork];
 		getri_(&N, &Inverse[0][0], &lda, &my_IPIV[0], WORK, &lwork, &my_info);
 		delete [] WORK;
@@ -203,8 +203,8 @@ class LU {
  private:
 
 	Matrix<Size,Size,Precision> my_lu;
-	int my_info;
-	Vector<Size, int> my_IPIV;	//Convenient static-or-dynamic array of ints :-)
+	FortranInteger my_info;
+	Vector<Size, FortranInteger> my_IPIV;	//Convenient static-or-dynamic array of ints :-)
 
 };
 }

@@ -97,7 +97,7 @@ link_directories(
   ${PROJECT_SOURCE_DIR}/thirdparty/agast/lib
 )
 
-set(PTAM_LIBRARIES GL glut cvd GVars3 agast blas lapack)
+set(PTAM_LIBRARIES GL glut cvd GVars3_headless agast blas lapack)
 
 add_definitions(-DKF_REPROJ)
 

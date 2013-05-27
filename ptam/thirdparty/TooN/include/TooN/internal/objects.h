@@ -89,28 +89,29 @@ namespace Internal{
 		///as One.
 		typedef int Type;
 	};
-
-	///@internal
-	///@brief Does One behave as a field with respect to Rhs?
-	///@ingroup gInternal
-	template<class Rhs> struct Field<One, Rhs>
-	{
-		///One can be converted in to anything, so the resulting type is
-		///a field if the other type is a field.
-		static const int is = IsField<Rhs>::value;
-	};
-
-	///@internal
-	///@brief Does One behave as a field with respect to Lhs?
-	///@ingroup gInternal
-	template<class Lhs> struct Field<Lhs, One>
-	{
-		///One can be converted in to anything, so the resulting type is
-		///a field if the other type is a field.
-		static const int is = IsField<Lhs>::value;
-	};
-
 }
+
+///@internal
+///@brief Does One behave as a field with respect to Rhs?
+///Answer: it does is Rhs forms a field.
+///@ingroup gInternal
+template<class Rhs> struct Field<Internal::One, Rhs>
+{
+	///One can be converted in to anything, so the resulting type is
+	///a field if the other type is a field.
+	static const int is = Field<Rhs,Rhs>::is;
+};
+
+///@internal
+///@brief Does One behave as a field with respect to Lhs?
+///Answer: it does is Lhs forms a field.
+///@ingroup gInternal
+template<class Lhs> struct Field<Lhs, Internal::One>
+{
+	///One can be converted in to anything, so the resulting type is
+	///a field if the other type is a field.
+	static const int is = Field<Lhs,Lhs>::is;
+};
 
 ////////////////////
 // Zero
@@ -144,6 +145,25 @@ template<> struct Operator<Internal::Zero> {
 		}
 	}
 	///@}
+
+	template<int R, int C, class P, class B>
+	bool notequal(Matrix<R,C,P,B>& m) const {
+		for(int r=0; r<m.num_rows(); r++)
+			for(int c=0; c<m.num_cols(); c++)
+				if(m[r][c] != 0)
+					return 1;
+		
+		return 0;
+	}
+
+
+	template<int S, class P, class B>
+	bool notequal(Vector<S,P,B>& v) const {
+		for(int i=0; i<v.size(); i++)
+			if(v[i] != 0)
+				return 1;
+		return 0;
+	}
 
 	///Generate a sized Zero object for constructing dynamic vectors.
 	Operator<Internal::SizedZero> operator()(int s);

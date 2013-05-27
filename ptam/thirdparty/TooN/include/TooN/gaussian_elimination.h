@@ -94,7 +94,7 @@ namespace TooN {
 	{
 		template<int i, int j, int k> struct Size3
 		{
-			static const int s=(i!= -1)?i:(j!=-1?j:k);
+			static const int s = !IsStatic<i>::is?i: (!IsStatic<j>::is?j:k);
 		};
 
 	};
@@ -117,7 +117,7 @@ namespace TooN {
 			Precision maxval = abs(A[i][i]);
 			
 			for (int ii=i+1; ii<size; ++ii) {
-				double v =  abs(A[ii][i]);
+				Precision v =  abs(A[ii][i]);
 				if (v > maxval) {
 					maxval = v;
 					argmax = ii;
@@ -139,7 +139,7 @@ namespace TooN {
 			b[i] *= inv_pivot;
 			
 			for (int u=i+1; u<size; ++u) {
-				double factor = A[u][i];
+				Precision factor = A[u][i];
 				//A[u][i] = 0;
 				for (int j=i+1; j<size; ++j)
 					A[u][j] -= factor * A[i][j];

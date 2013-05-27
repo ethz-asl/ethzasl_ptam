@@ -43,12 +43,19 @@
 #define TOON_ALIGN8
 #endif
 
-#include "debug.hh"
-
 namespace TooN {
 
 namespace Internal
 {
+
+template<class Precision> struct DefaultTypes
+{
+	typedef Precision* PointerType;
+	typedef const Precision* ConstPointerType;
+	typedef Precision& ReferenceType;
+	typedef const Precision& ConstReferenceType;
+};
+
 
 template<int Size, class Precision, bool heap> class StackOrHeap;
 
@@ -110,9 +117,11 @@ template<int Size, class Precision> class StaticSizedAllocator: public StackOrHe
 
 
 ///@internal
-///@brief Allocate memory for a Vector.
+///@brief Allocate memory for a static sized Vector.
+///The class switches to heap allocation automatically for large Vectors.
+///Naturally, the vector is not resizable.
 ///@ingroup gInternal
-template<int Size, class Precision> struct VectorAlloc : public StaticSizedAllocator<Size, Precision> {
+template<int Size, class Precision> struct VectorAlloc : public StaticSizedAllocator<Size, Precision>, DefaultTypes<Precision> {
 	
 	///Default constructor (only for statically sized vectors)
 	VectorAlloc() { }
@@ -152,10 +161,19 @@ template<int Size, class Precision> struct VectorAlloc : public StaticSizedAlloc
 		{
 			return my_data;
 		};
+		
+		void try_destructive_resize(int)
+		{}
 
+		template<class Op> void try_destructive_resize(const Operator<Op>&) 
+		{}
 };
 
-template<class Precision> struct VectorAlloc<Dynamic, Precision> {
+///@internal
+///@brief Allocate memory for a dynamic sized Vector.
+///This is not resizable.
+///@ingroup gInternal
+template<class Precision> struct VectorAlloc<Dynamic, Precision>: public DefaultTypes<Precision> {
 	Precision * const my_data;
 	const int my_size;
 
@@ -208,10 +226,21 @@ template<class Precision> struct VectorAlloc<Dynamic, Precision> {
 		{
 			return my_data;
 		};
+
+		void try_destructive_resize(int)
+		{}
+
+		template<class Op> void try_destructive_resize(const Operator<Op>&) 
+		{}
 };
 
 
-template<class Precision> struct VectorAlloc<Resizable, Precision> {
+///@internal
+///@brief Allocate memory for a resizable Vector.
+///New elements available after a resize are treated as
+///uninitialized. 
+///@ingroup gInternal
+template<class Precision> struct VectorAlloc<Resizable, Precision>: public DefaultTypes<Precision> {
 	protected: 
 		std::vector<Precision> numbers;
 	
@@ -248,6 +277,11 @@ template<class Precision> struct VectorAlloc<Resizable, Precision> {
 			return data();
 		}
 
+		void swap(VectorAlloc& s)
+		{
+			numbers.swap(s.numbers);
+		}
+
 	protected:
 
 		Precision* data() {
@@ -256,6 +290,37 @@ template<class Precision> struct VectorAlloc<Resizable, Precision> {
 
 		const Precision* data()const  {
 			return &numbers[0];
+		}
+
+	private:
+		//Dymmy class for implementing sfinae
+		//in order to test for a .size() member
+		template<int S> struct SFINAE_dummy{typedef void type;};
+	
+	protected:
+
+		//SFINAE implementation of try_destructive_resize
+		//to avoid calling .size if it does not exist!
+
+		//Force the function TYPE to depend on a property
+		//of the Operator<Op> type, so that it simply does
+		//not exist if the property is missing.
+		//Therefore this method only uses .size() if it exists.
+		template<class Op> 
+		typename SFINAE_dummy<sizeof(&Operator<Op>::size)>::type try_destructive_resize(const Operator<Op>& op) 
+		{
+			try_destructive_resize(op.size());
+		}
+		
+		//Catch-all do nothing for operators with no size method.
+		template<class Op>
+		void try_destructive_resize(const Op&)
+		{}
+
+		void try_destructive_resize(int newsize)
+		{
+			numbers.resize(newsize);
+			debug_initialize(data(), newsize);
 		}
 
 	public:
@@ -269,7 +334,12 @@ template<class Precision> struct VectorAlloc<Resizable, Precision> {
 		}
 };
 
-template<int S, class Precision> struct VectorSlice
+///@internal
+///@brief Hold a pointer to yield a statically sized slice of a Vector.
+///Not resizable.
+///@ingroup gInternal
+//template<int S, class Precision, class PtrType=Precision*, class ConstPtrType=const Precision*, class RefType=Precision&, class ConstRefType=const Precision&> struct VectorSlice
+template<int S, class Precision, class PtrType=Precision*, class ConstPtrType=const Precision*, class RefType=Precision&, class ConstRefType=const Precision&> struct VectorSlice
 {
 	int size() const {
 		return S;
@@ -277,34 +347,50 @@ template<int S, class Precision> struct VectorSlice
 
 	//Optional Constructors
 	
-	Precision* const my_data;
-	VectorSlice(Precision* p)
+	const PtrType my_data;
+	VectorSlice(PtrType p)
 	:my_data(p){}
 
-	VectorSlice(Precision* p, int /*size*/)
+	VectorSlice(PtrType p, int /*size*/)
 	:my_data(p){}
 
 	template<class Op>
 	VectorSlice(const Operator<Op>& op) : my_data(op.data()) {}
 	
 	protected:
-		Precision *data()
+		PtrType data()
 		{
 			return my_data;
 		};
 
-		const Precision *data() const
+		ConstPtrType data() const
 		{
 			return my_data;
 		};
+
+		void try_destructive_resize(int)
+		{}
+
+		template<class Op> void try_destructive_resize(const Operator<Op>&) 
+		{}
+
+	public:
+		typedef PtrType PointerType;
+		typedef ConstPtrType ConstPointerType;
+		typedef RefType ReferenceType;
+		typedef ConstRefType ConstReferenceType;
 };
 
-template<class Precision> struct VectorSlice<-1, Precision>
+///@internal
+///@brief Hold a pointer to yield a dynamically sized slice of a Vector.
+///Not resizable.
+///@ingroup gInternal
+template<class Precision, class PtrType, class ConstPtrType, class RefType, class ConstRefType> struct VectorSlice<Dynamic, Precision, PtrType, ConstPtrType, RefType, ConstRefType>
 {
-	Precision* const my_data;
+	const PtrType my_data;
 	const int my_size;
 
-	VectorSlice(Precision* d, int s)
+	VectorSlice(PtrType d, int s)
 	:my_data(d), my_size(s)
 	{ }
 
@@ -317,19 +403,28 @@ template<class Precision> struct VectorSlice<-1, Precision>
 
 	protected:
 
-		Precision *data()
+		PtrType data()
 		{
 			return my_data;
 		};
 
-		const Precision *data() const
+		ConstPtrType data() const
 		{
 			return my_data;
 		};
+
+		void try_destructive_resize(int)
+		{}
+
+		template<class Op> void try_destructive_resize(const Operator<Op>&) 
+		{}
+
+	public:
+		typedef PtrType PointerType;
+		typedef ConstPtrType ConstPointerType;
+		typedef RefType ReferenceType;
+		typedef ConstRefType ConstReferenceType;
 };
-
-
-
 
 ////////////////////////////////////////////////////////////////////////////////
 //
@@ -370,8 +465,6 @@ template<> struct SizeHolder<-1>
 		return my_size;
 	}
 };
-
-
 
 ///@internal
 ///This struct holds the number of rows, only allocating space if

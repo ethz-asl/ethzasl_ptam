@@ -63,9 +63,7 @@ Matrix<3> M;
 which just is a synonym for <code>Matrix<3,3></code>. Matrices can also be
 constructed from pointers or static 1D or 2D arrays of doubles:
 @code
-
-  double dvals1[9]={1,2,3,4,5,6};
-  Matrix<2,3, Reference::RowMajor> M2 (dvals1);
+  Matrix<2,3, Reference::RowMajor> M2 = Data(1,2,3,4,5,6);
 @endcode
 
 \par Dynamically-sized matrices
@@ -85,8 +83,7 @@ note that the static dimension must be provided, but it is ignored.
 
 @endcode
 
-<code>Matrix<></code> is a synonym for <code> Matrix<Dynamic, Dynamic> </code> which is
-<code>%Matrix<-1,-1></code>
+<code>Matrix<></code> is a synonym for <code> Matrix<Dynamic, Dynamic> </code>.
 
 \par Row-major and column-major
 
@@ -100,13 +97,13 @@ You can override the default for a specific matrix by specifying the layout when
 you construct it:
 @code
 Matrix<3,3,double,ColMajor> M1;
-Matrix<-1,-1,double,RowMajor> M2(nrows, ncols);
+Matrix<Dynamic,Dynamic,double,RowMajor> M2(nrows, ncols);
 @endcode
 In this case the precision template argument must be given as it precedes the layout argument
 
 @ingroup gLinAlg
 **/
-template <int Rows=-1, int Cols=Rows, class Precision=DefaultPrecision, class Layout = RowMajor>
+template <int Rows=Dynamic, int Cols=Rows, class Precision=DefaultPrecision, class Layout = RowMajor>
 struct Matrix : public Layout::template MLayout<Rows, Cols, Precision>
 {
 public:
@@ -203,7 +200,7 @@ public:
 	///@name operations on the matrix
 	///@{
 
-	Matrix& operator*=(const Precision& rhs)
+	Matrix& operator*=(const Precision rhs)
 	{
 		  for(int r=0; r < num_rows(); r++)
 			  for(int c=0; c < num_cols(); c++)
@@ -212,7 +209,7 @@ public:
 		  return *this;
 	}
 
-	Matrix& operator/=(const Precision& rhs)
+	Matrix& operator/=(const Precision rhs)
 	{
 		  for(int r=0; r < num_rows(); r++)
 			  for(int c=0; c < num_cols(); c++)
@@ -262,7 +259,7 @@ public:
 	}
 
   	template<int Rows2, int Cols2, typename Precision2, typename Base2>
-	bool operator== (const Matrix<Rows2, Cols2, Precision2, Base2>& rhs)
+	bool operator== (const Matrix<Rows2, Cols2, Precision2, Base2>& rhs) const
 	{
 		SizeMismatch<Rows, Rows2>::test(num_rows(), rhs.num_rows());
 		SizeMismatch<Cols, Cols2>::test(num_cols(), rhs.num_cols());
@@ -275,7 +272,7 @@ public:
 	}
 
   	template<int Rows2, int Cols2, typename Precision2, typename Base2>
-	bool operator!= (const Matrix<Rows2, Cols2, Precision2, Base2>& rhs)
+	bool operator!= (const Matrix<Rows2, Cols2, Precision2, Base2>& rhs) const
 	{
 		SizeMismatch<Rows, Rows2>::test(num_rows(), rhs.num_rows());
 		SizeMismatch<Cols, Cols2>::test(num_cols(), rhs.num_cols());
@@ -286,6 +283,13 @@ public:
 		      return 1;
 	    return 0;
 	}
+
+	template<class Op>
+	bool operator!=(const Operator<Op>& op)
+	{
+		return op.notequal(*this);
+	}
+
 	
 	///@}
 	
@@ -305,8 +309,9 @@ public:
 		Access an element from the matrix.
 		The index starts at zero, i.e. the top-left element is m(0, 0).
 		@code
-		double d[2][3] = {{1, 2, 3}, {4, 5, 6}};
-		Matrix<2,3> m(d);
+		Matrix<2,3> m(Data(
+			1,2,3
+			4,5,6));
 		double e = m(1,2);     // now e = 6.0;
 		@endcode
 		@internal
@@ -331,7 +336,9 @@ public:
 		This can be used as either an r-value or an l-value. The index starts at zero,
 		i.e. the top-left element is m(0, 0).
 		@code
-		double d[2][3] = {{1, 2, 3}, {4, 5, 6}};
+		Matrix<2,3> m(Data(
+			1,2,3
+			4,5,6));
 		Matrix<2,3> m(d);
 		m(1,2) = 8;     // now d = [1 2 3]
 					  //         [4 5 8]
@@ -349,7 +356,9 @@ public:
 		or an l-value. The index starts at zero, i.e. the first row (or column) is
 		m[0].
 		@code
-		double d[2][3] = {{1, 2, 3}, {4, 5, 6}};
+		Matrix<2,3> m(Data(
+			1,2,3
+			4,5,6));
 		Matrix<2,3> m(d);
 		Vector<3> v = m[1];       // now v = [4 5 6];
 		Vector<2> v2 = m.T()[0];  // now v2 = [1 4];
@@ -367,7 +376,9 @@ public:
 		or an l-value. The index starts at zero, i.e. the first row (or column) is
 		m[0].
 		@code
-		double d[2][3] = {{1, 2, 3}, {4, 5, 6}};
+		Matrix<2,3> m(Data(
+			1,2,3
+			4,5,6));
 		Matrix<2,3> m(d);
 		Zero(m[0]);   // set the first row to zero
 		Vector<2> v = 8,9;
@@ -396,7 +407,9 @@ public:
 		reinterprets a row-major matrix as column-major or vice-versa. This can be
 		used as an l-value.
 		@code
-		double d[2][3] = {{1, 2, 3}, {4, 5, 6}};
+		Matrix<2,3> m(Data(
+			1,2,3
+			4,5,6));
 		Matrix<2,3> m(d);
 		Zero(m[0]);   // set the first row to zero
 		Vector<2> v = 8,9;
@@ -413,7 +426,9 @@ public:
 		reinterprets a row-major  matrix as column-major or vice-versa. The result can
 		be used as an l-value.
 		@code
-		double d[2][3] = {{1, 2, 3}, {4, 5, 6}};
+		Matrix<2,3> m(Data(
+			1,2,3
+			4,5,6));
 		Matrix<2,3> m(d);
 		Vector<2> v = 8,9;
 		// Set the first column to v
@@ -433,7 +448,10 @@ public:
 		Extract a sub-matrix. The matrix extracted will be begin at element
 		(Rstart, Cstart) and will contain the next Rsize by Csize elements.
 		@code
-		double d[3][3] = {{1, 2, 3}, {4, 5, 6}, {7, 8, 9}};
+		Matrix<2,3> m(Data(
+			1,2,3
+			4,5,6
+			7,8,9));
 		Matrix<3> m(d);
 		Extract the top-left 2x2 matrix
 		Matrix<2> b = m.slice<0,0,2,2>();  // b = [1 2]
@@ -450,7 +468,9 @@ public:
 		Cstart) and will contain the next Rsize by Csize elements. This can be used as
 		either an r-value or an l-value.
 		@code
-		double d[2][3] = {{1, 2, 3}, {4, 5, 6}};
+		Matrix<2,3> m(Data(
+			1,2,3
+			4,5,6));
 		Matrix<2,3> m(d);
 		Zero(m.slice<0,2,2,1>());  // b = [1 2 0]
 								  //     [4 5 0]

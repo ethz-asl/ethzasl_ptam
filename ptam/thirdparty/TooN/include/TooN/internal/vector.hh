@@ -128,6 +128,13 @@ template<int Size=Dynamic, typename Precision=DefaultPrecision, typename Base=In
 struct Vector : public Base::template VLayout<Size, Precision> {
 protected:
 public:
+	
+	///Value of template Size parameter. Used by internal classes to reduce
+	///parameter list sizes.
+	///@internal
+	static const int SizeParameter = Size;
+
+	typedef typename Base::template VLayout<Size, Precision>::PointerType PointerType;
   // sneaky hack: only one of these constructors will work with any given base
   // class but they don't generate errors unless the user tries to use one of them
   // although the error message may be less than helpful - maybe this can be changed?
@@ -153,7 +160,7 @@ public:
 	/// double[] d = {1,2,3};
 	/// Vector<3,double,Reference> v(d);
 	/// @endcode
-	explicit inline Vector(Precision* data) : Base::template VLayout<Size, Precision> (data) {}
+	explicit inline Vector(PointerType data) : Base::template VLayout<Size, Precision> (data) {}
 
 
 	/// Constructor used when constructing a dynamic vector which references
@@ -162,13 +169,14 @@ public:
 	/// double[] d = {1,2,3};
 	/// Vector<Dynamic,double,Reference> v(d,3);
 	/// @endcode
-	inline Vector(Precision* data, int size_in) : Base::template VLayout<Size, Precision> (data, size_in) {}
+	inline Vector(PointerType data, int size_in) : Base::template VLayout<Size, Precision> (data, size_in) {}
 
 	/// internal constructor
-	inline Vector(Precision* data_in, int size_in, int stride_in, Internal::Slicing)
+	inline Vector(PointerType data_in, int size_in, int stride_in, Internal::Slicing)
   : Base::template VLayout<Size, Precision>(data_in, size_in, stride_in) {}
 	
 	using Base::template VLayout<Size, Precision>::size;
+	using Base::template VLayout<Size, Precision>::try_destructive_resize;
 
 	/// construction from Operator object
 	///
@@ -226,11 +234,15 @@ public:
 
 #endif
 
+	
 	/// @name Assignment
 	/// @{
 
 	/// operator = from copy
+	/// A size mismatch is a fatal error, unless the destination
+	/// is resizable.
 	inline Vector& operator= (const Vector& from){
+		try_destructive_resize(from.size());
 		SizeMismatch<Size,Size>::test(size(), from.size());
 		const int s=size();
 		for(int i=0; i<s; i++){
@@ -240,8 +252,11 @@ public:
 	}
 
 	/// operator = another Vector
+	/// A size mismatch is a fatal error, unless the destination
+	/// is resizable.
 	template<int Size2, typename Precision2, typename Base2>
 	Vector<Size,Precision,Base >& operator= (const Vector<Size2, Precision2, Base2>& from){
+		try_destructive_resize(from.size());
 		SizeMismatch<Size,Size2>::test(size(), from.size());
 		const int s=size();
 		for(int i=0; i<s; i++){
@@ -251,8 +266,12 @@ public:
 	}
 
 	/// assignment from an Operator object
+	/// Assignment from sized operators causes a resize
+	/// of Resizable Vectors. Assignment from unsized
+	/// operators dows not.
 	template <class Op>
 	inline Vector & operator=(const Operator<Op>& op){
+		try_destructive_resize(op);
 		op.eval(*this);
 		return *this;
 	}
@@ -262,14 +281,14 @@ public:
 	/// @{
 
 	/// divide this vector by a constant
-	Vector& operator/=(const Precision& rhs) {
+	Vector& operator/=(const Precision rhs) {
 		for(int i=0; i<size(); i++)
 			(*this)[i]/=rhs;
 		return *this;
 	}
 	
 	/// multiply this vector by a constant
-	Vector& operator*=(const Precision& rhs) {
+	Vector& operator*=(const Precision rhs) {
 		for(int i=0; i<size(); i++)
 			(*this)[i]*=rhs;
 		return *this;
@@ -321,7 +340,7 @@ public:
 
 	/// Test for equality with another vector
 	template<int Size2, class Precision2, class Base2>
-	bool operator==(const Vector<Size2, Precision2, Base2>& rhs) {
+	bool operator==(const Vector<Size2, Precision2, Base2>& rhs) const {
 		SizeMismatch<Size,Size2>::test(size(),rhs.size());
 		for(int i=0; i<size(); i++)
 		  if((*this)[i]!=rhs[i])
@@ -331,14 +350,21 @@ public:
 
 	/// Test for inequality with another vector
 	template<int Size2, class Precision2, class Base2>
-	bool operator!=(const Vector<Size2, Precision2, Base2>& rhs) {
+	bool operator!=(const Vector<Size2, Precision2, Base2>& rhs) const {
 		SizeMismatch<Size,Size2>::test(size(),rhs.size());
 		for(int i=0; i<size(); i++)
 		  if((*this)[i]!=rhs[i])
 		    return 1;
 		return 0;
 	}
-
+	
+	
+	template<class Op>
+	bool operator!=(const Operator<Op>& op)
+	{
+		return op.notequal(*this);
+	}		
+	
 	/// @}
 
 	/// @name Misc

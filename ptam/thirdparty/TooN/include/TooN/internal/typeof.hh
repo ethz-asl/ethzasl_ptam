@@ -27,6 +27,8 @@
 // invalidate any other reasons why the executable file might be covered by
 // the GNU General Public License.
 
+
+
 #ifdef TOON_TYPEOF_DECLTYPE
 	#define TOON_TYPEOF(X) decltype((X))
 #elif defined TOON_TYPEOF_TYPEOF
@@ -36,6 +38,10 @@
 #elif defined TOON_TYPEOF_BOOST
     #include <boost/typeof/typeof.hpp>
 	#define TOON_TYPEOF(X) BOOST_TYPEOF((X))
+#elif (__cplusplus > 199711L ) && ! defined TOON_TYPEOF_BUILTIN
+    #define TOON_TYPEOF(X) decltype((X))
+#elif defined __GNUC__ && ! defined TOON_TYPEOF_BUILTIN
+    #define TOON_TYPEOF(X) typeof((X))
 #else
 	#include <complex>
 	namespace TooN{

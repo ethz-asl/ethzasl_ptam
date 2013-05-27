@@ -53,9 +53,10 @@ namespace TooN
      
      The template parameters WANT_U and WANT_V may be set to false to
      indicate that U and/or V are not needed for a minor speed-up.
-  **/
 
-  template<int M, int N, class Precision = DefaultPrecision, bool WANT_U = 1, bool WANT_V = 1> 
+	 @ingroup gDecomps
+  **/
+  template<int M, int N = M, class Precision = DefaultPrecision, bool WANT_U = 1, bool WANT_V = 1> 
   class GR_SVD
   {
   public:
@@ -159,6 +160,7 @@ namespace TooN
   {
     using std::abs;
     using std::max;
+    using std::sqrt;
     // ------------  Householder reduction to bidiagonal form
     Precision g = 0.0;
     Precision scale = 0.0;
@@ -280,7 +282,7 @@ namespace TooN
   void GR_SVD<M,N,Precision,WANT_U,WANT_V>::Accumulate_LHS()
   {
     // Same thing; remove loop over dummy ii and do straight over i
-    // Some implementations start from N here (??)
+    // Some implementations start from N here
     for(int i=SmallDim-1; i>=0; --i)
       { // 500
 	const int l = i+1;
@@ -346,14 +348,19 @@ namespace TooN
   bool GR_SVD<M,N,Precision,WANT_U, WANT_V>::Diagonalize_SubLoop(int k, Precision &z)
   {
     using std::abs;
+    using std::sqrt;
     const int k1 = k-1;
     // 520 is here!
     for(int l=k; l>=0; --l)
       { // 530
 	const int l1 = l-1;
-	const bool rv1_test = ((abs(vOffDiagonal[l]) + anorm) == anorm);
-	const bool w_test = ((abs(vDiagonal[l1]) + anorm) == anorm);
-	if(!rv1_test && w_test) // 540 to 565
+	if((abs(vOffDiagonal[l]) + anorm) == anorm)	
+		goto line_565;
+	if((abs(vDiagonal[l1]) + anorm) == anorm)
+		goto line_540;
+	continue;
+
+	line_540:
 	  {
 	    Precision c = 0;
 	    Precision s = 1.0;
@@ -378,7 +385,8 @@ namespace TooN
 		    }
 	      } // 560
 	  }
-	if(rv1_test || w_test) // line 565
+
+	line_565:
 	  {
 	    // Check for convergence..
 	    z = vDiagonal[k];
@@ -452,7 +460,7 @@ namespace TooN
       } // 530
     // Code should never get here!
     throw(0);
-    return false;
+    //return false;
   }
 
   

@@ -75,8 +75,7 @@ template<int R, int C, class Precision, class Base> void gauss_jordan(Matrix<R, 
 				}
 			
 			if(col != pivotpos)
-				for(int c=0; c < m.num_cols(); c++)
-					swap(m[col][c], m[pivotpos][c]);
+				swap(m[col].ref(), m[pivotpos].ref());
 		}
 
 		//Reduce the current column in every row to zero, excluding elements on

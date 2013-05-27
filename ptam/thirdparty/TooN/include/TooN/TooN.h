@@ -37,6 +37,7 @@
 #include <new>
 #include <utility>
 #include <vector>
+#include <complex>
 #include <TooN/internal/config.hh>
 #include <TooN/internal/typeof.hh>
 #include <TooN/internal/deprecated.hh>
@@ -78,15 +79,60 @@ namespace TooN {
 #endif
 	
 	using std::numeric_limits;
-	///Is a number a field? ie, +, -, *, / defined.
-	///Specialize this to make TooN work properly with new types.
+	///Is a number a field? i.e., +, -, *, / defined.
+	///
+	///Specialize this to make TooN work properly with new types. See, for example functions/fadbad.h
+	///
+	///Specifically, is the type on the default field. Because of the conversion rules
+	///of C++, TooN uses a rather loose definition of field. The a type is on the
+	///default field if arithmetic works between it and any builtin numeric type. So, for
+	///instance unsigned char and float are considered to be on the default field even though 
+	///by themselves they form very different fields.
+	///
+	///See also Field.
+	///
+	///The reason for this is so that <code> makeVector(1, 0, 0) </code> behaves as expected
+	///even though it will actually be a <code> Vector<3,int></code>.
+	///
+	///
+	///
+	///The primary reason for this is to allow SFINAE to work properly.
+	///This is required if there are the following two functions:
+	///@code 
+	///   Vector<> * X  //Generic type X
+	///   Vector<> * DiagonalMatrix<>
+	///@endcode
+	///If one of the functions is a substitution failure, then it will be
+	///ignored, allowing the functions to coexist happily. However, not all
+	///types of failure are substitution failures. TooN's type deduction happens
+	///when determining the return type of the function. This is too early, so
+	///the wrong kind of error in the return type deduction causes an error, rather
+	///than a substitution failure. The IsField mechanism makes it the right kind of
+	///error, thereby allowing a substitution failuer to occur.
+	///
 	///@internal
-	///Internal::Field determines if two classes are in the same field.
+	///Internal::One is on the same field of any type which is also a field.
 	///@ingroup gLinAlg
 	template<class C> struct IsField
 	{
 		static const int value = numeric_limits<C>::is_specialized; ///<Is C a field?
 	};
+
+	template<class C> struct IsField<std::complex<C> >
+	{
+		static const int value = numeric_limits<C>::is_specialized; ///<Is C a field?
+	};
+	
+	///Specialized for const types
+	///@internal
+	///Internal::Field determines if two classes are in the same field.
+	///@ingroup gLinAlg
+	template<class C> struct IsField<const C>
+	{
+		static const int value = IsField<C>::value; ///<Is C a field?
+	};
+
+	template<class C, class D> struct These_Types_Do_Not_Form_A_Field;
 	
 	///@internal
 	///@brief The namaespace holding all the internal code.
@@ -241,10 +287,53 @@ namespace TooN {
 	static const int Dynamic = -1;
 	static const int Resizable = -0x7fffffff;
 
+	namespace Internal
+	{
+		template<int i, int j> struct SimpleSizer{static const int size=i;};
+		template<int i> struct SimpleSizer<Dynamic, i>{static const int size=i;};
+		template<int i> struct SimpleSizer<i, Dynamic>{static const int size=i;};
+		template<> struct SimpleSizer<Dynamic, Dynamic>    {static const int size=-1;};
+
+		template<int i> struct IsStatic
+		{
+			static const bool is = (i!=Dynamic && i != Resizable);
+		};
+
+		//Choose an output size, given a pair of input sizes. Be static if possible.
+		template<int i, int j=i> struct Sizer{
+			static const int size=SimpleSizer<Sizer<i>::size, Sizer<j>::size>::size;
+		};
+
+		//Choose an output size, given an input size. Be static if possible.
+		//Otherwise be dynamic. Never generate a resizable vector.
+		template<int i> struct Sizer<i,i>{
+			static const int size = IsStatic<i>::is?i:Dynamic;
+		};
+	}
 	
 	///All TooN classes default to using this precision for computations and storage.
+#ifndef TOON_DEFAULT_PRECISION
 	typedef double DefaultPrecision;
+#else
+	typedef TOON_DEFAULT_PRECISION DefaultPrecision;
+#endif
+
+#if defined  TOON_FORTRAN_INTEGER && defined TOON_CLAPACK
+	#error Error: both TOON_FORTRAN_INTEGER and TOON_CLAPACK defined
+#elif defined TOON_CLAPACK
+	typedef long FortranInteger;
+#elif defined TOON_FORTRAN_INTEGER
+	typedef TOON_FORTRAN_INTEGER FortranInteger;
+#else
+	typedef int FortranInteger;
+#endif
+
 }
+
+#include <TooN/internal/debug.hh>
+
+#include <TooN/internal/introspection.hh>
+
 
 #include <TooN/internal/dchecktest.hh>
 #include <TooN/internal/allocator.hh>
@@ -252,7 +341,6 @@ namespace TooN {
 #include <TooN/internal/size_mismatch.hh>
 #include <TooN/internal/overfill_error.hh>
 #include <TooN/internal/slice_error.hh>
-#include <TooN/internal/debug.hh>
 
 #include <TooN/internal/comma.hh>
 
@@ -274,5 +362,6 @@ namespace TooN {
 #include <TooN/internal/data_functions.hh>
 
 #include <TooN/helpers.h>
+#include <TooN/determinant.h>
 
 #endif

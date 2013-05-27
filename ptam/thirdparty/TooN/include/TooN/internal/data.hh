@@ -22,6 +22,14 @@ namespace TooN{
 				for(int c=0; c < C; c++, n++)
 					m[r][c] = vals[n];
 		}
+
+		template<int S, typename P2, typename B>
+		void eval(Vector<S, P2, B>& v) const
+		{
+			SizeMismatch<S, N>::test(v.size(), N);
+			for(int i=0; i <N; i++)
+				v[i] = vals[i];
+		}
 	};
 
 	#ifdef DOXYGEN_INCLUDE_ONLY_FOR_DOCS

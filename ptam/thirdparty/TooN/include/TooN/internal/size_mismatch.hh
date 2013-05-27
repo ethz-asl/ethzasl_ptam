@@ -83,23 +83,23 @@ struct SizeMismatch_<Dynamic,Dynamic>{
   }
 };
 
+#if 0
 namespace Internal
 {
-	struct BadSize{};
+	struct BadSize;
 }
+#endif
 
+#ifdef TOON_TEST_INTERNALS
 template<int Size1, int Size2>
 struct SizeMismatch_
 {
 	static inline void test(int, int)
 	{
-		#ifdef TOON_TEST_INTERNALS
-			throw Internal::StaticSizeMismatch();
-		#else
-			Internal::BadSize size_mismatch;
-		#endif
+		throw Internal::StaticSizeMismatch();
 	}
 };
+#endif
 
 template<int Size1, int Size2>
 struct SizeMismatch

@@ -60,14 +60,31 @@ namespace TooN{
 		b = lambda;
 		b_val = func(b);
 
+		while(std::isnan(b_val))
+		{
+			//We've probably gone in to an invalid region. This can happen even 
+			//if following the gradient would never get us there.
+			//try backing off lambda
+			lambda*=.5;
+			b = lambda;
+			b_val = func(b);
+
+		}
+
+
 		if(b_val < a_val) //We've gone downhill, so keep searching until we go back up
 		{
+			double last_good_lambda = lambda;
+			
 			for(;;)
 			{
 				lambda *= 2;
 				c = lambda;
 				c_val = func(c);
 
+				if(std::isnan(c_val))
+					break;
+				last_good_lambda = lambda;
 				if(c_val > 	b_val) // we have a bracket
 					break;
 				else
@@ -79,6 +96,27 @@ namespace TooN{
 
 				}
 			}
+
+			//We took a step too far.
+			//Back up: this will not attempt to ensure a bracket
+			if(std::isnan(c_val))
+			{
+				double bad_lambda=lambda;
+				double l=1;
+
+				for(;;)
+				{
+					l*=.5;
+					c = last_good_lambda + (bad_lambda - last_good_lambda)*l;
+					c_val = func(c);
+
+					if(!std::isnan(c_val))
+						break;
+				}
+
+
+			}
+
 		}
 		else //We've overshot the minimum, so back up
 		{
@@ -159,7 +197,7 @@ will not be necessary.
 
 @ingroup gOptimize
 */
-template<int Size, class Precision=double> struct ConjugateGradient
+template<int Size=Dynamic, class Precision=double> struct ConjugateGradient
 {
 	const int size;      ///< Dimensionality of the space.
 	Vector<Size> g;      ///< Gradient vector used by the next call to iterate()
@@ -215,6 +253,7 @@ template<int Size, class Precision=double> struct ConjugateGradient
 	{
 
 		using std::numeric_limits;
+		using std::sqrt;
 		x = start;
 
 		//Start with the conjugate direction aligned with
@@ -280,18 +319,30 @@ template<int Size, class Precision=double> struct ConjugateGradient
 			return;
 
 		//We should have a bracket here
-		assert(a < b && b < c);
-		assert(a_val > b_val && b_val < c_val);
 
-		//Find the real minimum
-		Vector<2, Precision>  m = brent_line_search(a, b, c, b_val, line, linesearch_max_iterations, linesearch_tolerance, linesearch_epsilon);
+		if(c < b)
+		{
+			//Failed to bracket due to NaN, so c is the best known point.
+			//Simply go there.
+			x-=h * c;
+			y=c_val;
 
-		assert(m[0] >= a && m[0] <= c);
-		assert(m[1] <= b_val);
+		}
+		else
+		{
+			assert(a < b && b < c);
+			assert(a_val > b_val && b_val < c_val);
 
-		//Update the current position and value
-		x -= m[0] * h;
-		y = m[1];
+			//Find the real minimum
+			Vector<2, Precision>  m = brent_line_search(a, b, c, b_val, line, linesearch_max_iterations, linesearch_tolerance, linesearch_epsilon);
+
+			assert(m[0] >= a && m[0] <= c);
+			assert(m[1] <= b_val);
+
+			//Update the current position and value
+			x -= m[0] * h;
+			y = m[1];
+		}
 	}
 
 	///Check to see it iteration should stop. You probably do not want to use

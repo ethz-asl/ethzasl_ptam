@@ -33,8 +33,10 @@
 #define TOON_INCLUDE_HELPERS_H
 
 #include <TooN/TooN.h>
+#include <TooN/gaussian_elimination.h>
 #include <cmath>
 #include <functional>
+#include <utility>
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
@@ -44,7 +46,34 @@
 #define M_SQRT1_2 0.707106781186547524401
 #endif
 
+#ifdef WIN32
+namespace std {
+	inline int isfinite( const double & v ){ return _finite(v); }
+	inline int isfinite( const float & v ){ return _finite(v); }
+	inline int isnan( const double & v ){ return _isnan(v); }
+	inline int isnan( const float & v ){ return _isnan(v); }
+}
+#endif
+
 namespace TooN {
+	
+	///Invert a matrix.
+	///
+	///For sizes other than 2x2, @link gDecomps decompositions @endlink provide a suitable solition.
+	///
+	///@param m Matrix to invert.
+	///@ingroup gDecomps
+	inline Matrix<2> inv(const Matrix<2>& m)
+	{
+		double d = 1./(m[0][0]*m[1][1] - m[1][0]*m[0][1]);
+
+		return Data(
+		     m[1][1]*d, -m[0][1]*d,
+		    -m[1][0]*d,  m[0][0]*d
+		);
+	}
+
+
 
 	///\deprecated
 	///@ingroup gLinAlg
@@ -91,6 +120,21 @@ namespace TooN {
 			n += abs(v[i]);
 		return n;
 	}
+
+	///Compute the \f$L_\infty\f$ norm of \e v
+	///@param v \e v
+	///@ingroup gLinAlg
+	template<int Size, class Precision, class Base> inline Precision norm_inf(const Vector<Size, Precision, Base>& v)
+	{
+		using std::abs;
+		using std::max;
+		Precision n = 0;
+		n = abs(v[0]);
+
+		for(int i=1; i < v.size(); i++)
+			n = max(n, abs(v[i]));
+		return n;
+	}
 	
 	///Compute the \f$L_2\f$ norm of \e v.
 	///Synonym for norm()
@@ -110,7 +154,7 @@ namespace TooN {
 	template<int Size, class Precision, class Base> inline Vector<Size, Precision> unit(const Vector<Size, Precision, Base> & v)
 	{
 		using std::sqrt;
-		return v * (1/sqrt(v*v));
+		return TooN::operator*(v,(1/sqrt(v*v)));
 	}
 	
 	//Note because of the overload later, this function will ONLY receive sliced vectors. Therefore
@@ -134,20 +178,23 @@ namespace TooN {
 		normalize(v.as_slice());
 	}
 
-
 	///For a vector \e v of length \e i, return \f$[v_1, v_2, \cdots, v_{i-1}] / v_i \f$
 	///@param v \e v
 	///@ingroup gLinAlg
-	template<int Size, typename Precision, typename Base> inline Vector<(Size==Dynamic?Dynamic:Size-1), Precision> project( const Vector<Size, Precision, Base> & v){
+	// Don't remove the +0 in the first template parameter of the return type. It is a work around for a Visual Studio 2010 bug:
+	// https://connect.microsoft.com/VisualStudio/feedback/details/735283/vc-2010-parse-error-in-template-parameters-using-ternary-operator
+	template<int Size, typename Precision, typename Base> inline Vector<(Size==Dynamic?Dynamic:Size-1)+0, Precision> project( const Vector<Size, Precision, Base> & v){
 		static const int Len = (Size==Dynamic?Dynamic:Size-1);
-		return v.template slice<0, Len>(0, v.size()-1) / v[v.size() - 1];
+		return TooN::operator/(v.template slice<0, Len>(0 , v.size() - 1) , v[v.size() - 1]);
 	}
-	
+
 	//This should probably be done with an operator to prevent an extra new[] for dynamic vectors.
 	///For a vector \e v of length \e i, return \f$[v_1, v_2, \cdots, v_{i}, 1]\f$
 	///@param v \e v
 	///@ingroup gLinAlg
-	template<int Size, typename Precision, typename Base> inline Vector<(Size==Dynamic?Dynamic:Size+1), Precision> unproject( const Vector<Size, Precision, Base> & v){
+	// Don't remove the +0 in the first template parameter of the return type. It is a work around for a Visual Studio 2010 bug:
+	// https://connect.microsoft.com/VisualStudio/feedback/details/735283/vc-2010-parse-error-in-template-parameters-using-ternary-operator
+	template<int Size, typename Precision, typename Base> inline Vector<(Size==Dynamic?Dynamic:Size+1)+0, Precision> unproject( const Vector<Size, Precision, Base> & v){
 		Vector<(Size==Dynamic?Dynamic:Size+1), Precision> result(v.size()+1);
 		static const int Len = (Size==Dynamic?Dynamic:Size);
 		result.template slice<0, Len>(0, v.size()) = v;
@@ -159,7 +206,7 @@ namespace TooN {
        \overload
 	*/
 	template<int R, int C, typename Precision, typename Base> inline Matrix<R-1, C, Precision> project( const Matrix<R,C, Precision, Base> & m){
-        Matrix<R-1, C, Precision> result = m.template slice(0,0,R-1,m.num_cols());
+        Matrix<R-1, C, Precision> result = m.slice(0,0,R-1,m.num_cols());
         for( int c = 0; c < m.num_cols(); ++c ) {
             result.slice(0,c,R-1,1) /= m[R-1][c];
         }
@@ -167,7 +214,7 @@ namespace TooN {
     }
 
     template<int C, typename Precision, typename Base> inline Matrix<-1, C, Precision> project( const Matrix<-1,C, Precision, Base> & m){
-        Matrix<-1, C, Precision> result = m.template slice(0,0,m.num_rows()-1,m.num_cols());
+        Matrix<-1, C, Precision> result = m.slice(0,0,m.num_rows()-1,m.num_cols());
         for( int c = 0; c < m.num_cols(); ++c ) {
             result.slice(0,c,m.num_rows()-1,1) /= m[m.num_rows()-1][c];
         }
@@ -186,7 +233,7 @@ namespace TooN {
 
     template<int C, typename Precision, typename Base> inline Matrix<-1, C, Precision> unproject( const Matrix<-1, C, Precision, Base> & m){
         Matrix<-1, C, Precision> result( m.num_rows()+1, m.num_cols() );
-        result.template slice(0,0,m.num_rows(),m.num_cols()) = m;
+        result.slice(0,0,m.num_rows(),m.num_cols()) = m;
         result[m.num_rows()] = Ones;
         return result;
     }
@@ -256,6 +303,25 @@ namespace TooN {
 			}
 			return result;
 		}
+
+		///@internal
+		///@brief Logarithm of a matrix using a the Taylor series
+		///This will not work if the norm of the matrix is too large.
+		template <int R, int C, typename P, typename B>
+		inline Matrix<R, C, P> log_taylor( const Matrix<R,C,P,B> & m ){
+			TooN::SizeMismatch<R, C>::test(m.num_rows(), m.num_cols());
+			Matrix<R,C,P> X = m - TooN::Identity * 1.0;
+			Matrix<R,C,P> F = X;
+			Matrix<R,C,P> sum = TooN::Zeros(m.num_rows(), m.num_cols());
+			P k = 1;
+			while(norm_inf((sum+F/k)-sum) > 0){
+				sum += F/k;
+				F = -F*X;
+				k += 1;
+			}
+			return sum;
+		}
+
 	};
 	
 	/// computes the matrix exponential of a matrix m by 
@@ -274,6 +340,48 @@ namespace TooN {
 		for(int i = 0; i < s; ++i)
 			result = result * result;
 		return result;
+	}
+	
+	/// computes a matrix square root of a matrix m by
+	/// the product form of the Denman and Beavers iteration
+	/// as given in Chen et al. 'Approximating the logarithm of a matrix to specified accuracy', 
+	/// J. Matrix Anal Appl, 2001. This is used for the matrix
+	/// logarithm function, but is useable by on its own.
+	/// @param m input matrix, must be square
+	/// @return a square root of m of the same size/type as input
+	/// @ingroup gLinAlg
+	template <int R, int C, typename P, typename B>
+	inline Matrix<R, C, P> sqrt( const Matrix<R,C,P,B> & m){
+		SizeMismatch<R, C>::test(m.num_rows(), m.num_cols());
+		Matrix<R,C,P> M = m;
+		Matrix<R,C,P> Y = m;
+		Matrix<R,C,P> M_inv(m.num_rows(), m.num_cols());
+		const Matrix<R,C,P> id = Identity(m.num_rows());
+		do {
+			M_inv = gaussian_elimination(M, id);
+			Y = Y * (id + M_inv) * 0.5;
+			M = 0.5 * (id + (M + M_inv) * 0.5);
+		} while(norm_inf(M - M_inv) > 0);
+		return Y;
+	}
+	
+	/// computes the matrix logarithm of a matrix m using the inverse scaling and 
+	/// squaring method. The overall approach is described in
+	/// Chen et al. 'Approximating the logarithm of a matrix to specified accuracy', 
+	/// J. Matrix Anal Appl, 2001, but this implementation only uses a simple
+	/// taylor series after the repeated square root operation.
+	/// @param m input matrix, must be square
+	/// @return the log of m of the same size/type as input
+	/// @ingroup gLinAlg
+	template <int R, int C, typename P, typename B>
+	inline Matrix<R, C, P> log( const Matrix<R,C,P,B> & m){
+		int counter = 0;
+		Matrix<R,C,P> A = m;
+		while(norm_inf(A - Identity*1.0) > 0.5){
+			++counter;
+			A = sqrt(A);
+		}
+		return Internal::log_taylor(A) * pow(2.0, counter);
 	}
 	
 	/// Returns true if every element is finite
@@ -333,7 +441,7 @@ namespace TooN {
 	{
 		SizeMismatch<Size,3>::test(vec.size(), 3);
 
-		TooN::Matrix<3> result;
+		TooN::Matrix<3, 3, P> result;
 
 		result(0,0) = 0; 
 		result(0,1) = -vec[2]; 

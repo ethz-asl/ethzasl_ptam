@@ -86,6 +86,8 @@ template<int Rows, int Cols, class Precision, int RowStride, int ColStride, clas
 	//Slices can never have tied strides
 	static const int SliceRowStride = RowStride == -2?-1: RowStride;
 	static const int SliceColStride = ColStride == -2?-1: ColStride;
+	
+	typedef Slice<SliceRowStride,SliceColStride> SliceBase;
 
 	int rowstride() const {
 		if(RowStride == -2) { //Normal tied stride
@@ -157,15 +159,16 @@ template<int Rows, int Cols, class Precision, int RowStride, int ColStride, clas
 
 	// this is the type of vector obtained by [ ]
 	typedef Vector<Cols, Precision, SliceVBase<SliceColStride> > Vec;
+	typedef Vector<Cols, const Precision, SliceVBase<SliceColStride> > CVec;
 	
 	Vec operator[](int r) {
 		Internal::check_index(num_rows(), r);
 		return Vec(my_data + rowstride()* r, num_cols(), colstride(), Slicing());
 	}
 
-	const Vec operator[](int r) const {
+	const CVec operator[](int r) const {
 		Internal::check_index(num_rows(), r);
-		return Vec(const_cast<Precision*>(my_data + rowstride()* r), num_cols(), colstride(), Slicing());
+		return CVec(my_data + rowstride()* r, num_cols(), colstride(), Slicing());
 	}
 
 	
@@ -185,14 +188,14 @@ template<int Rows, int Cols, class Precision, int RowStride, int ColStride, clas
 	}
 
 	template<int Rstart, int Cstart, int Rlength, int Clength>
-	const Matrix<Rlength, Clength, Precision, Slice<SliceRowStride,SliceColStride> > slice(int rs, int cs, int rl, int cl) const{
+	const Matrix<Rlength, Clength, const Precision, Slice<SliceRowStride,SliceColStride> > slice(int rs, int cs, int rl, int cl) const{
 		Internal::CheckSlice<Rows, Rstart, Rlength>::check(num_rows(), rs, rl);
 		Internal::CheckSlice<Cols, Cstart, Clength>::check(num_cols(), cs, cl);
 
 		//Always pass the size and stride as a run-time parameter. It will be ignored
 		//by SliceHolder (above) if it is statically determined.
-		return Matrix<Rlength, Clength, Precision, Slice<SliceRowStride,SliceColStride> >(
-		       const_cast<Precision*>(my_data)+rowstride()*(Rstart==Dynamic?rs:Rstart) + colstride()*(Cstart==Dynamic?cs:Cstart), 
+		return Matrix<Rlength, Clength, const Precision, Slice<SliceRowStride,SliceColStride> >(
+		       my_data+rowstride()*(Rstart==Dynamic?rs:Rstart) + colstride()*(Cstart==Dynamic?cs:Cstart), 
 			   Rlength==Dynamic?rl:Rlength, 
 			   Clength==Dynamic?cl:Clength, 
 			   rowstride(), colstride(), Slicing());
@@ -209,7 +212,7 @@ template<int Rows, int Cols, class Precision, int RowStride, int ColStride, clas
 	}
 
 	template<int Rstart, int Cstart, int Rlength, int Clength>
-	const Matrix<Rlength, Clength, Precision, Slice<SliceRowStride,SliceColStride> > slice() const
+	const Matrix<Rlength, Clength, const Precision, Slice<SliceRowStride,SliceColStride> > slice() const
 	{
 		Internal::CheckSlice<Rows, Rstart, Rlength>::check();
 		Internal::CheckSlice<Cols, Cstart, Clength>::check();
@@ -220,7 +223,7 @@ template<int Rows, int Cols, class Precision, int RowStride, int ColStride, clas
 		return slice<Dynamic, Dynamic, Dynamic, Dynamic>(rs, cs, rl, cl);
 	}
 
-	const Matrix<-1, -1, Precision, Slice<SliceRowStride,SliceColStride> > slice(int rs, int cs, int rl, int cl) const {
+	const Matrix<-1, -1, const Precision, Slice<SliceRowStride,SliceColStride> > slice(int rs, int cs, int rl, int cl) const {
 		return slice<Dynamic, Dynamic, Dynamic, Dynamic>(rs, cs, rl, cl);
 	}
 
@@ -229,8 +232,8 @@ template<int Rows, int Cols, class Precision, int RowStride, int ColStride, clas
 		return Matrix<Cols, Rows, Precision, Slice<SliceColStride,SliceRowStride> >(my_data, num_cols(), num_rows(), colstride(), rowstride(), Slicing());
 	}
 
-	const Matrix<Cols, Rows, Precision, Slice<SliceColStride,SliceRowStride> > T() const{
-		return Matrix<Cols, Rows, Precision, Slice<SliceColStride,SliceRowStride> >(const_cast<Precision*>(my_data), num_cols(), num_rows(), colstride(), rowstride(), Slicing());
+	const Matrix<Cols, Rows, const Precision, Slice<SliceColStride,SliceRowStride> > T() const{
+		return Matrix<Cols, Rows, const Precision, Slice<SliceColStride,SliceRowStride> >(my_data, num_cols(), num_rows(), colstride(), rowstride(), Slicing());
 	}
 
 	static const int DiagSize = Internal::DiagSize<Rows, Cols>::size;
@@ -239,6 +242,11 @@ template<int Rows, int Cols, class Precision, int RowStride, int ColStride, clas
 	Vector<DiagSize, Precision, SliceVBase<DiagStride> > diagonal_slice()
 	{
 		return Vector<DiagSize, Precision, SliceVBase<DiagStride> >(my_data, std::min(num_cols(), num_rows()), rowstride() + colstride(), Slicing());
+	}
+
+	Vector<DiagSize, const Precision, SliceVBase<DiagStride> > diagonal_slice() const 
+	{
+		return Vector<DiagSize, const Precision, SliceVBase<DiagStride> >(my_data, std::min(num_cols(), num_rows()), rowstride() + colstride(), Slicing());
 	}
 };
 

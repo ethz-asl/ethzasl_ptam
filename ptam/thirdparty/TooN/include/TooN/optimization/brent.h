@@ -32,6 +32,7 @@ namespace TooN
 		using std::max;
 
 		using std::abs;
+		using std::sqrt;
 
 		//The golden ratio:
 		const Precision g = (3.0 - sqrt(5))/2;

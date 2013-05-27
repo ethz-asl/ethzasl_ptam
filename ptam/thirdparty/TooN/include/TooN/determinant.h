@@ -85,7 +85,7 @@ namespace TooN
 			Precision maxval = abs(A[i][i]);
 			
 			for (int ii=i+1; ii<size; ++ii) {
-				double v =  abs(A[ii][i]);
+				Precision v =  abs(A[ii][i]);
 				if (v > maxval) {
 					maxval = v;
 					argmax = ii;
@@ -111,7 +111,7 @@ namespace TooN
 			for (int u=i+1; u<size; ++u) {
 				//Do not multiply out the usual 1/pivot term
 				//to avoid division. It causes poor scaling.
-				double factor = A[u][i]/pivot;
+				Precision factor = A[u][i]/pivot;
 
 				for (int j=i+1; j<size; ++j)
 					A[u][j] = A[u][j] - factor * A[i][j];
@@ -121,18 +121,20 @@ namespace TooN
 		return determinant;
 	}
 	
-	/** Compute the determinant using TooN::LU.
-		@param A The matrix to find the determinant of.
-		@returns determinant.
-		@ingroup gLinAlg
-	*/
-	template<int R, int C, class P, class B>
-	P determinant_LU(const Matrix<R, C, P, B>& A)
-	{
-		TooN::SizeMismatch<R, C>::test(A.num_rows(), A.num_cols());
-		LU<Internal::Square<R,C>::Size, P> lu(A);
-		return lu.determinant();
-	}
+	#ifdef TOON_DETERMINANT_LAPACK
+		/** Compute the determinant using TooN::LU.
+			@param A The matrix to find the determinant of.
+			@returns determinant.
+			@ingroup gLinAlg
+		*/
+		template<int R, int C, class P, class B>
+		P determinant_LU(const Matrix<R, C, P, B>& A)
+		{
+			TooN::SizeMismatch<R, C>::test(A.num_rows(), A.num_cols());
+			LU<Internal::Square<R,C>::Size, P> lu(A);
+			return lu.determinant();
+		}
+	#endif
 
 	/** 
 		Compute the determinant of a matrix using an appropriate method. The

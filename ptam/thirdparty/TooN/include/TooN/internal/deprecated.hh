@@ -27,6 +27,10 @@
 // invalidate any other reasons why the executable file might be covered by
 // the GNU General Public License.
 
+#ifdef WIN32
+#undef TOON_DEPRECATED_GCC
+#endif
+
 #ifdef TOON_DEPRECATED_GCC
 	#define TOON_DEPRECATED __attribute__((deprecated))
 #else

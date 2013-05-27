@@ -80,14 +80,14 @@ struct Reference
 };
 
 
-                                    inline       Vector<Dynamic, double,    Reference> wrapVector(double* data, int size)          { return Vector<Dynamic, double,    Reference>(data, size); }
-                                    inline const Vector<Dynamic, double,    Reference> wrapVector(const double* data, int size)    { return Vector<Dynamic, double,    Reference>(const_cast<double*>(data), size); }
-template<int Size>                  inline       Vector<Size,    double,    Reference> wrapVector(double* data)                    { return Vector<Size,    double,    Reference>(data); }
-template<int Size>                  inline const Vector<Size,    double,    Reference> wrapVector(const double* data)              { return Vector<Size,    double,    Reference>(const_cast<double*>(data)); }
-template<class Precision>           inline       Vector<Dynamic, Precision, Reference> wrapVector(Precision* data, int size)       { return Vector<Dynamic, Precision, Reference>(data, size); }
-template<class Precision>           inline const Vector<Dynamic, Precision, Reference> wrapVector(const Precision* data, int size) { return Vector<Dynamic, Precision, Reference>(const_cast<Precision*>(data), size); }
-template<int Size, class Precision> inline       Vector<Size,    Precision, Reference> wrapVector(Precision* data)                 { return Vector<Size,    Precision, Reference>(data); }
-template<int Size, class Precision> inline const Vector<Size,    Precision, Reference> wrapVector(const Precision* data)           { return Vector<Size,    Precision, Reference>(const_cast<Precision*>(data)); }
+                                    inline       Vector<Dynamic, double,          Reference> wrapVector(double* data, int size)          { return Vector<Dynamic, double,          Reference>(data, size); }
+                                    inline const Vector<Dynamic, const double,    Reference> wrapVector(const double* data, int size)    { return Vector<Dynamic, const double,    Reference>(data, size); }
+template<int Size>                  inline       Vector<Size,    double,          Reference> wrapVector(double* data)                    { return Vector<Size,    double,          Reference>(data); }
+template<int Size>                  inline const Vector<Size,    const double,    Reference> wrapVector(const double* data)              { return Vector<Size,    const double,    Reference>(data); }
+template<class Precision>           inline       Vector<Dynamic, Precision,       Reference> wrapVector(Precision* data, int size)       { return Vector<Dynamic, Precision,       Reference>(data, size); }
+template<class Precision>           inline const Vector<Dynamic, const Precision, Reference> wrapVector(const Precision* data, int size) { return Vector<Dynamic, const Precision, Reference>(data, size); }
+template<int Size, class Precision> inline       Vector<Size,    Precision,       Reference> wrapVector(Precision* data)                 { return Vector<Size,    Precision,       Reference>(data); }
+template<int Size, class Precision> inline const Vector<Size,    const Precision, Reference> wrapVector(const Precision* data)           { return Vector<Size,    const Precision, Reference>(data); }
 
 ///Wrap external data as a \link TooN::Matrix Matrix \endlink
 ///As usual, if template sizes are provided, then the run-time size is only
@@ -95,19 +95,19 @@ template<int Size, class Precision> inline const Vector<Size,    Precision, Refe
 ///@ingroup gLinAlg
 ///@{
 //Fully static matrices, ie no size parameters
-template<int Rows, int Cols>                  inline       Matrix<Rows, Cols,       double,    Reference::RowMajor> wrapMatrix(double*    data)                     { return Matrix<Rows, Cols, double, Reference::RowMajor>(data);}
-template<int Rows, int Cols>                  inline const Matrix<Rows, Cols,       double,    Reference::RowMajor> wrapMatrix(const double*    data)                     { return Matrix<Rows, Cols, double, Reference::RowMajor>(const_cast<double*>(data));}
-template<int Rows, int Cols, class Precision> inline       Matrix<Rows, Cols,       Precision, Reference::RowMajor> wrapMatrix(Precision* data)                     { return Matrix<Rows, Cols, Precision, Reference::RowMajor>(data);}
-template<int Rows, int Cols, class Precision> inline const Matrix<Rows, Cols,       Precision, Reference::RowMajor> wrapMatrix(const Precision* data)                     { return Matrix<Rows, Cols, Precision, Reference::RowMajor>(const_cast<Precision*>(data));}
+template<int Rows, int Cols>                  inline       Matrix<Rows, Cols,       double,          Reference::RowMajor> wrapMatrix(double*    data)                           { return Matrix<Rows, Cols,       double,          Reference::RowMajor>(data);}
+template<int Rows, int Cols>                  inline const Matrix<Rows, Cols,       const double,    Reference::RowMajor> wrapMatrix(const double*    data)                     { return Matrix<Rows, Cols,       const double,    Reference::RowMajor>(data);}
+template<int Rows, int Cols, class Precision> inline       Matrix<Rows, Cols,       Precision,       Reference::RowMajor> wrapMatrix(Precision* data)                           { return Matrix<Rows, Cols,       Precision,       Reference::RowMajor>(data);}
+template<int Rows, int Cols, class Precision> inline const Matrix<Rows, Cols,       const Precision, Reference::RowMajor> wrapMatrix(const Precision* data)                     { return Matrix<Rows, Cols,       const Precision, Reference::RowMajor>(data);}
 //Static sizes with size parameters (useful for half-dynamic matrices)
-template<int Rows, int Cols>                  inline       Matrix<Rows, Cols,       double,    Reference::RowMajor> wrapMatrix(double*    data, int rows, int cols) { return Matrix<Rows, Cols, double, Reference::RowMajor>(data, rows, cols);}
-template<int Rows, int Cols>                  inline const Matrix<Rows, Cols,       double,    Reference::RowMajor> wrapMatrix(const double*    data, int rows, int cols) { return Matrix<Rows, Cols, double, Reference::RowMajor>(const_cast<double*>(data), rows, cols);}
-template<int Rows, int Cols, class Precision> inline       Matrix<Rows, Cols,       Precision, Reference::RowMajor> wrapMatrix(Precision* data, int rows, int cols) { return Matrix<Rows, Cols, Precision, Reference::RowMajor>(data, rows, cols);}
-template<int Rows, int Cols, class Precision> inline const Matrix<Rows, Cols,       Precision, Reference::RowMajor> wrapMatrix(const Precision* data, int rows, int cols) { return Matrix<Rows, Cols, Precision, Reference::RowMajor>(const_cast<Precision*>(data), rows, cols);}
+template<int Rows, int Cols>                  inline       Matrix<Rows, Cols,       double,          Reference::RowMajor> wrapMatrix(double*    data, int rows, int cols)       { return Matrix<Rows, Cols,       double,          Reference::RowMajor>(data, rows, cols);}
+template<int Rows, int Cols>                  inline const Matrix<Rows, Cols,       const double,    Reference::RowMajor> wrapMatrix(const double*    data, int rows, int cols) { return Matrix<Rows, Cols,       const double,    Reference::RowMajor>(data, rows, cols);}
+template<int Rows, int Cols, class Precision> inline       Matrix<Rows, Cols,       Precision,       Reference::RowMajor> wrapMatrix(Precision* data, int rows, int cols)       { return Matrix<Rows, Cols,       Precision,       Reference::RowMajor>(data, rows, cols);}
+template<int Rows, int Cols, class Precision> inline const Matrix<Rows, Cols,       const Precision, Reference::RowMajor> wrapMatrix(const Precision* data, int rows, int cols) { return Matrix<Rows, Cols,       const Precision, Reference::RowMajor>(data, rows, cols);}
 //Fully dynamic
-                                              inline       Matrix<Dynamic, Dynamic, double,    Reference::RowMajor> wrapMatrix(double*          data, int rows, int cols) { return Matrix<Dynamic, Dynamic, double, Reference::RowMajor>(data, rows, cols);}
-                                              inline const Matrix<Dynamic, Dynamic, double,    Reference::RowMajor> wrapMatrix(const double*    data, int rows, int cols) { return Matrix<Dynamic, Dynamic, double, Reference::RowMajor>(const_cast<double*>(data), rows, cols);}
-template<class Precision>                     inline       Matrix<Dynamic, Dynamic, Precision, Reference::RowMajor> wrapMatrix(Precision* data, int rows, int cols) { return Matrix<Dynamic, Dynamic, Precision, Reference::RowMajor>(data, rows, cols);}
-template<class Precision>                     inline const Matrix<Dynamic, Dynamic, Precision, Reference::RowMajor> wrapMatrix(const Precision* data, int rows, int cols) { return Matrix<Dynamic, Dynamic, Precision, Reference::RowMajor>(const_cast<Precision*>(data), rows, cols);}
+                                              inline       Matrix<Dynamic, Dynamic, double,          Reference::RowMajor> wrapMatrix(double*          data, int rows, int cols) { return Matrix<Dynamic, Dynamic, double,          Reference::RowMajor>(data, rows, cols);}
+                                              inline const Matrix<Dynamic, Dynamic, const double,    Reference::RowMajor> wrapMatrix(const double*    data, int rows, int cols) { return Matrix<Dynamic, Dynamic, const double,    Reference::RowMajor>(data, rows, cols);}
+template<class Precision>                     inline       Matrix<Dynamic, Dynamic, Precision,       Reference::RowMajor> wrapMatrix(Precision* data, int rows, int cols)       { return Matrix<Dynamic, Dynamic, Precision,       Reference::RowMajor>(data, rows, cols);}
+template<class Precision>                     inline const Matrix<Dynamic, Dynamic, const Precision, Reference::RowMajor> wrapMatrix(const Precision* data, int rows, int cols) { return Matrix<Dynamic, Dynamic, const Precision, Reference::RowMajor>(data, rows, cols);}
 ///@}
 }

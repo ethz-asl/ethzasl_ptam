@@ -33,8 +33,10 @@
 
 #include <TooN/TooN.h>
 #include <TooN/helpers.h>
-#include <TooN/LU.h>
+#include <TooN/gaussian_elimination.h>
+#include <TooN/determinant.h>
 #include <cassert>
+
 namespace TooN {
 
 template <int N, typename P> class SL;
@@ -53,7 +55,7 @@ template <int N, typename P> std::istream & operator>>(std::istream &, SL<N, P> 
 /// This choice represents the fact that SL(n) can be interpreted as the product
 /// of all symmetric matrices with det() = 1 times SO(n).
 /// @ingroup gTransforms
-template <int N, typename Precision = double>
+template <int N, typename Precision = DefaultPrecision>
 class SL {
 	friend std::istream & operator>> <N,Precision>(std::istream &, SL &);
 public:
@@ -77,14 +79,19 @@ public:
 	SL inverse() const { return SL(*this, Invert()); }
 
 	/// multiplies to SLs together by multiplying the underlying matrices
-	SL operator*( const SL & rhs) const { return SL(*this, rhs); }
+	template <typename P>
+	SL<N,typename Internal::MultiplyType<Precision, P>::type> operator*( const SL<N,P> & rhs) const { return SL<N,typename Internal::MultiplyType<Precision, P>::type>(*this, rhs); }
+
 	/// right multiplies this SL with another one
-	SL operator*=( const SL & rhs) { *this = *this*rhs; return *this; }
+	template <typename P>
+	SL operator*=( const SL<N,P> & rhs) { *this = *this*rhs; return *this; }
 
 	/// exponentiates a vector in the Lie algebra to compute the corresponding element
 	/// @arg v a vector of dimension SL::dim
 	template <int S, typename P, typename B>
 	static inline SL exp( const Vector<S,P,B> &);
+
+	inline Vector<N*N-1, Precision> ln() const ;
 
 	/// returns one generator of the group. see SL for a detailed description of 
 	/// the generators used.
@@ -93,12 +100,15 @@ public:
 
 private:
 	struct Invert {};
-	SL( const SL & from, struct Invert ) : my_matrix(LU<N>(from.get_matrix()).get_inverse()) {}
+	SL( const SL & from, struct Invert ) {
+		const Matrix<N> id = Identity;
+		my_matrix = gaussian_elimination(from.my_matrix, id);
+	}
 	SL( const SL & a, const SL & b) : my_matrix(a.get_matrix() * b.get_matrix()) {}
 
 	void coerce(){
 		using std::abs;
-		Precision det = LU<N>(my_matrix).determinant();
+		Precision det = determinant(my_matrix);
 		assert(abs(det) > 0);
         using std::pow;
 		my_matrix /= pow(det, 1.0/N);
@@ -127,6 +137,28 @@ inline SL<N, Precision> SL<N, Precision>::exp( const Vector<S,P,B> & v){
 	SL<N, Precision> result;
 	result.my_matrix = TooN::exp(t);
 	return result;
+}
+
+template <int N, typename Precision>
+inline Vector<N*N-1, Precision> SL<N, Precision>::ln() const {
+	const Matrix<N> l = TooN::log(my_matrix);
+	Vector<SL<N,Precision>::dim, Precision> v;
+	Precision last = 0;
+	for(int i = 0; i < DIAG_LIMIT; ++i){	// diagonal elements
+		v[i] = l(i,i) + last;
+		last = l(i,i);
+	}
+	for(int i = DIAG_LIMIT, row = 0, col = 1; i < SYMM_LIMIT; ++i) {	// calculate symmetric and antisymmetric in one go
+		// do the right thing here to calculate the correct indices !
+		v[i] = (l(row, col) + l(col, row))*0.5;
+		v[i+COUNT_SYMM] = (-l(row, col) + l(col, row))*0.5;
+		++col;
+		if( col == N ){
+			++row;
+			col = row+1;
+		}
+	}
+	return v;
 }
 
 template <int N, typename Precision>

@@ -47,7 +47,7 @@ namespace TooN {
 		double sd_inlier; ///< The inlier standard deviation, \f$\sigma\f$.
 		inline Precision reweight(Precision x) {return 1/(sd_inlier+fabs(x));}  ///< Returns \f$w(x)\f$.
 		inline Precision true_scale(Precision x) {return reweight(x) - fabs(x)*reweight(x)*reweight(x);}  ///< Returns \f$w(x) + xw'(x)\f$.
-		inline Precision objective(Precision x) {return fabs(x) + sd_inlier*log(sd_inlier*reweight(x));}  ///< Returns \f$\int xw(x)dx\f$.
+		inline Precision objective(Precision x) {return fabs(x) + sd_inlier*::log(sd_inlier*reweight(x));}  ///< Returns \f$\int xw(x)dx\f$.
 	};
 
 	/// Robust reweighting (type II) for IRLS.
@@ -60,7 +60,7 @@ namespace TooN {
 		Precision sd_inlier; ///< The inlier standard deviation squared, \f$\sigma\f$.
 		inline Precision reweight(Precision d){return 1/(sd_inlier+d*d);} ///< Returns \f$w(x)\f$.
 		inline Precision true_scale(Precision d){return d - 2*d*reweight(d);} ///< Returns \f$w(x) + xw'(x)\f$.
-		inline Precision objective(Precision d){return 0.5 * log(1 + d*d/sd_inlier);} ///< Returns \f$\int xw(x)dx\f$.
+		inline Precision objective(Precision d){return 0.5 * ::log(1 + d*d/sd_inlier);} ///< Returns \f$\int xw(x)dx\f$.
 	};
 
 	/// A reweighting class representing no reweighting in IRLS.

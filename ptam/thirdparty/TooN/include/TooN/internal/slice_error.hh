@@ -64,7 +64,7 @@ namespace Internal
 		{
 			static int n(int num)
 			{
-				return Num==Dynamic?num:Num;
+				return (Num==Dynamic||Num==Resizable)?num:Num;
 			}
 		};
 
@@ -77,10 +77,10 @@ namespace Internal
 		static void check()
 		{
 			//Sanity check all basic static sizes
-			BadSlice<!(Size== Dynamic || Size > 0)>::check();
+			BadSlice<!(Size== Dynamic || Size==Resizable || Size > 0)>::check();
 			BadSlice<!(Start >= 0)>::check();
-			BadSlice<!(Length > 0)>::check();
-			BadSlice<(Size != Dynamic && (Start + Length > Size))>::check();
+			BadSlice<!(Length >= 0)>::check();
+			BadSlice<(Size != Dynamic && Size != Resizable && (Start + Length > Size))>::check();
 		}	
 
 		///@internal 
@@ -95,29 +95,29 @@ namespace Internal
 		static void check(int size, int start, int length)
 		{
 			//Sanity check all basic static sizes
-			BadSlice<!(Size   == Dynamic || Size > 0)>::check();
+			BadSlice<!(Size   == Dynamic || Size==Resizable || Size > 0)>::check();
 			BadSlice<!(Start  == Dynamic || Start >= 0)>::check();
-			BadSlice<!(Length == Dynamic || Length > 0)>::check();
+			BadSlice<!(Length == Dynamic || Length >= 0)>::check();
 			
 			//We can make sure Length <= Size, even if Start is unknown
-			BadSlice<(Size!=Dynamic && Length != Dynamic && Length > Size)>::check();
+			BadSlice<(Size!=Dynamic && Size != Resizable &&  Length != Dynamic && Length > Size)>::check();
 			
 			//We can make sure Start < Size even if Length is unknown
-			BadSlice<(Start != Dynamic && Size != Dynamic && Start >= Size)>::check();
+			BadSlice<(Start != Dynamic && Size != Dynamic && Size != Resizable && Start > Size)>::check();
 
-			BadSlice<(Size != Dynamic && Start != Dynamic && Length != Dynamic && Start + Length > Size)>::check();
+			BadSlice<(Size != Dynamic && Size != Resizable && Start != Dynamic && Length != Dynamic && Start + Length > Size)>::check();
 			#ifndef TOON_NDEBUG_MISMATCH
-				if(Start != Dynamic && Start != start)
+				if(Start != Dynamic && Size != Resizable && Start != start)
 				{
 					std::cerr << "TooN slice: mismatch between static and dynamic start.\n";
 					std::abort();
 				}
-				if(Length != Dynamic && Length != length)
+				if(Length != Dynamic && Size != Resizable && Length != length)
 				{
 					std::cerr << "TooN slice: mismatch between static and dynamic length.\n";
 					std::abort();
 				}
-				if(Size != Dynamic && Size != size)
+				if(Size != Dynamic && Size != Resizable && Size != size)
 				{
 					std::cerr << "TooN slice: mismatch between static and dynamic size.\n";
 					std::abort();

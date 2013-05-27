@@ -37,16 +37,39 @@ template<int Size, class Precision, int Stride, class Mem> struct GenericVBase;
 //
 // Slice holding class
 //
+struct Default{};
 
-template<int Stride>
+template<int Stride, class Ptr=Default, class CPtr=Default, class Ref=Default, class CRef=Default>
 struct SliceVBase {
 
 	// this class is really just a typedef
 	template<int Size, typename Precision>
 	struct VLayout
-		: public GenericVBase<Size, Precision, Stride, VectorSlice<Size, Precision> > {
+		: public GenericVBase<Size, Precision, Stride, VectorSlice<Size, Precision, Ptr, CPtr, Ref, CRef> > {
+		typedef typename VectorSlice<Size, Precision, Ptr, CPtr, Ref, CRef>::PointerType PointerType;
 	
-		VLayout(Precision* d, int length, int stride)
+		VLayout(PointerType d, int length, int stride)
+			:GenericVBase<Size, Precision, Stride, VectorSlice<Size, Precision, Ptr, CPtr, Ref, CRef> >(d, length, stride){
+		}
+
+		template<class Op>
+		VLayout(const Operator<Op>& op)
+			:GenericVBase<Size, Precision, Stride, VectorSlice<Size, Precision> >(op) {}
+	};
+
+};
+
+template<int Stride>
+struct SliceVBase<Stride, Default, Default, Default, Default> {
+
+	// this class is really just a typedef
+	template<int Size, typename Precision>
+	struct VLayout
+		: public GenericVBase<Size, Precision, Stride, VectorSlice<Size, Precision> > {
+
+		typedef typename VectorSlice<Size, Precision>::PointerType PointerType;
+	
+		VLayout(PointerType d, int length, int stride)
 			:GenericVBase<Size, Precision, Stride, VectorSlice<Size, Precision> >(d, length, stride){
 		}
 
@@ -99,7 +122,12 @@ template<int Size, typename Precision, int Stride, typename Mem> struct GenericV
 	:Mem(s)
 	{}
 
-	GenericVBase(Precision* d, int length, int stride)
+	typedef typename Mem::PointerType PointerType;
+	typedef typename Mem::ConstPointerType ConstPointerType;
+	typedef typename Mem::ReferenceType ReferenceType;
+	typedef typename Mem::ConstReferenceType ConstReferenceType;
+
+	GenericVBase(PointerType d, int length, int stride)
 	:Mem(d, length),StrideHolder<Stride>(stride){
 	}
 	
@@ -109,83 +137,87 @@ template<int Size, typename Precision, int Stride, typename Mem> struct GenericV
 	using Mem::data;
 	using Mem::size;
 
-	Precision& operator[](int i) {
+	ReferenceType operator[](int i) {
 		Internal::check_index(size(), i);
 		return data()[i * stride()];
 	}
 
-	const Precision& operator[](int i) const {
+	ConstReferenceType operator[](int i) const {
 		Internal::check_index(size(), i);
 		return data()[i * stride()];
 	}
+
+	typedef SliceVBase<Stride, PointerType, ConstPointerType, ReferenceType, ConstReferenceType> SliceBase;
+	typedef SliceVBase<Stride, ConstPointerType, ConstPointerType, ConstReferenceType, ConstReferenceType> ConstSliceBase;
+
 
 	//Completely generic Vector slice operations below:
 	template<int Start, int Length> 
-	Vector<Length, Precision, SliceVBase<Stride> > slice(int start, int length){
+	Vector<Length, Precision, SliceBase> slice(int start, int length){
 		Internal::CheckSlice<Size, Start, Length>::check(size(), start, length);	
-		return Vector<Length, Precision, SliceVBase<Stride> >(data() + stride() * (Start==Dynamic?start:Start), Length==Dynamic?length:Length, stride(), Slicing());
+		return Vector<Length, Precision, SliceBase>(data() + stride() * (Start==Dynamic?start:Start), Length==Dynamic?length:Length, stride(), Slicing());
 	}
 
 	template<int Start, int Length> 
-	const Vector<Length, Precision, SliceVBase<Stride> > slice(int start, int length) const{
+	const Vector<Length, const Precision, ConstSliceBase> slice(int start, int length) const{
 		Internal::CheckSlice<Size, Start, Length>::check(size(), start, length);	
-		return Vector<Length, Precision, SliceVBase<Stride> >(const_cast<Precision*>(data()) + stride() * (Start==Dynamic?start:Start), Length==Dynamic?length:Length, stride(), Slicing());
+		return Vector<Length, const Precision, ConstSliceBase>(data() + stride() * (Start==Dynamic?start:Start), Length==Dynamic?length:Length, stride(), Slicing());
 	}
 
 	
 
 	//Special case slice operations
-	template<int Start, int Length> Vector<Length, Precision, SliceVBase<Stride> > slice(){
+	template<int Start, int Length> Vector<Length, Precision, SliceBase> slice(){
 		Internal::CheckSlice<Size, Start, Length>::check();
 		return slice<Start, Length>(Start, Length);
 	}
 
-	template<int Start, int Length> const Vector<Length, Precision, SliceVBase<Stride> > slice() const {
+	template<int Start, int Length> const Vector<Length, const Precision, ConstSliceBase> slice() const {
 		Internal::CheckSlice<Size, Start, Length>::check();
 		return slice<Start, Length>(Start, Length);
 	}
 
-	Vector<Dynamic, Precision, SliceVBase<Stride> > slice(int start, int length){
+	Vector<Dynamic, Precision, SliceBase> slice(int start, int length){
 		return slice<Dynamic, Dynamic>(start, length);
 	}
 
-	const Vector<Dynamic, Precision, SliceVBase<Stride> > slice(int start, int length) const{
+	const Vector<Dynamic, const Precision, ConstSliceBase> slice(int start, int length) const{
 		return slice<Dynamic, Dynamic>(start, length);
 	}
 		
 	//Other slices below
-	const Matrix<1, Size, Precision, Slice<1,Stride> > as_row() const{
-		return Matrix<1, Size, Precision, Slice<1,Stride> >(const_cast<Precision*>(data()), 1, size(), 1, stride(), Slicing());
+	const Matrix<1, Size, const Precision, Slice<1,Stride> > as_row() const{
+		return Matrix<1, Size, const Precision, Slice<1,Stride> >(data(), 1, size(), 1, stride(), Slicing());
 	}
 
 	Matrix<1, Size, Precision, Slice<1,Stride> > as_row(){
 		return Matrix<1, Size, Precision, Slice<1,Stride> >(data(), 1, size(), 1, stride(), Slicing());
 	}
 
-	const Matrix<Size, 1, Precision, Slice<Stride,1> > as_col() const{
-		return Matrix<Size, 1, Precision, Slice<Stride,1> >(const_cast<Precision*>(data()), size(), 1, stride(), 1, Slicing());
+	const Matrix<Size, 1, const Precision, Slice<Stride,1> > as_col() const{
+		return Matrix<Size, 1, const Precision, Slice<Stride,1> >(data(), size(), 1, stride(), 1, Slicing());
 	}
 
 	Matrix<Size, 1, Precision, Slice<Stride,1> > as_col(){
 		return Matrix<Size, 1, Precision, Slice<Stride,1> >(data(), size(), 1, stride(), 1, Slicing());
 	}
 
-	typedef Vector<Size, Precision, SliceVBase<Stride> > as_slice_type;
+	typedef Vector<Size, Precision, SliceBase> as_slice_type;
 	
-	Vector<Size, Precision, SliceVBase<Stride> > as_slice(){                 
-		return Vector<Size, Precision, SliceVBase<Stride> >(data(), size(), stride(), Slicing());         
+	Vector<Size, Precision, SliceBase> as_slice(){                 
+		return Vector<Size, Precision, SliceBase>(data(), size(), stride(), Slicing());         
 	}
 
-	const Vector<Size, Precision, SliceVBase<Stride> > as_slice() const {                 
-		return Vector<Size, Precision, SliceVBase<Stride> >(const_cast<Precision*>(data()), size(), stride(), Slicing());         
+	const Vector<Size, const Precision, ConstSliceBase> as_slice() const {                 
+		return Vector<Size, const Precision, ConstSliceBase>(data(), size(), stride(), Slicing());         
 	}
 
-	DiagonalMatrix<Size,Precision, SliceVBase<Stride> > as_diagonal() {
-		return DiagonalMatrix<Size, Precision, SliceVBase<Stride> > (data(), size(), stride(), Slicing());
+	DiagonalMatrix<Size,Precision, SliceBase> as_diagonal() {
+		return DiagonalMatrix<Size, Precision, SliceBase> (data(), size(), stride(), Slicing());
 	}
 
-	const DiagonalMatrix<Size,Precision, SliceVBase<Stride> > as_diagonal() const {
-		return DiagonalMatrix<Size, Precision, SliceVBase<Stride> > (const_cast<Precision*>(data()), size(), stride(), Slicing());
+	const DiagonalMatrix<Size,const Precision, ConstSliceBase> as_diagonal() const {
+		return DiagonalMatrix<Size, const Precision, ConstSliceBase> (data(), size(), stride(), Slicing());
 	}
 
 };

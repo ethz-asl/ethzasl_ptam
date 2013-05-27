@@ -48,7 +48,7 @@ namespace TooN {
 /// three numbers (in the space of the Lie Algebra). In this class, the first two parameters are a
 /// translation vector while the third is the amount of rotation in the plane as for SO2.
 /// @ingroup gTransforms
-template <typename Precision = double>
+template <typename Precision = DefaultPrecision>
 class SE2 {
 public:
 	/// Default constructor. Initialises the the rotation to zero (the identity) and the translation to zero
@@ -85,11 +85,15 @@ public:
 
 	/// Right-multiply by another SE2 (concatenate the two transformations)
 	/// @param rhs The multipier
-	inline SE2 operator *(const SE2& rhs) const { return SE2(my_rotation*rhs.my_rotation, my_translation + my_rotation*rhs.my_translation); }
+	template <typename P>
+	SE2<typename Internal::MultiplyType<Precision,P>::type> operator *(const SE2<P>& rhs) const { 
+		return SE2<typename Internal::MultiplyType<Precision,P>::type>(my_rotation*rhs.get_rotation(), my_translation + my_rotation*rhs.get_translation()); 
+	}
 
 	/// Self right-multiply by another SE2 (concatenate the two transformations)
 	/// @param rhs The multipier
-	inline SE2& operator *=(const SE2& rhs) { 
+	template <typename P>
+	inline SE2& operator *=(const SE2<P>& rhs) { 
 		*this = *this * rhs; 
 		return *this; 
 	}
@@ -113,7 +117,7 @@ public:
 	/// transfers a vector in the Lie algebra, from one coord frame to another
 	/// so that exp(adjoint(vect)) = (*this) * exp(vect) * (this->inverse())
 	template<typename Accessor>
-	inline Vector<3, Precision> adjoint(const Vector<3,Precision, Accessor> & vect) const {
+	Vector<3, Precision> adjoint(const Vector<3,Precision, Accessor> & vect) const {
 		Vector<3, Precision> result;
 		result[2] = vect[2];
 		result.template slice<0,2>() = my_rotation * vect.template slice<0,2>();
@@ -123,7 +127,7 @@ public:
 	}
 
 	template <typename Accessor>
-	inline Matrix<3,3,Precision> adjoint(const Matrix<3,3,Precision,Accessor>& M) const {
+	Matrix<3,3,Precision> adjoint(const Matrix<3,3,Precision,Accessor>& M) const {
 		Matrix<3,3,Precision> result;
 		for(int i=0; i<3; ++i)
 			result.T()[i] = adjoint(M.T()[i]);
@@ -141,8 +145,13 @@ private:
 /// @relates SE2
 template <class Precision>
 inline std::ostream& operator<<(std::ostream& os, const SE2<Precision> & rhs){
-	for(int i=0; i<2; i++)
-		os << rhs.get_rotation().get_matrix()[i] << rhs.get_translation()[i] << std::endl;
+	std::streamsize fw = os.width();
+	for(int i=0; i<2; i++){
+		os.width(fw);
+		os << rhs.get_rotation().get_matrix()[i];
+		os.width(fw);
+		os << rhs.get_translation()[i] << '\n';
+	}
 	return os;
 }
 
@@ -300,21 +309,6 @@ inline Matrix<Rows,3, typename Internal::MultiplyType<PM,P>::type> operator*(con
 	return Matrix<Rows,3,typename Internal::MultiplyType<PM,P>::type>(Operator<Internal::MSE2Mult<Rows, C, PM, A, P> >(lhs,rhs));
 }
 
-/* inline SE2 SE2::exp(const Vector<3>& mu){ */
-/*   SE2 result; */
-/*   double theta = mu[2]; */
-/*   result.get_rotation() = SO2::exp(theta); */
-/*   Matrix<2> m2; */
-/*   m2[0][0] = m2[1][1] = result.get_rotation().get_matrix()[1][0]; */
-/*   m2[0][1] = result.get_rotation().get_matrix()[0][0] - 1.0; */
-/*   m2[1][0] = - m2[0][1]; */
-/*   if(theta != 0.0)  */
-/*     result.get_translation() = m2 * mu.slice<0,2>() / fabs(theta); */
-/*   else */
-/*     result.get_translation() = mu.slice<0,2>(); */
-/*   return result; */
-/* } */
-
 template <typename Precision>
 template <int S, typename PV, typename Accessor>
 inline SE2<Precision> SE2<Precision>::exp(const Vector<S, PV, Accessor>& mu)
@@ -346,7 +340,7 @@ inline SE2<Precision> SE2<Precision>::exp(const Vector<S, PV, Accessor>& mu)
 			A = sine * inv_theta;
 			B = (1 - cosine) * (inv_theta * inv_theta);
 		}
-		result.get_translation() = A * mu.template slice<0,2>() + B * cross;
+		result.get_translation() = TooN::operator*(A,mu.template slice<0,2>()) + TooN::operator*(B,cross);
 	}
 	return result;
 }

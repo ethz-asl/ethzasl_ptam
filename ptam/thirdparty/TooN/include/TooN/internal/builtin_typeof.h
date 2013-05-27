@@ -16,3 +16,10 @@ template<> struct DeEnumerate<4>{typedef float type;};
 template<> struct DeEnumerate<5>{typedef double type;};
 template<> struct DeEnumerate<6>{typedef std::complex<float> type;};
 template<> struct DeEnumerate<7>{typedef std::complex<double> type;};
+
+#ifdef _FADBAD_H
+Enumerate<8> enumerate(const ::fadbad::F<float>&);
+Enumerate<9> enumerate(const ::fadbad::F<double>&);
+template<> struct DeEnumerate<8>{typedef ::fadbad::F<float> type;};
+template<> struct DeEnumerate<9>{typedef ::fadbad::F<double> type;};
+#endif

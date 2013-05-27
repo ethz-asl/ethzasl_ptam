@@ -43,7 +43,7 @@ template<int N, int R, int C, bool IsDynamic=(R==-1||C==-1)> struct CheckMOverFi
 			if(N >= R*C)
 				throw StaticMatrixOverfill();
 		#else
-			Internal::overfill<(N>=R*C)> overfilled_matrix;
+			Internal::overfill<(N>=R*C)>();
 		#endif
 	}
 };
