@@ -16,8 +16,6 @@ OctoMapInterface::OctoMapInterface( ros::NodeHandle& nh):nh_(nh)
   pub_scan_= nh_.advertise<ptam_com::OctoMapScan> ("vslam/octomapscan", 10);
   pub_points_= nh_.advertise<ptam_com::OctoMapPointArray> ("vslam/octomappoints", 10);
 
-  pub_test_ = nh_.advertise<std_msgs::String>("test",10);
-
   kfseq_ = 0;
   pointseq_ = 0;
 }

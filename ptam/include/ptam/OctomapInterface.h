@@ -17,7 +17,6 @@ private:
   ros::NodeHandle& nh_;
   ros::Publisher pub_scan_;
   ros::Publisher pub_points_;
-  ros::Publisher pub_test_;
 
   std::set<MapPoint::Ptr> localUpdateQueue_; //to collect updates before publishing them all at once
 
