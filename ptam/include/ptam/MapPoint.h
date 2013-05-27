@@ -20,9 +20,9 @@ using namespace TooN;
 #include <set>
 #include <boost/shared_ptr.hpp>
 
-class KeyFrame;
-class TrackerData;
-class MapMakerData;
+struct KeyFrame;
+struct TrackerData;
+struct MapMakerData;
 
 struct MapPoint
 {

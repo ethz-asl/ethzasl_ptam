@@ -535,10 +535,7 @@ void Tracker::TrackForInitialMap()
 void Tracker::TrailTracking_Start()
 {
   mCurrentKF->MakeKeyFrame_Rest();  // This populates the Candidates list, which is Shi-Tomasi thresholded.
-<<<<<<< HEAD
 
-=======
->>>>>>> using reset for the shared_ptrs instead of assignment
   mFirstKF.reset(new KeyFrame); //TODO check if we need to copy the data, or
   *mFirstKF = *mCurrentKF; //copy data
 
@@ -1181,12 +1178,12 @@ Vector<6> Tracker::CalcPoseUpdate(vector<TrackerData*> vTD, double dOverrideSigm
 		if(dWeight == 0.0)
 		{
 			if(bMarkOutliers)
-				TD.Point.nMEstimatorOutlierCount++;
+				TD.Point->nMEstimatorOutlierCount++;
 			continue;
 		}
 		else
 			if(bMarkOutliers)
-				TD.Point.nMEstimatorInlierCount++;
+				TD.Point->nMEstimatorInlierCount++;
 
 		Matrix<2,6> &m26Jac = TD.m26Jacobian;
 		wls.add_mJ(v2[0], TD.dSqrtInvNoise * m26Jac[0], dWeight); // These two lines are currently

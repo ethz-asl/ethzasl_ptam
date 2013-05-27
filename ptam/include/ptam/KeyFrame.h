@@ -29,10 +29,10 @@ using namespace TooN;
 
 #include "ptam/Params.h"
 
-class MapPoint;
+struct MapPoint;
 class SmallBlurryImage;
 //slynen{ reprojection
-class TrackerData;
+struct TrackerData;
 //}
 #define LEVELS 4
 

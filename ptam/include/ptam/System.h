@@ -84,7 +84,7 @@ private:
   Tracker *mpTracker; 
   ATANCamera *mpCamera;
 
-  bool mbDone;
+//  bool mbDone;
 
   void init(const CVD::ImageRef & size);
 

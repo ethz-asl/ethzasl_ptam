@@ -18,7 +18,7 @@ using namespace TooN;
 #include <sstream>
 #include "GLWindow2.h"
 
-class Map;
+struct Map;
 
 class MapViewer
 {

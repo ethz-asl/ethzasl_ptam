@@ -43,10 +43,10 @@ void OctoMapInterface::addKeyFrame(KeyFrame::Ptr k)
   pose = k->se3CfromW;
   rot = pose.get_rotation().get_matrix();
   trans = pose.get_translation();
-  tf::Transform transform(btMatrix3x3(rot(0, 0), rot(0, 1), rot(0, 2),
-                                      rot(1, 0), rot(1, 1), rot(1, 2),
-                                      rot(2, 0), rot(2, 1), rot(2, 2)),
-                          btVector3(trans[0] / scale, trans[1]/ scale, trans[2] / scale));
+  tf::Transform transform(tf::Matrix3x3(rot(0, 0), rot(0, 1), rot(0, 2),
+                                        rot(1, 0), rot(1, 1), rot(1, 2),
+                                        rot(2, 0), rot(2, 1), rot(2, 2)),
+                          tf::Vector3(trans[0] / scale, trans[1]/ scale, trans[2] / scale));
   q = transform.getRotation();
   t = transform.getOrigin();
   buffpose.header.seq=kfseq_++;
@@ -94,26 +94,27 @@ void OctoMapInterface::updatePoints(std::set<MapPoint::Ptr>& updateSet){
 void OctoMapInterface::publishPointUpdateFromQueue(){
 
   static double lastTime = 0;
+  if(pub_points_.getNumSubscribers()){
+    if(ros::Time::now().toSec() - lastTime > 1.0){ //only perform this once a second
+      ptam_com::OctoMapPointArrayPtr msg(new ptam_com::OctoMapPointArray);
+      for(std::set<MapPoint::Ptr>::const_iterator it = localUpdateQueue_.begin(); it != localUpdateQueue_.end() ; ++it){
+        ptam_com::OctoMapPointStamped pt;
+        pt.header.seq = pointseq_++;
+        pt.header.stamp = ros::Time::now();
+        pt.action = ptam_com::OctoMapPointStamped::UPDATE;
+        pt.position.x = (*it)->v3WorldPos[0];
+        pt.position.y = (*it)->v3WorldPos[1];
+        pt.position.z = (*it)->v3WorldPos[2];
+        msg->mapPoints.push_back(pt);
+      }
+      pub_points_.publish(msg);
 
-  if(ros::Time::now().toSec() - lastTime > 1.0){ //only perform this once a second
-    ptam_com::OctoMapPointArrayPtr msg(new ptam_com::OctoMapPointArray);
-    for(std::set<MapPoint::Ptr>::const_iterator it = localUpdateQueue_.begin(); it != localUpdateQueue_.end() ; ++it){
-      ptam_com::OctoMapPointStamped pt;
-      pt.header.seq = pointseq_++;
-      pt.header.stamp = ros::Time::now();
-      pt.action = ptam_com::OctoMapPointStamped::UPDATE;
-      pt.position.x = (*it)->v3WorldPos[0];
-      pt.position.y = (*it)->v3WorldPos[1];
-      pt.position.z = (*it)->v3WorldPos[2];
-      msg->mapPoints.push_back(pt);
+      lastTime = ros::Time::now().toSec();
+      localUpdateQueue_.clear();
+
+      //    std::cout<<"publishing now "<<lastTime - ((int)lastTime)%1000<<std::endl;
+
     }
-    pub_points_.publish(msg);
-
-    lastTime = ros::Time::now().toSec();
-    localUpdateQueue_.clear();
-
-    std::cout<<"publishing now "<<lastTime - ((int)lastTime)%1000<<std::endl;
-
   }
 }
 

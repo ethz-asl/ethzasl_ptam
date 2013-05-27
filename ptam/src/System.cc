@@ -554,10 +554,10 @@ bool System::keyframesservice(ptam_com::KeyFrame_srvRequest & req, ptam_com::Key
       pose = (*rit)->se3CfromW;
       rot =pose.get_rotation().get_matrix();
       trans = pose.get_translation();
-      tf::Transform transform(btMatrix3x3(rot(0, 0), rot(0, 1), rot(0, 2),
+      tf::Transform transform(tf::Matrix3x3(rot(0, 0), rot(0, 1), rot(0, 2),
                                           rot(1, 0), rot(1, 1), rot(1, 2),
                                           rot(2, 0), rot(2, 1), rot(2, 2)),
-                              btVector3(trans[0] / scale, trans[1]/ scale, trans[2] / scale));
+                              tf::Vector3(trans[0] / scale, trans[1]/ scale, trans[2] / scale));
       q = transform.getRotation();
       t = transform.getOrigin();
       buffpose.header.seq=seq;
