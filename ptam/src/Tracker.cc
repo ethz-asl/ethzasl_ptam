@@ -122,9 +122,9 @@ void Tracker::TrackFrame(Image<CVD::byte> &imFrame, bool bDraw)
 
   // Update the small images for the rotation estimator
   //Weiss{
-  ptam::PtamParamsConfig* pPars = ParamsAccess::varParams;
-  double gvdSBIBlur = pPars->RotationEstimatorBlur;
-  int gvnUseSBI = pPars->UseRotationEstimator;
+  const ptam::PtamParamsConfig& pPars = PtamParameters::varparams();
+  double gvdSBIBlur = pPars.RotationEstimatorBlur;
+  int gvnUseSBI = pPars.UseRotationEstimator;
   //static gvar3<double> gvdSBIBlur("Tracker.RotationEstimatorBlur", 0.75, SILENT);
   //static gvar3<int> gvnUseSBI("Tracker.UseRotationEstimator", 1, SILENT);
   //}
@@ -212,10 +212,10 @@ void Tracker::TrackFrame(Image<CVD::byte> &imFrame, bool bDraw)
   else // If there is no map, try to make one.
     //Weiss{
   {
-    ParamsAccess Params;
-    int level = Params.fixParams->InitLevel;
-    ptam::PtamParamsConfig* pPars = Params.varParams;
-    if (pPars->AutoInit)
+    
+    int level = PtamParameters::fixparams().InitLevel;
+    const ptam::PtamParamsConfig& pPars = PtamParameters::varparams();
+    if (pPars.AutoInit)
     {
       if(mnInitialStage == TRAIL_TRACKING_NOT_STARTED)
         mbUserPressedSpacebar=true;
@@ -244,14 +244,14 @@ void Tracker::TrackFrame(Image<CVD::byte> &imFrame, bool bDraw)
         }
         delete pSBIsecond;
 
-        if(k>0)	// otherwise "if (mediandist>pPars->AutoInitPixel)" segfaults...
+        if(k>0)	// otherwise "if (mediandist>pPars.AutoInitPixel)" segfaults...
         {
           std::vector<double>::iterator first = mediandistvec.begin();
           std::vector<double>::iterator last = mediandistvec.end();
           std::vector<double>::iterator middle = first + std::floor((last - first) / 2);
           std::nth_element(first, middle, last); // can specify comparator as optional 4th arg
           double mediandist = *middle;
-          if (mediandist>pPars->AutoInitPixel)
+          if (mediandist>pPars.AutoInitPixel)
             mbUserPressedSpacebar=true;
         }
       }
@@ -427,11 +427,11 @@ void Tracker::TrackForInitialMap()
 {
   // MiniPatch tracking threshhold.
   //Weiss{
-  ParamsAccess Params;
-  ptam::PtamParamsConfig* pPars = Params.varParams;
-  int gvnMaxSSD = pPars->MiniPatchMaxSSD;
+  
+  const ptam::PtamParamsConfig& pPars = PtamParameters::varparams();
+  int gvnMaxSSD = pPars.MiniPatchMaxSSD;
   //static gvar3<int> gvnMaxSSD("Tracker.MiniPatchMaxSSD", 100000, SILENT);
-  int level = Params.fixParams->InitLevel;
+  int level = PtamParameters::fixparams().InitLevel;
   ImageRef tmpInit, tmpCurr;
   //}
   MiniPatch::mnMaxSSD = gvnMaxSSD;
@@ -541,9 +541,9 @@ void Tracker::TrailTracking_Start()
 
   vector<pair<double,ImageRef> > vCornersAndSTScores;
 
-  ParamsAccess Params;
+  
   vCornersAndSTScores.reserve(1000);
-  int level = Params.fixParams->InitLevel;
+  int level = PtamParameters::fixparams().InitLevel;
   for(unsigned int i=0; i<mCurrentKF->aLevels[level].vCandidates.size(); i++)  // Copy candidates into a trivially sortable vector
   {                                                                     // so that we can choose the image corners with max ST score
     Candidate &c = mCurrentKF->aLevels[level].vCandidates[i];
@@ -582,8 +582,8 @@ int Tracker::TrailTracking_Advance()
     glEnable(GL_BLEND);
     glBegin(GL_LINES);
   }
-  ParamsAccess Params;
-  int level = Params.fixParams->InitLevel;
+  
+  int level = PtamParameters::fixparams().InitLevel;
   MiniPatch BackwardsPatch;
   Level &lCurrentFrame = mCurrentKF->aLevels[level];
   Level &lPreviousFrame = mPreviousFrameKF->aLevels[level];
@@ -766,14 +766,14 @@ void Tracker::TrackMap()
   // Tunable parameters to do with the coarse tracking stage:
 
   //Weiss{
-  ParamsAccess Params;
-  ptam::PtamParamsConfig* pPars = Params.varParams;
-  unsigned int gvnCoarseMin = pPars->CoarseMin;
-  unsigned int gvnCoarseMax = pPars->CoarseMax;
-  unsigned int gvnCoarseRange = pPars->CoarseRange;
-  int gvnCoarseSubPixIts = pPars->CoarseSubPixIts;
-  int gvnCoarseDisabled = pPars->DisableCoarse;
-  double gvdCoarseMinVel = pPars->CoarseMinVelocity;
+  
+  const ptam::PtamParamsConfig& pPars = PtamParameters::varparams();
+  unsigned int gvnCoarseMin = pPars.CoarseMin;
+  unsigned int gvnCoarseMax = pPars.CoarseMax;
+  unsigned int gvnCoarseRange = pPars.CoarseRange;
+  int gvnCoarseSubPixIts = pPars.CoarseSubPixIts;
+  int gvnCoarseDisabled = pPars.DisableCoarse;
+  double gvdCoarseMinVel = pPars.CoarseMinVelocity;
   //static gvar3<unsigned int> gvnCoarseMin("Tracker.CoarseMin", 20, SILENT);   // Min number of large-scale features for coarse stage
   //static gvar3<unsigned int> gvnCoarseMax("Tracker.CoarseMax", 60, SILENT);   // Max number of large-scale features for coarse stage
   //static gvar3<unsigned int> gvnCoarseRange("Tracker.CoarseRange", 30, SILENT);       // Pixel search radius for coarse features
@@ -895,7 +895,7 @@ void Tracker::TrackMap()
   // But we haven't got CPU to track _all_ patches in the map - arbitrarily limit
   // ourselves to 1000, and choose these randomly.
   //Weiss{
-  int gvnMaxPatchesPerFrame = pPars->MaxPatchesPerFrame;
+  int gvnMaxPatchesPerFrame = pPars.MaxPatchesPerFrame;
   //static gvar3<int> gvnMaxPatchesPerFrame("Tracker.MaxPatchesPerFrame", 1000, SILENT);
   //}
   int nFinePatchesToUse = gvnMaxPatchesPerFrame - vIterationSet.size();
@@ -1108,8 +1108,8 @@ Vector<6> Tracker::CalcPoseUpdate(vector<TrackerData*> vTD, double dOverrideSigm
 	int nEstimator = 0;
 	//Weiss{
 	//static std::string gvsEstimator = "Tukey";
-	FixParams* pPars = ParamsAccess::fixParams;
-	static std::string gvsEstimator = pPars->TrackerMEstimator;
+	const FixParams& pPars = PtamParameters::fixparams();
+	static std::string gvsEstimator = pPars.TrackerMEstimator;
 	//}
 	if(gvsEstimator == "Tukey")
 		nEstimator = 0;
@@ -1205,16 +1205,16 @@ Vector<6> Tracker::CalcPoseUpdate(vector<TrackerData*> vTD, double dOverrideSigm
 // are not handled properly here.
 void Tracker::ApplyMotionModel()
 {
-  VarParams *vp = ParamsAccess::varParams;
+  const VarParams& vp = PtamParameters::varparams();
   mse3StartPos = mse3CamFromWorld;
   Vector<6> v6Velocity = mv6CameraVelocity;
-  if(mbUseSBIInit && vp->MotionModelSource == ptam::PtamParams_MM_CONSTANT)
+  if(mbUseSBIInit && vp.MotionModelSource == ptam::PtamParams_MM_CONSTANT)
   {
     v6Velocity.slice<3,3>() = mv6SBIRot.slice<3,3>();
     v6Velocity[0] = 0.0;
     v6Velocity[1] = 0.0;
   }
-  else if(vp->MotionModelSource == ptam::PtamParams_MM_IMU)
+  else if(vp.MotionModelSource == ptam::PtamParams_MM_IMU)
   {
     //
     v6Velocity.slice<3,3>() = (mso3LastImu*mso3CurrentImu.inverse()).ln();
@@ -1276,9 +1276,9 @@ void Tracker::AssessTrackingQuality()
   }
 
   //Weiss{
-  ParamsAccess Params;
-  ptam::PtamParamsConfig* pPars = Params.varParams;
-  if(nTotalFound <= pPars->TrackingQualityFoundPixels || nTotalAttempted == 0)
+  
+  const ptam::PtamParamsConfig& pPars = PtamParameters::varparams();
+  if(nTotalFound <= pPars.TrackingQualityFoundPixels || nTotalAttempted == 0)
     mTrackingQuality = BAD;
   //}
   else
@@ -1291,8 +1291,8 @@ void Tracker::AssessTrackingQuality()
       dLargeFracFound = dTotalFracFound;
 
     //Weiss{
-    double gvdQualityGood = pPars->TrackingQualityGood;
-    double gvdQualityLost = pPars->TrackingQualityLost;
+    double gvdQualityGood = pPars.TrackingQualityGood;
+    double gvdQualityLost = pPars.TrackingQualityLost;
     //static gvar3<double> gvdQualityGood("Tracker.TrackingQualityGood", 0.3, SILENT);
     //static gvar3<double> gvdQualityLost("Tracker.TrackingQualityLost", 0.13, SILENT);
     //}
@@ -1316,9 +1316,9 @@ void Tracker::AssessTrackingQuality()
   if(mTrackingQuality==BAD)
   {
     //Weiss{
-    ParamsAccess Params;
-    ptam::PtamParamsConfig* pPars = Params.varParams;
-    if (pPars->AutoInit & mMap.IsGood())
+    
+    const ptam::PtamParamsConfig& pPars = PtamParameters::varparams();
+    if (pPars.AutoInit & mMap.IsGood())
     {
       mAutoreset=true;
       ROS_WARN_STREAM("Forcing map reset because of bad tracking! Autoreset set to " << mAutoreset);
@@ -1359,7 +1359,7 @@ ImageRef TrackerData::irImageSize;  // Static member of TrackerData lives here
 //Achtelik{
 void Tracker::command(const std::string & cmd){
 
-  if(ParamsAccess::fixParams->gui)
+  if(PtamParameters::fixparams().gui)
     this->GUICommandCallBack(this, "KeyPress", cmd);
   else
     this->GUICommandHandler("KeyPress", cmd);

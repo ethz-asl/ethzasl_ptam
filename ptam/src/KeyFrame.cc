@@ -48,32 +48,32 @@ void KeyFrame::MakeKeyFrame_Lite(BasicImage<CVD::byte> &im)
 
 		//Weiss{
 		void (*pFASTFunc)(const CVD::BasicImage<CVD::byte> &, std::vector<CVD::ImageRef> &,int)=NULL;
-		ParamsAccess Params;
-		ptam::PtamParamsConfig* pPars = Params.varParams;
+		
+		const ptam::PtamParamsConfig& pPars = PtamParameters::varparams();
 		pFASTFunc=&fast_corner_detect_9_nonmax;
-		if (pPars->FASTMethod=="FAST9")
+		if (pPars.FASTMethod=="FAST9")
 			pFASTFunc=&fast_corner_detect_9;
-		else if (pPars->FASTMethod=="FAST10")
+		else if (pPars.FASTMethod=="FAST10")
 			pFASTFunc=&fast_corner_detect_10;
-		else if (pPars->FASTMethod=="FAST9_nonmax")
+		else if (pPars.FASTMethod=="FAST9_nonmax")
 			pFASTFunc=&fast_corner_detect_9_nonmax;
-		else if (pPars->FASTMethod=="AGAST12d")
+		else if (pPars.FASTMethod=="AGAST12d")
 			pFASTFunc=&agast::agast7_12d::agast_corner_detect12d;
-		else if (pPars->FASTMethod=="OAST16")
+		else if (pPars.FASTMethod=="OAST16")
 			pFASTFunc=&agast::oast9_16::oast_corner_detect16;
 
 		if(i == 0)
-			pFASTFunc(lev.im, lev.vCorners, pPars->Thres_lvl0+thrs[i]);
+			pFASTFunc(lev.im, lev.vCorners, pPars.Thres_lvl0+thrs[i]);
 		if(i == 1)
-			pFASTFunc(lev.im, lev.vCorners, pPars->Thres_lvl1+thrs[i]);
+			pFASTFunc(lev.im, lev.vCorners, pPars.Thres_lvl1+thrs[i]);
 		if(i == 2)
-			pFASTFunc(lev.im, lev.vCorners, pPars->Thres_lvl2+thrs[i]);
+			pFASTFunc(lev.im, lev.vCorners, pPars.Thres_lvl2+thrs[i]);
 		if(i == 3)
-			pFASTFunc(lev.im, lev.vCorners, pPars->Thres_lvl3+thrs[i]);
+			pFASTFunc(lev.im, lev.vCorners, pPars.Thres_lvl3+thrs[i]);
 
-		if (pPars->AdaptiveThrs)
+		if (pPars.AdaptiveThrs)
 		{
-			buff = lev.vCorners.size()-pPars->AdaptiveThrsMult*pPars->MaxPatchesPerFrame/pow(2.0,i);
+			buff = lev.vCorners.size()-pPars.AdaptiveThrsMult*pPars.MaxPatchesPerFrame/pow(2.0,i);
 			thrs[i] = thrs[i]+(buff>0)-(buff<0);
 	//		printf("0: %d 1: %d 2: %d 3: %d N: %d\n",thrs[0],thrs[1],thrs[2],thrs[3],lev.vCorners.size());
 		}
@@ -102,17 +102,17 @@ void KeyFrame::MakeKeyFrame_Rest()
   // creation of the relocaliser's SmallBlurryImage.
   //Weiss{
   //static double gvdCandidateMinSTScore = 70;
-  ParamsAccess Params;
-  FixParams* pPars = ParamsAccess::fixParams;
-  VarParams* pVarPars = ParamsAccess::varParams;
-  static double gvdCandidateMinSTScore = pPars->CandidateMinSTScore;
+  
+  const FixParams& pPars = PtamParameters::fixparams();
+  const VarParams& pVarPars = PtamParameters::varparams();
+  static double gvdCandidateMinSTScore = pPars.CandidateMinSTScore;
   //static gvar3<double> gvdCandidateMinSTScore("MapMaker.CandidateMinShiTomasiScore", 70, SILENT);
   //}
 
 
   // For each level...
   int startlvl=0;
-  if(pVarPars->NoLevelZeroMapPoints)
+  if(pVarPars.NoLevelZeroMapPoints)
     startlvl=1;	// ignore level zero points for the map
   for(int l=startlvl; l<LEVELS; l++)
   {

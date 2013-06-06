@@ -19,7 +19,7 @@ inline bool isnan(double d) {return !(d==d);}
 
 inline bool defDebugBundleMessages()
 {
-  return ParamsAccess::varParams->BundleDebugMessages;
+  return PtamParameters::varparams().BundleDebugMessages;
 }
 //}
 
@@ -140,9 +140,9 @@ int Bundle::Compute(bool *pbAbortSignal)
   // What MEstimator are we using today?
   //Weiss{
   //static std::string gvsMEstimator = "Tukey";
-  ParamsAccess Params;
-  FixParams* pPars = ParamsAccess::fixParams;
-  static std::string gvsMEstimator = pPars->BundleMEstimator;
+
+  const FixParams& pPars = PtamParameters::fixparams();
+  static std::string gvsMEstimator = pPars.BundleMEstimator;
   //static gvar3<string> gvsMEstimator("BundleMEstimator", "Tukey", SILENT);
   //}
 
@@ -214,9 +214,9 @@ bool Bundle::Do_LM_Step(bool *pbAbortSignal)
 
   //Weiss{
   //static double gvdMinSigma = 0.4;
-  ParamsAccess Params;
-  FixParams* pPars = ParamsAccess::fixParams;
-  static double gvdMinSigma = pPars->MinTukeySigma;
+
+  const FixParams& pPars = PtamParameters::fixparams();
+  static double gvdMinSigma = pPars.MinTukeySigma;
   //static gvar3<double> gvdMinSigma("Bundle.MinTukeySigma", 0.4, SILENT);
   //}
 
@@ -481,10 +481,10 @@ bool Bundle::Do_LM_Step(bool *pbAbortSignal)
     // First check for convergence..
     // (this is a very poor convergence test)
     //Weiss{
-    ParamsAccess Params;
-    ptam::PtamParamsConfig* pPars = Params.varParams;
+
+    const ptam::PtamParamsConfig& pPars = PtamParameters::varparams();
     double dSumSquaredUpdate = vCamerasUpdate * vCamerasUpdate + vMapUpdates * vMapUpdates;
-    if(dSumSquaredUpdate< pPars->UpdateSquaredConvergenceLimit)
+    if(dSumSquaredUpdate< pPars.UpdateSquaredConvergenceLimit)
       mbConverged = true;
     //}
     // Now re-project everything and measure the error;
@@ -515,7 +515,7 @@ bool Bundle::Do_LM_Step(bool *pbAbortSignal)
 
     //Weiss{
     mnCounter++;
-    if(mnCounter >= pPars->MaxIterations)
+    if(mnCounter >= pPars.MaxIterations)
       mbHitMaxIterations = true;
     //}
   }   // End of while error too big loop

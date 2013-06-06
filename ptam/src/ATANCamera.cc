@@ -15,13 +15,13 @@ ATANCamera::ATANCamera(string sName)
   msName = sName;
   //Weiss{
   //mgvvCameraParams = mvDefaultParams;
-  FixParams* pPars = ParamsAccess::fixParams;
-  mgvvCameraParams = makeVector(pPars->Cam_fx, pPars->Cam_fy, pPars->Cam_cx, pPars->Cam_cy, pPars->Cam_s);
+  const FixParams& pPars = PtamParameters::fixparams();
+  mgvvCameraParams = makeVector(pPars.Cam_fx, pPars.Cam_fy, pPars.Cam_cx, pPars.Cam_cy, pPars.Cam_s);
   //GV2.Register(mgvvCameraParams, sName+".Parameters", mvDefaultParams, HIDDEN | FATAL_IF_NOT_DEFINED);
   //mvImageSize[0] = 640.0;
   //mvImageSize[1] = 480.0;
-  mvImageSize[0] =pPars->ImageSizeX;
-  mvImageSize[1] = pPars->ImageSizeY;
+  mvImageSize[0] =pPars.ImageSizeX;
+  mvImageSize[1] = pPars.ImageSizeY;
   //}
   RefreshParams();
 }

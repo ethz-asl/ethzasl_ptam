@@ -76,8 +76,8 @@ void MapMaker::run()
   SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_LOWEST);
 #endif
 
-  ParamsAccess Params;
-  ptam::PtamParamsConfig* pPars = Params.varParams;
+  
+  const ptam::PtamParamsConfig& pPars = PtamParameters::varparams();
 
   while(!shouldStop())  // ShouldStop is a CVD::Thread func which return true if the thread is told to exit.
   {
@@ -103,7 +103,7 @@ void MapMaker::run()
     // Should we run local bundle adjustment?
     if(!mbBundleConverged_Recent && QueueSize() == 0)
       //Weiss{
-      if (pPars->BundleMethod=="LOCAL" || pPars->BundleMethod=="LOCAL_GLOBAL")
+      if (pPars.BundleMethod=="LOCAL" || pPars.BundleMethod=="LOCAL_GLOBAL")
         BundleAdjustRecent();
     //}
 
@@ -116,7 +116,7 @@ void MapMaker::run()
     // Run global bundle adjustment?
     if(mbBundleConverged_Recent && !mbBundleConverged_Full && QueueSize() == 0)
       //Weiss{
-      if (pPars->BundleMethod=="GLOBAL" || pPars->BundleMethod=="LOCAL_GLOBAL")
+      if (pPars.BundleMethod=="GLOBAL" || pPars.BundleMethod=="LOCAL_GLOBAL")
         BundleAdjustAll();
 
     //}
@@ -246,8 +246,8 @@ bool MapMaker::InitFromStereo(KeyFrame::Ptr kF,
 {
   //Weiss{
   //mdWiggleScale = 0.1;
-  FixParams* pPars = ParamsAccess::fixParams;
-  mdWiggleScale=pPars->WiggleScale;
+  const FixParams& pPars = PtamParameters::fixparams();
+  mdWiggleScale=pPars.WiggleScale;
   //mdWiggleScale = *mgvdWiggleScale; // Cache this for the new map.
   //}
 
@@ -429,10 +429,10 @@ bool MapMaker::InitFromStereo(KeyFrame::Ptr kF,
 
 
   //check if point have been added
-  VarParams* pParams = ParamsAccess::varParams;
+  const VarParams& pParams = PtamParameters::varparams();
   bool addedsome=false;
   addedsome |= AddSomeMapPoints(3);
-  if(!pParams->NoLevelZeroMapPoints)
+  if(!pParams.NoLevelZeroMapPoints)
     addedsome |= AddSomeMapPoints(0);
   addedsome |= AddSomeMapPoints(1);
   addedsome |= AddSomeMapPoints(2);
@@ -444,10 +444,10 @@ bool MapMaker::InitFromStereo(KeyFrame::Ptr kF,
   mbBundleConverged_Recent = false;
   //Weiss{
   double nloops=0;
-  while(!mbBundleConverged_Full & (nloops<pParams->MaxStereoInitLoops))
+  while(!mbBundleConverged_Full & (nloops<pParams.MaxStereoInitLoops))
   {
     BundleAdjustAll();
-    if(mbResetRequested | (nloops>=pParams->MaxStereoInitLoops))
+    if(mbResetRequested | (nloops>=pParams.MaxStereoInitLoops))
       return false;
     nloops++;
   }
@@ -587,11 +587,11 @@ void MapMaker::AddKeyFrameFromTopOfQueue()
 
   //Weiss{
 
-  ParamsAccess Params;
-  ptam::PtamParamsConfig* pPars = Params.varParams;
-  if (pPars->MaxKF>1)	// MaxKF<2 means keep all KFs
+  
+  const ptam::PtamParamsConfig& pPars = PtamParameters::varparams();
+  if (pPars.MaxKF>1)	// MaxKF<2 means keep all KFs
   {
-    while (mMap.vpKeyFrames.size()>(unsigned int)pPars->MaxKF)
+    while (mMap.vpKeyFrames.size()>(unsigned int)pPars.MaxKF)
     {
       // find farthest KF
       double dFarthestDist = 0;
@@ -640,7 +640,7 @@ void MapMaker::AddKeyFrameFromTopOfQueue()
 
   bool addedsome=false;
   addedsome |= AddSomeMapPoints(3);       // .. and add more map points by epipolar search.
-  if(!pPars->NoLevelZeroMapPoints)
+  if(!pPars.NoLevelZeroMapPoints)
     addedsome |= AddSomeMapPoints(0);
   addedsome |= AddSomeMapPoints(1);
   addedsome |= AddSomeMapPoints(2);
@@ -894,8 +894,8 @@ bool MapMaker::NeedNewKeyFrame(KeyFrame::Ptr kCurrent)
   double dDist = KeyFrameLinearDist(kCurrent, pClosest);
 
   //Weiss{
-  ParamsAccess Params;
-  ptam::PtamParamsConfig* pPars = Params.varParams;
+  
+  const ptam::PtamParamsConfig& pPars = PtamParameters::varparams();
 
   std::vector<double> medianpixdist;
   Vector<3> veccam2;
@@ -916,13 +916,13 @@ bool MapMaker::NeedNewKeyFrame(KeyFrame::Ptr kCurrent)
 
   dDist *= (1.0 / kCurrent->dSceneDepthMean);
 
-  //	ParamsAccess Params;
-  //	ptam::PtamParamsConfig* pPars = Params.varParams;
+  //	
+  //	const ptam::PtamParamsConfig& pPars = PtamParameters::varparams();
   //if(dDist > GV2.GetDouble("MapMaker.MaxKFDistWiggleMult",1.0,SILENT) * mdWiggleScaleDepthNormalized)
-  if(pPars->UseKFPixelDist & (mediandist>pPars->AutoInitPixel))
+  if(pPars.UseKFPixelDist & (mediandist>pPars.AutoInitPixel))
     return true;
 
-  if(dDist > pPars->MaxKFDistWiggleMult * mdWiggleScaleDepthNormalized)
+  if(dDist > pPars.MaxKFDistWiggleMult * mdWiggleScaleDepthNormalized)
   {
     return true;
   }
@@ -967,9 +967,9 @@ void MapMaker::BundleAdjustRecent()
 
   //Weiss{ if we only keep N KFs only insert most recently added KF as loose
   unsigned char nloose = 4;
-  ParamsAccess Params;
-  ptam::PtamParamsConfig* pPars = Params.varParams;
-  if (pPars->MaxKF>1)	// MaxKF<2 means keep all KFs
+  
+  const ptam::PtamParamsConfig& pPars = PtamParameters::varparams();
+  if (pPars.MaxKF>1)	// MaxKF<2 means keep all KFs
     nloose=0;
 
   KeyFrame::Ptr pkfNewest = mMap.vpKeyFrames.back();
@@ -1314,9 +1314,9 @@ SE3<> MapMaker::CalcPlaneAligner()
     return SE3<>();
   };
   //Weiss{
-  ParamsAccess Params;
-  ptam::PtamParamsConfig* pPars = Params.varParams;
-  int nRansacs = pPars->PlaneAlignerRansacs;
+  
+  const ptam::PtamParamsConfig& pPars = PtamParameters::varparams();
+  int nRansacs = pPars.PlaneAlignerRansacs;
   //int nRansacs = GV2.GetInt("MapMaker.PlaneAlignerRansacs", 100, HIDDEN|SILENT);
   //}
   Vector<3> v3BestMean=makeVector(0,0,0);

@@ -39,10 +39,10 @@ bool Relocaliser::AttemptRecovery(KeyFrame& kCurrent)
   mse3Best = SmallBlurryImage::SE3fromSE2(mse2, mCamera) * se3KeyFramePos;
 
   //Weiss{
-  ParamsAccess Params;
-  ptam::PtamParamsConfig* pPars = Params.varParams;
+  
+  const ptam::PtamParamsConfig& pPars = PtamParameters::varparams();
   //if(dScore < GV2.GetDouble("Reloc2.MaxScore", 9e6, SILENT))
-  if(dScore < pPars->RelocMaxScore)
+  if(dScore < pPars.RelocMaxScore)
     return true;
   else 
     return false;

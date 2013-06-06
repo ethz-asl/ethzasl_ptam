@@ -62,7 +62,7 @@ void System::init(const CVD::ImageRef & size)
   GUI.RegisterCommand("exit", GUICommandCallBack, this);
   GUI.RegisterCommand("quit", GUICommandCallBack, this);
 
-  if(ParamsAccess::fixParams->gui){
+  if(PtamParameters::fixparams().gui){
     mGLWindow = new GLWindow2(size, "PTAM");
     mpMapViewer = new MapViewer(*mpMap, *mGLWindow);
 
@@ -94,7 +94,7 @@ void System::imageCallback(const sensor_msgs::ImageConstPtr & img)
 
   ROS_ASSERT(img->encoding == sensor_msgs::image_encodings::MONO8 && img->step == img->width);
 
-  VarParams *varParams = ParamsAccess::varParams;
+  const VarParams& varParams = PtamParameters::varparams();
 
   if(first_frame_){
     init(CVD::ImageRef(img->width, img->height));
@@ -102,7 +102,7 @@ void System::imageCallback(const sensor_msgs::ImageConstPtr & img)
   }
 
   TooN::SO3<double> imu_orientation;
-  if (varParams->MotionModelSource == ptam::PtamParams_MM_IMU)
+  if (varParams.MotionModelSource == ptam::PtamParams_MM_IMU)
   {
     sensor_msgs::Imu imu;
 
@@ -129,7 +129,7 @@ void System::imageCallback(const sensor_msgs::ImageConstPtr & img)
   static gvar3<int> gvnDrawMap("DrawMap", 0, HIDDEN | SILENT);
   bool bDrawMap = mpMap->IsGood() && *gvnDrawMap;
 
-  if(ParamsAccess::fixParams->gui){
+  if(PtamParameters::fixparams().gui){
     CVD::copy(img_tmp, img_rgb_);
 
     mGLWindow->SetupViewport();
@@ -145,7 +145,7 @@ void System::imageCallback(const sensor_msgs::ImageConstPtr & img)
   publishPreviewImage(img_bw_, img->header);
   std::cout << mpMapMaker->getMessageForUser();
 
-  if(ParamsAccess::fixParams->gui){
+  if(PtamParameters::fixparams().gui){
     string sCaption;
 
     if (bDrawMap)
@@ -266,8 +266,8 @@ bool System::transformPoint(const std::string & target_frame, const std_msgs::He
 
 void System::publishPoseAndInfo(const std_msgs::Header & header)
 {
-  ParamsAccess Params;
-  double scale = Params.varParams->Scale;
+  
+  double scale = PtamParameters::varparams().Scale;
 
   static float fps = 0;
   static double last_time = 0;
@@ -294,7 +294,7 @@ void System::publishPoseAndInfo(const std_msgs::Header & header)
     TooN::Vector<3, double> t_ptam =  pose.get_translation();
 
     tf::StampedTransform transform_ptam(tf::Transform(tf::Matrix3x3(r_ptam(0, 0), r_ptam(0, 1), r_ptam(0, 2), r_ptam(1, 0), r_ptam(1, 1), r_ptam(1, 2), r_ptam(2, 0), r_ptam(2, 1), r_ptam(2, 2))
-    , tf::Vector3(t_ptam[0] / scale, t_ptam[1] / scale, t_ptam[2] / scale)), header.stamp, header.frame_id, Params.fixParams->parent_frame);
+    , tf::Vector3(t_ptam[0] / scale, t_ptam[1] / scale, t_ptam[2] / scale)), header.stamp, header.frame_id, PtamParameters::fixparams().parent_frame);
 
 
     //camera in the world frame
@@ -302,7 +302,7 @@ void System::publishPoseAndInfo(const std_msgs::Header & header)
     TooN::Vector<3, double> t_world =  - r_world * pose.get_translation();
 
     tf::StampedTransform transform_world(tf::Transform(tf::Matrix3x3(r_world(0, 0), r_world(0, 1), r_world(0, 2), r_world(1, 0), r_world(1, 1), r_world(1, 2), r_world(2, 0), r_world(2, 1), r_world(2, 2))
-        , tf::Vector3(t_world[0] / scale, t_world[1] / scale, t_world[2] / scale)), header.stamp, Params.fixParams->parent_frame, header.frame_id);
+        , tf::Vector3(t_world[0] / scale, t_world[1] / scale, t_world[2] / scale)), header.stamp, PtamParameters::fixparams().parent_frame, header.frame_id);
 
     tf_pub_.sendTransform(transform_world);
 
@@ -424,8 +424,8 @@ void System::publishPreviewImage(CVD::Image<CVD::byte> & img, const std_msgs::He
     if (drawTrails)
     {
 
-      ParamsAccess Params;
-      int level = Params.fixParams->InitLevel;
+      
+      int level = PtamParameters::fixparams().InitLevel;
 
       for (std::list<Trail>::iterator i = trails.begin(); i != trails.end(); i++)
       {
@@ -515,8 +515,8 @@ bool System::keyframesservice(ptam_com::KeyFrame_srvRequest & req, ptam_com::Key
   //			zero = send all available KeyFrames
   //			positive number = send all KeyFrames with ID>N
 
-  ParamsAccess Params;
-  double scale = Params.varParams->Scale;
+  
+  double scale = PtamParameters::varparams().Scale;
 
   TooN::SE3<double> pose;
   TooN::Matrix<3, 3, double> rot;

@@ -27,11 +27,11 @@ int main(int argc, char** argv)
 
   try
   {
-    PtamParameters mPtamParameters;
+    std::cout<<"Gui is "<<(PtamParameters::fixparams().gui ? "on" : "off")<<std::endl; //make the singleton instantiate
     System s;
     s.Run();
   }
-  catch(CVD::Exceptions::All e)
+  catch(CVD::Exceptions::All& e)
   {
     cout << endl;
     cout << "!! Failed to run system; got exception. " << endl;

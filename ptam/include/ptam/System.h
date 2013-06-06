@@ -38,7 +38,7 @@
 #include <TooN/so3.h>
 
 class ATANCamera;
-class Map;
+struct Map;
 class MapMaker;
 class Tracker;
 class MapViewer;

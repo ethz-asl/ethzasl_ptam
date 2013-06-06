@@ -111,8 +111,8 @@ bool CalibImage::MakeFromImage(Image<byte> &im)
 {
   //Weiss{
   //static int gvnCornerPatchSize = 20;
-  FixParams* pPars = ParamsAccess::fixParams;
-  static int gvnCornerPatchSize = pPars->CameraCalibrator_CornerPatchSize;
+  const FixParams& pPars = PtamParameters::fixparams();
+  static int gvnCornerPatchSize = pPars.CameraCalibrator_CornerPatchSize;
   //static gvar3<int> gvnCornerPatchSize("CameraCalibrator.CornerPatchPixelSize", 20, SILENT);
   //}
   mvCorners.clear();
@@ -128,7 +128,7 @@ bool CalibImage::MakeFromImage(Image<byte> &im)
     Image<byte> imBlurred = mim;
     imBlurred.make_unique();
 
-    double blursigma = pPars->Calibrator_BlurSigma;
+    double blursigma = pPars.Calibrator_BlurSigma;
 
     convolveGaussian(imBlurred, blursigma);
     ImageRef irTopLeft(5,5);
@@ -137,7 +137,7 @@ bool CalibImage::MakeFromImage(Image<byte> &im)
     glPointSize(1);
     glColor3f(1,0,1);
     glBegin(GL_POINTS);
-    int nGate = pPars->Calibrator_MeanGate;
+    int nGate = pPars.Calibrator_MeanGate;
     do
       if(IsCorner(imBlurred, ir, nGate))
       {
@@ -150,7 +150,7 @@ bool CalibImage::MakeFromImage(Image<byte> &im)
 
   // If there's not enough corners, i.e. camera pointing somewhere random, abort.
   // int MinCornersForGrabbedImage=20;
-  int MinCornersForGrabbedImage=pPars->Calibrator_MinCornersForGrabbedImage;
+  int MinCornersForGrabbedImage=pPars.Calibrator_MinCornersForGrabbedImage;
   if((int) mvCorners.size() < MinCornersForGrabbedImage)
     return false;
 
@@ -214,8 +214,8 @@ bool CalibImage::ExpandByAngle(int nSrc, int nDirn)
 {
   //Weiss{
   //static int gvnCornerPatchSize = 20;
-  FixParams* pPars = ParamsAccess::fixParams;
-  static int gvnCornerPatchSize = pPars->CameraCalibrator_CornerPatchSize;
+  const FixParams& pPars = PtamParameters::fixparams();
+  static int gvnCornerPatchSize = pPars.CameraCalibrator_CornerPatchSize;
   //static gvar3<int> gvnCornerPatchSize("CameraCalibrator.CornerPatchPixelSize", 20, SILENT);
   //}
   CalibGridCorner &gSrc = mvGridCorners[nSrc];
@@ -364,9 +364,9 @@ void CalibImage::ExpandByStep(int n)
   //Weiss{
   // static double gvdMaxStepDistFraction = 0.3;
   // static int gvnCornerPatchSize = 20;
-  FixParams* pPars = ParamsAccess::fixParams;
-  static double gvdMaxStepDistFraction = pPars->CameraCalibrator_MaxStepDistFraction;
-  static int gvnCornerPatchSize = pPars->CameraCalibrator_CornerPatchSize;
+  const FixParams& pPars = PtamParameters::fixparams();
+  static double gvdMaxStepDistFraction = pPars.CameraCalibrator_MaxStepDistFraction;
+  static int gvnCornerPatchSize = pPars.CameraCalibrator_CornerPatchSize;
   //static gvar3<double> gvdMaxStepDistFraction("CameraCalibrator.ExpandByStepMaxDistFrac", 0.3, SILENT);
   //static gvar3<int> gvnCornerPatchSize("CameraCalibrator.CornerPatchPixelSize", 20, SILENT);
   //}

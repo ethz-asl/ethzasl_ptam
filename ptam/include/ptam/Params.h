@@ -53,28 +53,6 @@ public:
   void readFixParams();
 };
 
-class ParamsAccess
-{
-public:
-  ParamsAccess(){};
-  ParamsAccess(ptam::PtamParamsConfig* _varParams, FixParams* _fixParams){
-    //		static ptam::PtamParamsConfig *s_ptamParams = _varParams;
-    //		varParams = s_ptamParams;//_varParams;
-    //
-    //		static FixParams* s_ptamFixParams = _fixParams;
-    //		fixParams = s_ptamFixParams;
-
-    varParams = _varParams;
-    fixParams = _fixParams;
-  };
-
-  // ptam::PtamParamsConfig* varParams{return varParams;};
-  // FixParams* getFixParams(){return fixParams;};
-
-  static ptam::PtamParamsConfig* varParams;
-  static FixParams* fixParams;
-};
-
 class PtamParameters{
 private:
   ptam::PtamParamsConfig mVarParams;
@@ -85,7 +63,7 @@ private:
   void ptamParamsConfig(ptam::PtamParamsConfig & config, uint32_t level){
     mVarParams = config;
   };
-public:
+  static PtamParameters* inst_;
   PtamParameters()
   {
     mpPtamParamsReconfigureServer = new PtamParamsReconfigureServer(ros::NodeHandle("~"));
@@ -93,8 +71,23 @@ public:
     mpPtamParamsReconfigureServer->setCallback(PtamParamCall);
 
     mFixParams.readFixParams();
-
-    ParamsAccess pAccess(&mVarParams, &mFixParams);
+  }
+  ~PtamParameters(){
+    delete inst_;
+    inst_ = NULL;
+  }
+public:
+  static const ptam::PtamParamsConfig& varparams(){
+    if(!inst_){
+      inst_ = new PtamParameters;
+    }
+    return inst_->mVarParams;
+  }
+  static const FixParams& fixparams(){
+    if(!inst_){
+      inst_ = new PtamParameters;
+    }
+    return inst_->mFixParams;
   }
 };
 

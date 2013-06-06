@@ -21,11 +21,11 @@ GLWindowMenu::GLWindowMenu(string sName, string sTitle)
   GUI.RegisterCommand(msName+".AddMenuMonitor", GUICommandCallBack, this);
   GUI.RegisterCommand(msName+".ShowMenu", GUICommandCallBack, this);
   //Weiss{
-  ParamsAccess Params;
-  FixParams* pPars = ParamsAccess::fixParams;
-  mgvnMenuItemWidth=pPars->GLWindowMenu_mgvnMenuItemWidth;
-  mgvnMenuTextOffset=pPars->GLWindowMenu_mgvnMenuTextOffset;
-  mgvnEnabled=pPars->GLWindowMenu_Enable;
+  
+  const FixParams& pPars = PtamParameters::fixparams();
+  mgvnMenuItemWidth=pPars.GLWindowMenu_mgvnMenuItemWidth;
+  mgvnMenuTextOffset=pPars.GLWindowMenu_mgvnMenuTextOffset;
+  mgvnEnabled=pPars.GLWindowMenu_Enable;
   //GV2.Register(mgvnMenuItemWidth, msName+".MenuItemWidth", 90, HIDDEN | SILENT);
   //GV2.Register(mgvnMenuTextOffset, msName+".MenuTextOffset", 20, HIDDEN | SILENT);
   //GV2.Register(mgvnEnabled, msName+".Enabled", 1, HIDDEN | SILENT);
