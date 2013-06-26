@@ -118,6 +118,9 @@ protected:
   void UpdateParams(Vector<NUMTRACKERCAMPARAMETERS> vUpdate);
   void DisableRadialDistortion();
 
+  // maximal allowable field of view (for fisheye cams)
+  double MaxFOV_; // maximal field of view: in radians and half angle
+
   // Cached from the last project/unproject:
   Vector<2> mvLastCam;      // Last z=1 coord
   Vector<2> mvLastIm;       // Last image/UFB coord
@@ -160,7 +163,7 @@ protected:
   {
     if(mdW == 0.0)
       return r;
-    return(tan(r * mdW) * mdOneOver2Tan);
+   	return tan(r * mdW) * mdOneOver2Tan;
   };
 
   std::string msName;

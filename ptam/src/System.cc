@@ -294,15 +294,14 @@ void System::publishPoseAndInfo(const std_msgs::Header & header)
     TooN::Vector<3, double> t_ptam =  pose.get_translation();
 
     tf::StampedTransform transform_ptam(tf::Transform(tf::Matrix3x3(r_ptam(0, 0), r_ptam(0, 1), r_ptam(0, 2), r_ptam(1, 0), r_ptam(1, 1), r_ptam(1, 2), r_ptam(2, 0), r_ptam(2, 1), r_ptam(2, 2))
-    , tf::Vector3(t_ptam[0] / scale, t_ptam[1] / scale, t_ptam[2] / scale)), header.stamp, header.frame_id, PtamParameters::fixparams().parent_frame);
-
+    , tf::Vector3(t_ptam[0] / scale, t_ptam[1] / scale, t_ptam[2] / scale)), header.stamp, frame_id, PtamParameters::fixparams().parent_frame);
 
     //camera in the world frame
     TooN::Matrix<3, 3, double> r_world = pose.get_rotation().get_matrix().T();
     TooN::Vector<3, double> t_world =  - r_world * pose.get_translation();
 
     tf::StampedTransform transform_world(tf::Transform(tf::Matrix3x3(r_world(0, 0), r_world(0, 1), r_world(0, 2), r_world(1, 0), r_world(1, 1), r_world(1, 2), r_world(2, 0), r_world(2, 1), r_world(2, 2))
-        , tf::Vector3(t_world[0] / scale, t_world[1] / scale, t_world[2] / scale)), header.stamp, PtamParameters::fixparams().parent_frame, header.frame_id);
+        , tf::Vector3(t_world[0] / scale, t_world[1] / scale, t_world[2] / scale)), header.stamp, PtamParameters::fixparams().parent_frame, frame_id);
 
     tf_pub_.sendTransform(transform_world);
 

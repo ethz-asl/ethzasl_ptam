@@ -17,6 +17,7 @@ ATANCamera::ATANCamera(string sName)
   //mgvvCameraParams = mvDefaultParams;
   const FixParams& pPars = PtamParameters::fixparams();
   mgvvCameraParams = makeVector(pPars.Cam_fx, pPars.Cam_fy, pPars.Cam_cx, pPars.Cam_cy, pPars.Cam_s);
+  MaxFOV_ = (pPars.MaxFoV/2)/180*M_PI;
   //GV2.Register(mgvvCameraParams, sName+".Parameters", mvDefaultParams, HIDDEN | FATAL_IF_NOT_DEFINED);
   //mvImageSize[0] = 640.0;
   //mvImageSize[1] = 480.0;
@@ -68,7 +69,12 @@ void ATANCamera::RefreshParams()
   Vector<2> v2;
   v2[0]= max(mgvvCameraParams[2], 1.0 - mgvvCameraParams[2]) / mgvvCameraParams[0];
   v2[1]= max(mgvvCameraParams[3], 1.0 - mgvvCameraParams[3]) / mgvvCameraParams[1];
-  mdLargestRadius = invrtrans(sqrt(v2*v2));
+  
+  double rbuff=sqrt(v2*v2);
+  if((rbuff*mdW)>MaxFOV_)
+	  mdLargestRadius =  tan(MaxFOV_) * mdOneOver2Tan;
+  else
+	  mdLargestRadius= tan(rbuff * mdW) * mdOneOver2Tan;
 
   // At what stage does the model become invalid?
   mdMaxR = 1.5 * mdLargestRadius; // (pretty arbitrary)

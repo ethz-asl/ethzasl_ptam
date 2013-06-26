@@ -36,6 +36,7 @@ public:
   double Cam_cx;
   double Cam_cy;
   double Cam_s;
+  double MaxFoV;
   double Calibrator_BlurSigma;
   double Calibrator_MeanGate;
   int Calibrator_MinCornersForGrabbedImage;

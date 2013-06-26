@@ -253,9 +253,12 @@ bool MapMaker::InitFromStereo(KeyFrame::Ptr kF,
 
   mCamera.SetImageSize(kF->aLevels[0].im.size());
 
-  //Weiss{
-  if(vTrailMatches.size()<4)
-    return false;
+//Weiss{
+	if(vTrailMatches.size()<4)
+	{
+		ROS_WARN_STREAM("Too few matches to init.");
+		return false;
+	}
 
   /////////////// init alternative: get rotation from SBI and direction from optical flow /////////////////
   ///////////////  turns out to be slightly faster but much less robuts...                /////////////////
@@ -404,10 +407,13 @@ bool MapMaker::InitFromStereo(KeyFrame::Ptr kF,
     //}
   }
 
-  //Weiss{
-  if(mMap.vpPoints.size()<4)
-    return false;
-  //}
+//Weiss{
+	if(mMap.vpPoints.size()<4)
+	{
+		ROS_WARN_STREAM("Too few map points to init.");
+		return false;
+	}
+//}
 
   mMap.vpKeyFrames.push_back(pkFirst);
   mMap.vpKeyFrames.push_back(pkSecond);
@@ -420,12 +426,18 @@ bool MapMaker::InitFromStereo(KeyFrame::Ptr kF,
   // Estimate the feature depth distribution in the first two key-frames
   // (Needed for epipolar search)
 
-  //Weiss{
-  if(!RefreshSceneDepth(pkFirst))
-    return false;
-  if(!RefreshSceneDepth(pkSecond))
-    return false;
-  mdWiggleScaleDepthNormalized = mdWiggleScale / pkFirst->dSceneDepthMean;
+//Weiss{
+	if(!RefreshSceneDepth(pkFirst))
+	{
+		ROS_WARN_STREAM("Something is seriously wrong with the first KF.");
+		return false;
+	}
+	if(!RefreshSceneDepth(pkSecond))
+	{
+		ROS_WARN_STREAM("Something is seriously wrong with the second KF.");
+		return false;
+	}
+	mdWiggleScaleDepthNormalized = mdWiggleScale / pkFirst->dSceneDepthMean;
 
 
   //check if point have been added
@@ -437,7 +449,10 @@ bool MapMaker::InitFromStereo(KeyFrame::Ptr kF,
   addedsome |= AddSomeMapPoints(1);
   addedsome |= AddSomeMapPoints(2);
   if(!addedsome)
-    return false;
+	{
+		ROS_WARN_STREAM("Could not add any map points on any level - abort init.");
+		return false;
+	}
   //}
 
   mbBundleConverged_Full = false;
@@ -453,7 +468,7 @@ bool MapMaker::InitFromStereo(KeyFrame::Ptr kF,
   }
 
   //sanity check: if the point variance is too large assume init is crap --> very hacky, assumes flat init scene!!
-  if((pkFirst->dSceneDepthSigma+pkSecond->dSceneDepthSigma)/2.0>0.5)
+  if(((pkFirst->dSceneDepthSigma+pkSecond->dSceneDepthSigma)/2.0>0.5) && pParams.CheckInitMapVar)
   {
     ROS_WARN_STREAM("Initial map rejected because of too large point variance. Point sigma: " << ((pkFirst->dSceneDepthSigma+pkSecond->dSceneDepthSigma)/2.0));
     return false;

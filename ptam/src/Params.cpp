@@ -54,6 +54,7 @@ void FixParams::readFixParams()
   nh.param("InitLevel", InitLevel, 1);
   nh.param("parent_frame", parent_frame, std::string("world"));
   nh.param("gui", gui, false);
+  nh.param("MaxFoV", MaxFoV, 130.0);
 }
 ;
 PtamParameters* PtamParameters::inst_ = NULL;
