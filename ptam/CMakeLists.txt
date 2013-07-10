@@ -104,7 +104,7 @@ add_definitions(-DKF_REPROJ)
 
 # PTAM executable
 rosbuild_add_executable(ptam ${PTAM_SOURCE_FILES} ${PTAM_HEADER_FILES})
-rosbuild_add_compile_flags(ptam -D_LINUX -D_REENTRANT -Wall  -O3 -march=native -msse3)
++rosbuild_add_compile_flags(ptam -D_LINUX -D_REENTRANT -Wall  -O3 -march=native)
 target_link_libraries(ptam ${PTAM_LIBRARIES} ${OpenCV_LIBS})
 
 
