@@ -1,6 +1,5 @@
 cmake_minimum_required(VERSION 2.4.6)
 include($ENV{ROS_ROOT}/core/rosbuild/rosbuild.cmake)
-include(CMakeDetermineSystem)
 # Set the build type.  Options are:
 #  Coverage       : w/ debug symbols, w/o optimization, w/ code-coverage
 #  Debug          : w/ debug symbols, w/o optimization
@@ -105,9 +104,6 @@ add_definitions(-DKF_REPROJ)
 # PTAM executable
 rosbuild_add_executable(ptam ${PTAM_SOURCE_FILES} ${PTAM_HEADER_FILES})
 rosbuild_add_compile_flags(ptam -D_LINUX -D_REENTRANT -Wall  -O3 -march=native)
-if(CMAKE_SYSTEM_PROCESSOR MATCHES "i686")
-	rosbuild_add_compile_flags(ptam -msse3)
-endif(CMAKE_SYSTEM_PROCESSOR MATCHES "i686")
 target_link_libraries(ptam ${PTAM_LIBRARIES} ${OpenCV_LIBS})
 
 
