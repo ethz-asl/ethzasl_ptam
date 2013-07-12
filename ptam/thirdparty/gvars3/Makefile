@@ -8,8 +8,8 @@ git_checkedout:
 
 gvars_built: 
 	cp -r sources build
-	cd build && export CPATH=../../TooN/include && ./configure --without-ffmpeg --without-dc1394v1 --without-dc1394v2 --with-lapack
-	cd build && export CPATH=../../TooN/include && make -j4 -l4
+	cd build && if [ "`arch`" == "armv7l" ]; then sed -i 's/CXX=@CXX@/CXX=@CXX@ -fPIC/g' Makefile.in; fi
+	cd build && export CPATH=../../TooN/include && ./configure --without-ffmpeg --without-dc1394v1 --without-dc1394v2 --with-lapack --with-pic=no && make -j4 -l4
 	mkdir -p include
 	mkdir -p lib
 	cp build/*.so* lib
