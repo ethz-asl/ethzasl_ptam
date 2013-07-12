@@ -8,7 +8,7 @@ git_checkedout:
 	
 libcvd_built: 
 	cp -r sources build
-	cd build && export CPATH=../../TooN/include && ./configure --without-ffmpeg --without-dc1394v1 --without-dc1394v2 --with-toon --with-lapack
+	cd build && export CPATH=../../TooN/include && $(if $(shell arch)=="armv7l", export CXXFLAGS="-mfpu=neon") && ./configure --without-ffmpeg --without-dc1394v1 --without-dc1394v2 --with-toon --with-lapack
 	cd build && export CPATH=../../TooN/include && make -j4 -l4
 	mkdir -p include
 	mkdir -p lib
