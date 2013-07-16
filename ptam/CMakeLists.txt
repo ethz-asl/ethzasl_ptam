@@ -7,7 +7,6 @@ include($ENV{ROS_ROOT}/core/rosbuild/rosbuild.cmake)
 #  RelWithDebInfo : w/ debug symbols, w/ optimization
 #  MinSizeRel     : w/o debug symbols, w/ optimization, stripped binaries
 #set(ROS_BUILD_TYPE RelWithDebInfo)
-include(CMakeDetermineSystem)
 rosbuild_init()
 
 add_definitions(-DCVD_HAVE_TOON)
