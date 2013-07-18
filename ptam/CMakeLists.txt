@@ -7,7 +7,6 @@ include($ENV{ROS_ROOT}/core/rosbuild/rosbuild.cmake)
 #  RelWithDebInfo : w/ debug symbols, w/ optimization
 #  MinSizeRel     : w/o debug symbols, w/ optimization, stripped binaries
 #set(ROS_BUILD_TYPE RelWithDebInfo)
-
 rosbuild_init()
 
 add_definitions(-DCVD_HAVE_TOON)
@@ -103,7 +102,12 @@ add_definitions(-DKF_REPROJ)
 
 # PTAM executable
 rosbuild_add_executable(ptam ${PTAM_SOURCE_FILES} ${PTAM_HEADER_FILES})
-rosbuild_add_compile_flags(ptam -D_LINUX -D_REENTRANT -Wall  -O3 -march=native)
+rosbuild_add_compile_flags(ptam -D_LINUX -D_REENTRANT -Wall -march=native)
+IF(CMAKE_BUILD_TYPE MATCHES Release)
+ rosbuild_add_compile_flags(ptam -O3)
+ SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsee -funsafe-loop-optimizations -ffinite-math-only -fno-signed-zeros -fno-math-errno -funroll-loops")
+ENDIF(CMAKE_BUILD_TYPE MATCHES Release)
+
 target_link_libraries(ptam ${PTAM_LIBRARIES} ${OpenCV_LIBS})
 
 
