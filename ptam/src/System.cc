@@ -328,8 +328,8 @@ void System::publishPoseAndInfo(const std_msgs::Header & header)
 
 
       //camera in the world frame
-      const tf::Quaternion & q_tf_world = transform_ptam.getRotation();
-      const tf::Vector3 & t_tf_world = transform_ptam.getOrigin();
+      const tf::Quaternion & q_tf_world = transform_world.getRotation();
+      const tf::Vector3 & t_tf_world = transform_world.getOrigin();
       msg_pose->pose.pose.orientation.w = q_tf_world.w();
       msg_pose->pose.pose.orientation.x = q_tf_world.x();
       msg_pose->pose.pose.orientation.y = q_tf_world.y();
