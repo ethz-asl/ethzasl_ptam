@@ -1,25 +1,25 @@
-cmake_minimum_required(VERSION 2.4.6)
-include($ENV{ROS_ROOT}/core/rosbuild/rosbuild.cmake)
-# Set the build type.  Options are:
-#  Coverage       : w/ debug symbols, w/o optimization, w/ code-coverage
-#  Debug          : w/ debug symbols, w/o optimization
-#  Release        : w/o debug symbols, w/ optimization
-#  RelWithDebInfo : w/ debug symbols, w/ optimization
-#  MinSizeRel     : w/o debug symbols, w/ optimization, stripped binaries
-#set(ROS_BUILD_TYPE RelWithDebInfo)
-rosbuild_init()
+cmake_minimum_required(VERSION 2.8.3)
+project(ptam)
 
-add_definitions(-DCVD_HAVE_TOON)
-
-set(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/bin)
-set(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/lib)
-
-# Generate dynamic parameters
-rosbuild_find_ros_package(dynamic_reconfigure)
-include(${dynamic_reconfigure_PACKAGE_PATH}/cmake/cfgbuild.cmake)
-gencfg()
+find_package(catkin REQUIRED COMPONENTS
+  roscpp
+  dynamic_reconfigure
+  std_msgs
+  image_transport
+  dynamic_reconfigure
+  sensor_msgs
+  ptam_com
+  tf
+  visualization_msgs
+  cv_bridge
+)
 
 find_package(OpenCV REQUIRED)
+
+generate_dynamic_reconfigure_options(cfg/PTAMVisualizerParams.cfg cfg/PtamParams.cfg)
+
+##Needed for ros packages
+catkin_package(CATKIN_DEPENDS roscpp dynamic_reconfigure std_msgs image_transport dynamic_reconfigure sensor_msgs ptam_com tf visualization_msgs cv_bridge)
 
 set(PTAM_SOURCE_FILES         
 	src/GLWindow2.cc       
@@ -83,11 +83,12 @@ SET(CALIBRATOR_FILES
   src/Params.cpp 
 )	
 
-include_directories(
+include_directories( include
   ${PROJECT_SOURCE_DIR}/thirdparty/TooN/include 
   ${PROJECT_SOURCE_DIR}/thirdparty/libcvd/include 
   ${PROJECT_SOURCE_DIR}/thirdparty/gvars3/include 
   ${PROJECT_SOURCE_DIR}/thirdparty/agast/include
+  ${catkin_INCLUDE_DIRS}
 )  
 
 link_directories(
@@ -98,22 +99,23 @@ link_directories(
 
 set(PTAM_LIBRARIES GL glut cvd GVars3_headless agast blas lapack)
 
+add_definitions(-DCVD_HAVE_TOON)
 add_definitions(-DKF_REPROJ)
 
 # PTAM executable
-rosbuild_add_executable(ptam ${PTAM_SOURCE_FILES} ${PTAM_HEADER_FILES})
-rosbuild_add_compile_flags(ptam -D_LINUX -D_REENTRANT -Wall -march=native)
+add_executable(ptam ${PTAM_SOURCE_FILES} ${PTAM_HEADER_FILES})
+set_target_properties(ptam PROPERTIES -D_LINUX -D_REENTRANT -Wall -march=native)
 IF(CMAKE_BUILD_TYPE MATCHES Release)
- rosbuild_add_compile_flags(ptam -O3)
+ set_target_properties(ptam PROPERTIES -O3)
  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsee -funsafe-loop-optimizations -fno-signed-zeros -fno-math-errno -funroll-loops")
 ENDIF(CMAKE_BUILD_TYPE MATCHES Release)
 
-target_link_libraries(ptam ${PTAM_LIBRARIES} ${OpenCV_LIBS})
+target_link_libraries(ptam ${PTAM_LIBRARIES} ${OpenCV_LIBS} ${catkin_LIBRARIES})
 
 
 # Camera calibrator 
-rosbuild_add_executable(cameracalibrator ${CALIBRATOR_FILES})
-target_link_libraries(cameracalibrator ${PTAM_LIBRARIES} ${OpenCV_LIBS})
+add_executable(cameracalibrator ${CALIBRATOR_FILES})
+target_link_libraries(cameracalibrator ${PTAM_LIBRARIES} ${OpenCV_LIBS} ${catkin_LIBRARIES})
 
 # PTAM remote control
 # this is unfortunately neccessary to close app, when opencvwindow gets closed
@@ -130,7 +132,8 @@ if (PKG_CONFIG_FOUND AND UNIX AND NOT APPLE)
    endif(GTK_FOUND)
 endif(PKG_CONFIG_FOUND AND UNIX AND NOT APPLE)
 
-rosbuild_add_executable(remote_ptam src/RemotePtam.cpp)
-target_link_libraries(remote_ptam ${GTK_LIBRARIES} ${OpenCV_LIBS})
+add_executable(remote_ptam src/RemotePtam.cpp)
+target_link_libraries(remote_ptam ${GTK_LIBRARIES} ${OpenCV_LIBS} ${catkin_LIBRARIES})
 
-rosbuild_add_executable(ptam_visualizer src/PTAMVisualizer.cpp)
+add_executable(ptam_visualizer src/PTAMVisualizer.cpp)
+target_link_libraries(ptam_visualizer ${catkin_LIBRARIES})
