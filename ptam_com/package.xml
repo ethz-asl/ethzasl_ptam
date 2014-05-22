@@ -1,0 +1,43 @@
+<?xml version="1.0"?>
+<package>
+  <name>ptam_com</name>
+  <version>0.0.1</version>
+  <description>
+    
+      header files for the modified version of the monocular SLAM framework PTAM
+
+  </description>
+  
+  <maintainer email="markus.achtelik@mavt.ethz.ch">Markus Achtelik</maintainer>
+  <maintainer email="stephan.weiss@mavt.ethz.ch">Stephan Weiss</maintainer>
+  <maintainer email="simon.lynen@mavt.ethz.ch">Simon Lynen</maintainer>
+
+  <license>see http://www.robots.ox.ac.uk/~gk/PTAM/download.html </license>
+
+  <url>http://ros.org/wiki/ethzasl_ptam/ptam</url>
+  <url type="repository">https://github.com/ethz-asl/ethzasl_ptam</url>
+  <url type="bugtracker">https://github.com/ethz-asl/ethzasl_ptam/issues</url>
+
+  <author email="markus.achtelik@mavt.ethz.ch">Markus Achtelik</author>
+  <author email="stephan.weiss@mavt.ethz.ch">Stephan Weiss</author>
+  <author email="simon.lynen@mavt.ethz.ch">Simon Lynen</author>
+
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <build_depend>message_generation</build_depend>
+  <build_depend>std_msgs</build_depend>
+  <build_depend>roscpp</build_depend>
+  <build_depend>sensor_msgs</build_depend>
+  <build_depend>geometry_msgs</build_depend>
+
+  <run_depend>message_runtime</run_depend>
+  <run_depend>std_msgs</run_depend>
+  <run_depend>roscpp</run_depend>
+  <run_depend>sensor_msgs</run_depend>
+  <run_depend>geometry_msgs</run_depend>
+
+  <export>
+    <cpp cflags="-I${prefix}/srv/cpp -I${prefix}/msg/cpp"/>
+  </export>
+
+</package>

@@ -99,7 +99,7 @@ struct KeyFrame
 
   //slynen{ reprojection
   std::vector<boost::shared_ptr<MapPoint> > vpPoints;                          // stores the map points found in this keyframe
-  static const unsigned int iBestPointsCount = 5;                    // how many points to use for keyframe evaluation
+  enum { iBestPointsCount = 5 };                    // how many points to use for keyframe evaluation
   boost::shared_ptr<MapPoint> apCurrentBestPoints[iBestPointsCount];	               // stores the currently best Points for Keyframe identification
   void AddKeyMapPoint(boost::shared_ptr<MapPoint> mp);                        // checks whether to add a MapPoint to the KeyMapPoint of the KeyFrame
   // those points help selecting the Keyframes which are visible for reprojection

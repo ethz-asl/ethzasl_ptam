@@ -22,6 +22,11 @@ ptam_com/build/
 ptam_com/msg_gen/
 ptam_com/src/
 ptam_com/srv_gen/
+ptam/thirdparty/agast/lib/
+ptam/thirdparty/gvars3/git_checkedout
+ptam/thirdparty/gvars3/sources/
+ptam/thirdparty/libcvd/git_checkedout
+ptam/thirdparty/libcvd/sources/
 
 /build
 /Debug
