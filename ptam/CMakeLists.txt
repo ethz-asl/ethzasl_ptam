@@ -1,6 +1,12 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(ptam)
 
+add_custom_target(
+  DEPS ALL
+  COMMAND echo Building all dependencies
+  COMMAND cd ${PROJECT_SOURCE_DIR}/thirdparty && make
+)
+
 find_package(catkin REQUIRED COMPONENTS
   roscpp
   dynamic_reconfigure
@@ -83,7 +89,8 @@ SET(CALIBRATOR_FILES
   src/Params.cpp 
 )	
 
-include_directories( include
+include_directories(
+  include
   ${PROJECT_SOURCE_DIR}/thirdparty/TooN/include 
   ${PROJECT_SOURCE_DIR}/thirdparty/libcvd/include 
   ${PROJECT_SOURCE_DIR}/thirdparty/gvars3/include 
@@ -109,12 +116,14 @@ IF(CMAKE_BUILD_TYPE MATCHES Release)
  set_target_properties(ptam PROPERTIES -O3)
  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsee -funsafe-loop-optimizations -fno-signed-zeros -fno-math-errno -funroll-loops")
 ENDIF(CMAKE_BUILD_TYPE MATCHES Release)
+add_dependencies(ptam DEPS)
 
 target_link_libraries(ptam ${PTAM_LIBRARIES} ${OpenCV_LIBS} ${catkin_LIBRARIES})
 
 
 # Camera calibrator 
 add_executable(cameracalibrator ${CALIBRATOR_FILES})
+add_dependencies(cameracalibrator DEPS)
 target_link_libraries(cameracalibrator ${PTAM_LIBRARIES} ${OpenCV_LIBS} ${catkin_LIBRARIES})
 
 # PTAM remote control
@@ -133,7 +142,9 @@ if (PKG_CONFIG_FOUND AND UNIX AND NOT APPLE)
 endif(PKG_CONFIG_FOUND AND UNIX AND NOT APPLE)
 
 add_executable(remote_ptam src/RemotePtam.cpp)
+add_dependencies(remote_ptam DEPS)
 target_link_libraries(remote_ptam ${GTK_LIBRARIES} ${OpenCV_LIBS} ${catkin_LIBRARIES})
 
 add_executable(ptam_visualizer src/PTAMVisualizer.cpp)
+add_dependencies(ptam_visualizer DEPS)
 target_link_libraries(ptam_visualizer ${catkin_LIBRARIES})
