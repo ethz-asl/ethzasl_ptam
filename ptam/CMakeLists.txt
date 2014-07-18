@@ -111,9 +111,9 @@ add_definitions(-DKF_REPROJ)
 
 # PTAM executable
 add_executable(ptam ${PTAM_SOURCE_FILES} ${PTAM_HEADER_FILES})
-set_target_properties(ptam PROPERTIES -D_LINUX -D_REENTRANT -Wall -march=native)
+set_property(TARGET ptam APPEND_STRING PROPERTY COMPILE_FLAGS "-D_LINUX -D_REENTRANT -Wall -march=native ")
 IF(CMAKE_BUILD_TYPE MATCHES Release)
- set_target_properties(ptam PROPERTIES -O3)
+ set_property(TARGET ptam APPEND_STRING PROPERTY COMPILE_FLAGS "-O3 ")
  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsee -funsafe-loop-optimizations -fno-signed-zeros -fno-math-errno -funroll-loops")
 ENDIF(CMAKE_BUILD_TYPE MATCHES Release)
 add_dependencies(ptam DEPS)
