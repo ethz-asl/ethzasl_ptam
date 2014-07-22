@@ -124,6 +124,7 @@ void OctoMapInterface::deletePoint(MapPoint::Ptr p){
   pt.header.seq = pointseq_++;
   pt.header.stamp = ros::Time::now();
   pt.action = ptam_com::OctoMapPointStamped::DELETE;
+  pt.position = p->v3WorldPos;
   msg->mapPoints.push_back(pt);
   pub_points_.publish(msg);
 }
