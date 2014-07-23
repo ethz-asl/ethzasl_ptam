@@ -168,25 +168,25 @@ void KeyFrame::AddKeyMapPoint(MapPoint::Ptr mp){
   Vector<2> v2Diff = v2PointPos - v2Imcenter;	//distance to center of level zero
   Vector<2> v2DiffBest; //best distance for this point
 
-  v2DiffBest = LevelZeroPos(apCurrentBestPoints[0]->irCenter,0) - v2Imcenter;
+  v2DiffBest = LevelZeroPos(apCurrentBestPoints[0]->irCenter,apCurrentBestPoints[0]->nSourceLevel) - v2Imcenter;
   if((v2Diff*v2Diff) < (v2DiffBest*v2DiffBest))
     apCurrentBestPoints[0] = mp;	//the point is closer to the center that current best center point
 
   //now check which quadrant the point is in
   if(v2PointPos[0] > v2Imcenter[0] &&  v2PointPos[1] > v2Imcenter[1]){
-    v2DiffBest = LevelZeroPos(apCurrentBestPoints[1]->irCenter,0) - v2Imcenter;
+    v2DiffBest = LevelZeroPos(apCurrentBestPoints[1]->irCenter,apCurrentBestPoints[1]->nSourceLevel) - v2Imcenter;
     if((v2Diff*v2Diff) > (v2DiffBest*v2DiffBest))
       apCurrentBestPoints[1] = mp; //further away than current best point
   }else if(v2PointPos[0]<v2Imcenter[0] &&  v2PointPos[1] > v2Imcenter[1]){
-    v2DiffBest = LevelZeroPos(apCurrentBestPoints[2]->irCenter,0) - v2Imcenter;
+    v2DiffBest = LevelZeroPos(apCurrentBestPoints[2]->irCenter,apCurrentBestPoints[2]->nSourceLevel) - v2Imcenter;
     if((v2Diff*v2Diff) > (v2DiffBest*v2DiffBest))
       apCurrentBestPoints[2] = mp; //further away than current best point
   }else if(v2PointPos[0]<v2Imcenter[0] &&  v2PointPos[1] < v2Imcenter[1]){
-    v2DiffBest = LevelZeroPos(apCurrentBestPoints[3]->irCenter,0) - v2Imcenter;
+    v2DiffBest = LevelZeroPos(apCurrentBestPoints[3]->irCenter,apCurrentBestPoints[3]->nSourceLevel) - v2Imcenter;
     if((v2Diff*v2Diff) > (v2DiffBest*v2DiffBest))
       apCurrentBestPoints[3] = mp; //further away than current best point
   }else if(v2PointPos[0]>v2Imcenter[0] &&  v2PointPos[1] < v2Imcenter[1]){
-    v2DiffBest = LevelZeroPos(apCurrentBestPoints[4]->irCenter,0) - v2Imcenter;
+    v2DiffBest = LevelZeroPos(apCurrentBestPoints[4]->irCenter,apCurrentBestPoints[4]->nSourceLevel) - v2Imcenter;
     if((v2Diff*v2Diff) > (v2DiffBest*v2DiffBest))
       apCurrentBestPoints[4] = mp; //further away than current best point
   }
