@@ -116,14 +116,14 @@ IF(CMAKE_BUILD_TYPE MATCHES Release)
  set_property(TARGET ptam APPEND_STRING PROPERTY COMPILE_FLAGS "-O3 ")
  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsee -funsafe-loop-optimizations -fno-signed-zeros -fno-math-errno -funroll-loops")
 ENDIF(CMAKE_BUILD_TYPE MATCHES Release)
-add_dependencies(ptam DEPS)
+add_dependencies(ptam DEPS ${${PROJECT_NAME}_EXPORTED_TARGETS}})
 
 target_link_libraries(ptam ${PTAM_LIBRARIES} ${OpenCV_LIBS} ${catkin_LIBRARIES})
 
 
 # Camera calibrator 
 add_executable(cameracalibrator ${CALIBRATOR_FILES})
-add_dependencies(cameracalibrator DEPS)
+add_dependencies(cameracalibrator DEPS ${${PROJECT_NAME}_EXPORTED_TARGETS}})
 target_link_libraries(cameracalibrator ${PTAM_LIBRARIES} ${OpenCV_LIBS} ${catkin_LIBRARIES})
 
 # PTAM remote control
@@ -142,9 +142,9 @@ if (PKG_CONFIG_FOUND AND UNIX AND NOT APPLE)
 endif(PKG_CONFIG_FOUND AND UNIX AND NOT APPLE)
 
 add_executable(remote_ptam src/RemotePtam.cpp)
-add_dependencies(remote_ptam DEPS)
+add_dependencies(remote_ptam DEPS ${${PROJECT_NAME}_EXPORTED_TARGETS}})
 target_link_libraries(remote_ptam ${GTK_LIBRARIES} ${OpenCV_LIBS} ${catkin_LIBRARIES})
 
 add_executable(ptam_visualizer src/PTAMVisualizer.cpp)
-add_dependencies(ptam_visualizer DEPS)
+add_dependencies(ptam_visualizer DEPS ${${PROJECT_NAME}_EXPORTED_TARGETS}})
 target_link_libraries(ptam_visualizer ${catkin_LIBRARIES})
