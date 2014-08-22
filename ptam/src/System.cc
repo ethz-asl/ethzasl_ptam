@@ -550,6 +550,22 @@ bool System::keyframesservice(ptam_com::KeyFrame_srvRequest & req, ptam_com::Key
     {
       takeKF=false;
       resp.KFids.push_back((*rit)->ID);
+      
+      //jaegera (AndreasJaeger): 
+      //{Export also keyframe-image 
+      CVD::Image<CVD::byte> KFim=(*rit)->aLevels[0].im;     //current keyframe-image (CVD)    
+      ImageRef pos(5,5); 
+      sensor_msgs::Image im_msg;                            //create image-msg object 
+      im_msg.height=KFim.size().y; 
+      im_msg.width=KFim.size().x; 
+      int u,v; 
+      for (v=0;v<KFim.size().y;v++) 
+      for (u=0;u<KFim.size().x;u++) { 
+      im_msg.data.push_back(KFim[v][u]); 
+      } 
+      resp.KFimgs.push_back(im_msg);                       //add image to srv response               
+      //}
+
       pose = (*rit)->se3CfromW;
       rot =pose.get_rotation().get_matrix();
       trans = pose.get_translation();
