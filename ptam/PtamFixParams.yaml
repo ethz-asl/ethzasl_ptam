@@ -1,5 +1,5 @@
 gui: True
-ImageSizeX: 640
+ImageSizeX: 752
 ImageSizeY: 480
 ARBuffer_width: 1200
 ARBuffer_height: 900
