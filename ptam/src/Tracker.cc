@@ -604,10 +604,15 @@ int Tracker::TrailTracking_Advance()
       ImageRef irBackWardsFound = irEnd;
       bFound = BackwardsPatch.FindPatch(irBackWardsFound, lPreviousFrame.im, 10, lPreviousFrame.vCorners);
       if((irBackWardsFound - irStart).mag_squared() > 2)
+      {
+        // this trail will be deleted
         bFound = false;
-
-      trail.irCurrentPos = irEnd;
-      nGoodTrails++;
+      }
+      else
+      {
+        trail.irCurrentPos = irEnd;
+        nGoodTrails++;
+      }
     }
     if(mbDraw)
     {
