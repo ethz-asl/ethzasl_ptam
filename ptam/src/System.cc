@@ -21,7 +21,7 @@ using namespace GVars3;
 
 
 System::System() :
-      nh_("vslam"), image_nh_(""), first_frame_(true)
+      nh_("vslam"), image_nh_(""), first_frame_(true), mpMap(NULL)
 {
 
   pub_pose_ = nh_.advertise<geometry_msgs::PoseWithCovarianceStamped> ("pose", 1);
