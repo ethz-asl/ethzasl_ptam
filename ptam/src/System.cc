@@ -527,7 +527,7 @@ bool System::keyframesservice(ptam_com::KeyFrame_srvRequest & req, ptam_com::Key
   int k=0;
   static unsigned int seq=0;
 
-  if(!(mpMap->vpKeyFrames.size()>0) | !mpMap->bGood)
+  if(!mpMap || mpMap->vpKeyFrames.empty() || !mpMap->bGood)
     return false;
 
   resp.KFids.reserve(mpMap->vpKeyFrames.size());
