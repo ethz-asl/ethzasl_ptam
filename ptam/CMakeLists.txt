@@ -108,6 +108,7 @@ set(PTAM_LIBRARIES GL glut cvd GVars3_headless agast blas lapack)
 
 add_definitions(-DCVD_HAVE_TOON)
 add_definitions(-DKF_REPROJ)
+set(CMAKE_BUILD_TYPE Release)
 
 # PTAM executable
 add_executable(ptam ${PTAM_SOURCE_FILES} ${PTAM_HEADER_FILES})
